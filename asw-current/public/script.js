@@ -43,7 +43,7 @@ function drag(e) {
 }
 function drop(e) {
     e.preventDefault();
-    //saveState();
+    saveState();
     var data = e.dataTransfer.getData("text");
     const item = document.getElementById(data);
     const dropArea = document.getElementById('jacketbox');
@@ -65,7 +65,7 @@ function drop(e) {
             clonedItem.id = uniqueId;
             clonedItem.className = item.className + ' dropped-item';
             clonedItem.style.cssText = item.style.cssText;
-            //saveState();
+            saveState();
             dropArea.appendChild(clonedItem);
             positionItem(clonedItem, e, dropArea);
             selectItem(clonedItem);
@@ -153,10 +153,19 @@ function selectItem(item) {
     });
     if (item.id.startsWith('speaker')) {
         document.getElementById('movement-title').textContent = "Sound";
+        document.getElementById('movement-title').style.marginLeft = "45%";
         document.getElementById('custom-title').textContent = "Describe the desired sound:";
     } else {
         document.getElementById('movement-title').textContent = "Movement";
+        document.getElementById('movement-title').style.marginLeft = "";
         document.getElementById('custom-title').textContent = "Write my own:";
+    }
+    if (item.id.startsWith('battery')) {
+        document.getElementById('speed-title').textContent = "Battery Level";
+        document.getElementById('speed-title').style.marginLeft = "17%";
+    } else {
+        document.getElementById('speed-title').textContent = "Speed";
+        document.getElementById('speed-title').style.marginLeft = "";
     }
     let baseId = item.id;
     if (baseId.includes('CLONED')) {
@@ -451,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     radioValue = null;
                 }
+                saveState();
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
@@ -502,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clickItem = document.querySelector('.click-create');
     let lastClickX = 0;
     let lastClickY = 0;
-    jacketCanvas.addEventListener('click', function(e) {
+    jacketCanvas.addEventListener('contextmenu', function(e) {
         var imgData = jacketCtx.getImageData(e.offsetX, e.offsetY, 1, 1);
         var rgba = imgData.data;
         if (!clickOpen && rgba[3] !== 0) {
@@ -1040,12 +1050,11 @@ function duplicate() {
     }
 }
 
-/*let undoStack = [];
+let undoStack = [];
 let redoStack = [];
 function undo() {
     if (undoStack.length > 0) {
         const lastState = undoStack.pop();
-        //redoStack.push({...itemSelections[currView][lastState.id]});
         redoStack.push(lastState);
         loadState(undoStack[undoStack.length - 1]);
     }
@@ -1053,7 +1062,6 @@ function undo() {
 function redo() {
     if (redoStack.length > 0) {
         const lastState = redoStack.pop();
-        //undoStack.push({...itemSelections[currView][lastState.id]});
         undoStack.push(lastState);
         //itemSelections[currView][lastState.id] = {...lastState};
         loadState(lastState);
@@ -1098,7 +1106,7 @@ function loadState(state) {
             flashAnimation(newItem, flashType);
         }
     });
-}*/
+}
 
 //delete selected item
 function deleteItem() {

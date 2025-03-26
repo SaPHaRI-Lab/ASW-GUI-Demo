@@ -396,12 +396,14 @@ body {
   margin-left: 48px;
   margin-bottom: 3px;
   padding: 20px;
+  white-space: nowrap;
 }
 
 #custom-title {
   font-weight: lighter;
   color: white;
   font-size: 15px;
+  white-space: nowrap;
 }
 
 #color {

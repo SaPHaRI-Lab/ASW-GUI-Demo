@@ -8,11 +8,11 @@
   <div class="popup">
     <div class="popup-instructions">
       <h1 id="popup-title">Instructions</h1>
-      <p id="popup-text"><br>Welcome to the Affect-Sensing Wearable graphical user interface (GUI).</br><br>Please drag & drop features from the left sidebar onto the jacket image based on the video you have watched. You can consider emotional expression and desired social-physical interaction. From the right sidebar, you can make customizations and selections for various actuation methods. When you're done with your design, click the "Submit Design" button at the bottom right.</br><br>Before beginning, please enter your participant number and video code below:</br></p>
+      <p id="popup-text"><br>Welcome to the Affect-Sensing Wearable graphical user interface (GUI).</br><br>Please drag & drop features from the left sidebar onto the jacket image based on the video you have watched. You can consider emotional expression and desired social-physical interaction. From the right sidebar, you can make customizations and selections for various actuation methods. When you're done with your design, click the "Submit Design" button at the bottom right.</br><br>Please enter your participant number and design code below:</br></p>
       <div class="popup-identifiers">
         <label for="participant1" id="pNum1">Participant #:</label>
         <input type="text" id="participant1"/>
-        <label for="videoNum1" id="vNum1">Video Code:</label>
+        <label for="videoNum1" id="vNum1">Design Code:</label>
         <input type="text" id="videoNum1"/>
       </div>
       <button id="continue-button" disabled onclick="continueToGUI()">Continue</button>
@@ -49,7 +49,7 @@
       <div class="identifiers">
         <label for="participant" id="pNum">Participant #:</label>
         <input type="text" id="participant"/>
-        <label for="videoNum" id="vNum">Video Code:</label>
+        <label for="videoNum" id="vNum">Design Code:</label>
         <input type="text" id="videoNum"/>
       </div>
       <div class="option">Fur Patch
@@ -94,8 +94,8 @@
       <div class="option">Social Battery Display
         <div class="item-container" id="battery-cont">
           <div class="battery" id="battery" draggable="true" ondragstart="drag(event)">
-            <div class="battery1"></div>
             <div class="battery2"></div>
+            <div class="battery1"></div>
           </div>
         </div>
       </div>
@@ -186,7 +186,7 @@
       <div class="custom-user-input">
         <h2 id="custom-title">Write my own:</h2>
         <textarea id="custom-input" name="item-movement" rows="2" cols="22"></textarea>
-    </div>
+      </div>
       <div class="save">
         <button type="button" id="save-button" onclick="saveFile()">Submit Design</button>
       </div>
