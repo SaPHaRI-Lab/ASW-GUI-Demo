@@ -43,7 +43,7 @@ function drag(e) {
 }
 function drop(e) {
     e.preventDefault();
-    saveState();
+    //saveState();
     var data = e.dataTransfer.getData("text");
     const item = document.getElementById(data);
     const dropArea = document.getElementById('jacketbox');
@@ -65,7 +65,7 @@ function drop(e) {
             clonedItem.id = uniqueId;
             clonedItem.className = item.className + ' dropped-item';
             clonedItem.style.cssText = item.style.cssText;
-            saveState();
+            //saveState();
             dropArea.appendChild(clonedItem);
             positionItem(clonedItem, e, dropArea);
             selectItem(clonedItem);
@@ -155,6 +155,10 @@ function selectItem(item) {
         document.getElementById('movement-title').textContent = "Sound";
         document.getElementById('movement-title').style.marginLeft = "45%";
         document.getElementById('custom-title').textContent = "Describe the desired sound:";
+    } else if (item.id.startsWith('display')) {
+        document.getElementById('movement-title').textContent = "Display";
+        document.getElementById('movement-title').style.marginLeft = "45%";
+        document.getElementById('custom-title').textContent = "Write my own:";
     } else {
         document.getElementById('movement-title').textContent = "Movement";
         document.getElementById('movement-title').style.marginLeft = "";
@@ -454,13 +458,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.color = selectedColor;
                 document.getElementById('color-range').style.background = `linear-gradient(to right, white, ${baseColor}, black)`;
                 let radioValue;
-                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                if (selectedRadio) {
-                    radioValue = selectedRadio.value;
+                if (selectedItem.classList.contains('speaker')) {
+                    const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
+                    const values = Array.from(checkboxes).map(function(cb) {
+                        return cb.value;
+                    });
+                    radioValue = values.join(', ');
                 } else {
-                    radioValue = null;
+                    const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                    if (selectedRadio) {
+                        radioValue = selectedRadio.value;
+                    } else {
+                        radioValue = null;
+                    }
                 }
-                saveState();
+                //saveState();
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
@@ -491,11 +503,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             selectedItem.color = selectedColor;
             let radioValue;
-            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-            if (selectedRadio) {
-                radioValue = selectedRadio.value;
+            if (selectedItem.classList.contains('speaker')) {
+                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
+                const values = Array.from(checkboxes).map(function(cb) {
+                    return cb.value;
+                });
+                radioValue = values.join(', ');
             } else {
-                radioValue = null;
+                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                if (selectedRadio) {
+                    radioValue = selectedRadio.value;
+                } else {
+                    radioValue = null;
+                }
             }
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
         }
@@ -679,7 +699,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedItem = document.querySelector('.dropped-item.selected-item');
             if (selectedItem) {
                 const sliderVal = document.getElementById("speed-range").value;
-                saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
+                let radioValue;
+                if (selectedItem.classList.contains('speaker')) {
+                    const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
+                    const values = Array.from(checkboxes).map(function(cb) {
+                        return cb.value;
+                    });
+                    radioValue = values.join(', ');
+                } else {
+                    const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                    if (selectedRadio) {
+                        radioValue = this.value;
+                    }
+                }
+                saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
                 } else if (radio.value.includes('Flash')) {
@@ -741,11 +774,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-            if (selectedRadio) {
-                radioValue = selectedRadio.value;
+            if (selectedItem.classList.contains('speaker')) {
+                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
+                const values = Array.from(checkboxes).map(function(cb) {
+                    return cb.value;
+                });
+                radioValue = values.join(', ');
             } else {
-                radioValue = null;
+                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                if (selectedRadio) {
+                    radioValue = selectedRadio.value;
+                } else {
+                    radioValue = null;
+                }
             }
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedColor, colorX, colorY, gradient);
             selectedItem.userinput = document.getElementById("custom-input").value;
@@ -756,11 +797,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-            if (selectedRadio) {
-                radioValue = selectedRadio.value;
+            if (selectedItem.classList.contains('speaker')) {
+                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
+                const values = Array.from(checkboxes).map(function(cb) {
+                    return cb.value;
+                });
+                radioValue = values.join(', ');
             } else {
-                radioValue = null;
+                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                if (selectedRadio) {
+                    radioValue = selectedRadio.value;
+                } else {
+                    radioValue = null;
+                }
             }
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));//this.value*100);
             saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
@@ -996,6 +1045,15 @@ function stopFlash(item) {
     }
 }
 
+function furAnimation(item, shakePattern) {
+    if (item.shakeInterval) {
+        clearInterval(item.shakeInterval);
+    }
+}
+function stopFur(item) {
+    
+}
+
 //duplicate selected item
 function duplicate() {
     const selectedItem = document.querySelector('.dropped-item.selected-item');
@@ -1037,9 +1095,18 @@ function duplicate() {
             clonedItem.x = xVal;
             clonedItem.y = yVal;
         }
-        clonedItem.addEventListener('click', function() {
+        /*clonedItem.addEventListener('click', function() {
             selectItem(clonedItem);
+        });*/
+        document.querySelectorAll('.dropped-item.selected-item').forEach(item => {
+            item.classList.remove('selected-item');
+            item.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.remove('selected-item'));
+            const rotateHandle = item.querySelector('.rotate-circle');
+            if (rotateHandle) {
+                rotateHandle.remove();
+            }
         });
+        selectItem(clonedItem);
         clonedItem.setAttribute('data-flashing-color', selectedItem.getAttribute('data-flashing-color'));
         if (flashingItems.has(selectedItem)) {
             flashingItems.add(clonedItem);
@@ -1050,7 +1117,7 @@ function duplicate() {
     }
 }
 
-let undoStack = [];
+/*let undoStack = [];
 let redoStack = [];
 function undo() {
     if (undoStack.length > 0) {
@@ -1106,7 +1173,7 @@ function loadState(state) {
             flashAnimation(newItem, flashType);
         }
     });
-}
+}*/
 
 //delete selected item
 function deleteItem() {
