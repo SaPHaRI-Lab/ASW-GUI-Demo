@@ -396,7 +396,6 @@ function resetColor() {
 }
 
 //let flashInterval = null;
-const flashingItems = new Set();
 //let currSpeed = null;
 //let selectedColor = null;
 const defaultColor = 'grey';
@@ -763,6 +762,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         //updateSpeed(this.value);
                         flashAnimation(selectedItem, 'random-fl');
                     //});
+                } else if (radio.value.includes('Shake')) {
+                    furAnimation(selectedItem, 'shake');
+                } else if (radio.value.includes('Stick up')) {
+                    furAnimation(selectedItem, 'stick-up');
                 }
                 selectedItem.radioSelection = this.value;
                 selectedItem.speed = sliderVal;
@@ -955,6 +958,7 @@ function normalizeColorStr(colorStr) {
     return colorStr;
 }
 
+const flashingItems = new Set();
 function flashAnimation(item, flashPattern) {
     if (item.flashInterval) {
         clearInterval(item.flashInterval);
@@ -1045,9 +1049,26 @@ function stopFlash(item) {
     }
 }
 
+const furAnimItems = new Set();
 function furAnimation(item, shakePattern) {
     if (item.shakeInterval) {
         clearInterval(item.shakeInterval);
+    }
+    let currSpeed = parseInt(item.getAttribute('data-speed'));
+    /*if (shakePattern == 'shake') {
+        let direction = 1;
+        item.shakeInterval = setInterval(() => {
+            item.style.transform = `rotate(${5*direction}deg)`;
+            direction *= -1;
+        }, currSpeed);
+    } else */if (shakePattern == 'stick-up') {
+        item.style.transform = 'rotate(0deg)';
+        const furs = item.querySelectorAll('.fur1, .fur2');
+        furs.forEach(fur => {
+            fur.style.transition = 'transform 0.3s ease';
+            fur.style.transformOrigin = 'bottom center';
+            fur.style.transform = 'rotate(-40deg)';
+        });
     }
 }
 function stopFur(item) {
@@ -1059,7 +1080,14 @@ function duplicate() {
     const selectedItem = document.querySelector('.dropped-item.selected-item');
     if (selectedItem) {
         const clonedItem = selectedItem.cloneNode(true);
-        const tempId = selectedItem.id.split('-').slice(0, -1).join('-');;
+        //const tempId = selectedItem.id.split('-').slice(0, -1).join('-');
+        let tempIdParts = selectedItem.id.split('-');
+        if (tempIdParts.includes('CLONED')) {
+            tempIdParts = tempIdParts.slice(0, -2);
+        } else {
+            tempIdParts = tempIdParts.slice(0, -1);
+        }
+        const tempId = tempIdParts.join('-');
         clonedItem.id = `${tempId}-CLONED-${Date.now()}`;
         clonedItem.className = selectedItem.className + ' dropped-item';
         clonedItem.style.cssText = selectedItem.style.cssText;
