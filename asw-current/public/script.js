@@ -81,7 +81,9 @@ function drop(e) {
                 clonedItem.setAttribute('data-speed', 400);
                 document.querySelector('input[name="item-movement"][value="Flash str"]').checked = true;
                 document.querySelector('input[name="item-movement"][value="Flash str"]').dispatchEvent(new Event('change'));
-            }
+            } /*else if (clonedItem.id.startsWith('fur-patch')) {
+                clonedItem.setAttribute('data-speed', 400);
+            }*/
             flashAnimation(clonedItem);
             clonedItem.addEventListener('click', function() {
                 selectItem(clonedItem);
@@ -155,19 +157,21 @@ function selectItem(item) {
         document.getElementById('movement-title').textContent = "Sound";
         document.getElementById('movement-title').style.marginLeft = "45%";
         document.getElementById('custom-title').textContent = "Describe the desired sound:";
+        document.getElementById('speed-title').textContent = "Volume";
+        document.getElementById('speed-title').style.marginLeft = "";
     } else if (item.id.startsWith('display')) {
         document.getElementById('movement-title').textContent = "Display";
         document.getElementById('movement-title').style.marginLeft = "45%";
         document.getElementById('custom-title').textContent = "Write my own:";
+        document.getElementById('speed-title').textContent = "Speed";
+        document.getElementById('speed-title').style.marginLeft = "";
+    } else if (item.id.startsWith('battery')) {
+        document.getElementById('speed-title').textContent = "Battery Level";
+        document.getElementById('speed-title').style.marginLeft = "17%";
     } else {
         document.getElementById('movement-title').textContent = "Movement";
         document.getElementById('movement-title').style.marginLeft = "";
         document.getElementById('custom-title').textContent = "Write my own:";
-    }
-    if (item.id.startsWith('battery')) {
-        document.getElementById('speed-title').textContent = "Battery Level";
-        document.getElementById('speed-title').style.marginLeft = "17%";
-    } else {
         document.getElementById('speed-title').textContent = "Speed";
         document.getElementById('speed-title').style.marginLeft = "";
     }
@@ -457,20 +461,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.color = selectedColor;
                 document.getElementById('color-range').style.background = `linear-gradient(to right, white, ${baseColor}, black)`;
                 let radioValue;
-                if (selectedItem.classList.contains('speaker')) {
+                /*if (selectedItem.classList.contains('speaker')) {
                     const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
                     const values = Array.from(checkboxes).map(function(cb) {
                         return cb.value;
                     });
                     radioValue = values.join(', ');
-                } else {
+                } else {*/
                     const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
                     if (selectedRadio) {
                         radioValue = selectedRadio.value;
                     } else {
                         radioValue = null;
                     }
-                }
+                //}
                 //saveState();
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
@@ -502,20 +506,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             selectedItem.color = selectedColor;
             let radioValue;
-            if (selectedItem.classList.contains('speaker')) {
+            /*if (selectedItem.classList.contains('speaker')) {
                 const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
                 const values = Array.from(checkboxes).map(function(cb) {
                     return cb.value;
                 });
                 radioValue = values.join(', ');
-            } else {
+            } else {*/
                 const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
                 if (selectedRadio) {
                     radioValue = selectedRadio.value;
                 } else {
                     radioValue = null;
                 }
-            }
+            //}
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
         }
     });
@@ -698,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedItem = document.querySelector('.dropped-item.selected-item');
             if (selectedItem) {
                 const sliderVal = document.getElementById("speed-range").value;
-                let radioValue;
+                /*let radioValue;
                 if (selectedItem.classList.contains('speaker')) {
                     const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
                     const values = Array.from(checkboxes).map(function(cb) {
@@ -710,8 +714,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (selectedRadio) {
                         radioValue = this.value;
                     }
-                }
-                saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+                }*/
+                //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+                saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
                 } else if (radio.value.includes('Flash')) {
@@ -777,20 +782,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            if (selectedItem.classList.contains('speaker')) {
+            /*if (selectedItem.classList.contains('speaker')) {
                 const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
                 const values = Array.from(checkboxes).map(function(cb) {
                     return cb.value;
                 });
                 radioValue = values.join(', ');
-            } else {
+            } else {*/
                 const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
                 if (selectedRadio) {
                     radioValue = selectedRadio.value;
                 } else {
                     radioValue = null;
                 }
-            }
+            //}
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedColor, colorX, colorY, gradient);
             selectedItem.userinput = document.getElementById("custom-input").value;
         }
@@ -800,26 +805,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            if (selectedItem.classList.contains('speaker')) {
+            /*if (selectedItem.classList.contains('speaker')) {
                 const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
                 const values = Array.from(checkboxes).map(function(cb) {
                     return cb.value;
                 });
                 radioValue = values.join(', ');
-            } else {
+            } else {*/
                 const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
                 if (selectedRadio) {
                     radioValue = selectedRadio.value;
                 } else {
                     radioValue = null;
                 }
-            }
+            //}
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));//this.value*100);
             saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
             //updateSpeed(this.value);
             if (flashingItems.has(selectedItem)) {
                 flashAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
+            }
+            if (furAnimItems.has(selectedItem)) {
+                furAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
         }
     });
@@ -1054,25 +1062,41 @@ function furAnimation(item, shakePattern) {
     if (item.shakeInterval) {
         clearInterval(item.shakeInterval);
     }
+    /*if (!item.hasAttribute('data-speed')) {
+        item.setAttribute('data-speed', 400);
+    }*/
+    furAnimItems.add(item);
+    const furs = item.querySelectorAll('.fur1, .fur2');
     let currSpeed = parseInt(item.getAttribute('data-speed'));
-    /*if (shakePattern == 'shake') {
+    if (shakePattern == 'shake') {
+        furs.forEach(fur => {
+            if (getComputedStyle(fur).transform !== 'none') {
+                if (fur.classList.contains('fur1')) {
+                    fur.style.transform = 'rotate(15deg)';
+                } else if (fur.classList.contains('fur2')) {
+                    fur.style.transform = 'rotate(-15deg)';
+                }
+            }
+        });
         let direction = 1;
         item.shakeInterval = setInterval(() => {
             item.style.transform = `rotate(${5*direction}deg)`;
             direction *= -1;
         }, currSpeed);
-    } else */if (shakePattern == 'stick-up') {
+    } else if (shakePattern == 'stick-up') {
         item.style.transform = 'rotate(0deg)';
-        const furs = item.querySelectorAll('.fur1, .fur2');
         furs.forEach(fur => {
             fur.style.transition = 'transform 0.3s ease';
-            fur.style.transformOrigin = 'bottom center';
             fur.style.transform = 'rotate(-40deg)';
         });
     }
 }
 function stopFur(item) {
-    
+    if (item.shakeInterval) { 
+        clearInterval(item.shakeInterval);
+        item.shakeInterval = null;
+    }
+    furAnimItems.delete(item);
 }
 
 //duplicate selected item
