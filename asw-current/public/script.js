@@ -81,9 +81,9 @@ function drop(e) {
                 clonedItem.setAttribute('data-speed', 400);
                 document.querySelector('input[name="item-movement"][value="Flash str"]').checked = true;
                 document.querySelector('input[name="item-movement"][value="Flash str"]').dispatchEvent(new Event('change'));
-            } /*else if (clonedItem.id.startsWith('fur-patch')) {
+            } else if (clonedItem.id.startsWith('fur-patch')) {
                 clonedItem.setAttribute('data-speed', 400);
-            }*/
+            }
             flashAnimation(clonedItem);
             clonedItem.addEventListener('click', function() {
                 selectItem(clonedItem);
@@ -819,8 +819,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
-            selectedItem.setAttribute('data-speed', updateSpeed(this.value));//this.value*100);
-            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
+            selectedItem.setAttribute('data-speed', updateSpeed(this.value));
+            //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
             //updateSpeed(this.value);
             if (flashingItems.has(selectedItem)) {
@@ -829,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (furAnimItems.has(selectedItem)) {
                 furAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
+            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
         }
     });
     //delete item
