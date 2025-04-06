@@ -83,6 +83,12 @@ function drop(e) {
                 document.querySelector('input[name="item-movement"][value="Flash str"]').dispatchEvent(new Event('change'));
             } else if (clonedItem.id.startsWith('fur-patch')) {
                 clonedItem.setAttribute('data-speed', 400);
+            } else if (clonedItem.id.startsWith('battery')) {
+                document.getElementById('bar1').style.opacity = 1;
+                document.getElementById('bar2').style.opacity = 1;
+                document.getElementById('bar3').style.opacity = 1;
+                document.getElementById('bar4').style.opacity = 0;
+                document.getElementById('bar5').style.opacity = 0;
             }
             flashAnimation(clonedItem);
             clonedItem.addEventListener('click', function() {
@@ -812,6 +818,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 radioValue = values.join(', ');
             } else {*/
+            if (selectedItem.classList.contains('battery')) {
+                const bars = selectedItem.querySelectorAll('.battery-bar');
+                const sliderVal = parseInt(this.value);
+                if (this.value == 1) {
+                    document.getElementById('bar1').style.opacity = 1;
+                    document.getElementById('bar2').style.opacity = 0;
+                    document.getElementById('bar3').style.opacity = 0;
+                    document.getElementById('bar4').style.opacity = 0;
+                    document.getElementById('bar5').style.opacity = 0;
+                } else if (this.value == 2) {
+                    document.getElementById('bar1').style.opacity = 1;
+                    document.getElementById('bar2').style.opacity = 1;
+                    document.getElementById('bar3').style.opacity = 0;
+                    document.getElementById('bar4').style.opacity = 0;
+                    document.getElementById('bar5').style.opacity = 0;
+                } else if (this.value == 3) {
+                    document.getElementById('bar1').style.opacity = 1;
+                    document.getElementById('bar2').style.opacity = 1;
+                    document.getElementById('bar3').style.opacity = 1;
+                    document.getElementById('bar4').style.opacity = 0;
+                    document.getElementById('bar5').style.opacity = 0;
+                } else if (this.value == 4) {
+                    document.getElementById('bar1').style.opacity = 1;
+                    document.getElementById('bar2').style.opacity = 1;
+                    document.getElementById('bar3').style.opacity = 1;
+                    document.getElementById('bar4').style.opacity = 1;
+                    document.getElementById('bar5').style.opacity = 0;
+                } else if (this.value == 5) {
+                    document.getElementById('bar1').style.opacity = 1;
+                    document.getElementById('bar2').style.opacity = 1;
+                    document.getElementById('bar3').style.opacity = 1;
+                    document.getElementById('bar4').style.opacity = 1;
+                    document.getElementById('bar5').style.opacity = 1;
+                }
+            }
                 const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
                 if (selectedRadio) {
                     radioValue = selectedRadio.value;

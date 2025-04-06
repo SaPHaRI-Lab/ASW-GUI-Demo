@@ -3,23 +3,22 @@ const app = express();
 const path = require('path');
 const port = process.env.PORT || 3000;
 const sqlite3 = require("sqlite3").verbose();
-//const bodyParser = require("body-parser");
-//const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const upload = multer({storage: multer.memoryStorage()});
 
 app.use(express.static(path.join(__dirname, 'public')));
-//app.use(cors());
-//app.use(bodyParser.json());
 
-/*app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});*/
-
+//use this for laptop
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+//use this for tablet
+/*const localIP = 'xxx.xx.xxx.xxx';
+app.listen(port, localIP, () => {
+  console.log(`Server is running on http://${localIP}:${port}`);
+});*/
 
 app.use(express.static(path.join(__dirname, "public")));
 
