@@ -1,5 +1,5 @@
 async function fetchFiles() {
-    const response = await fetch("http://localhost:3000/files");
+    const response = await fetch("http://localhost:3000/files");//("http://xxx.xx.xxx.xx:3000/files");
     const json = await response.json();
     let fileList = "<table border='1'><tr><th>Participant #</th><th>Video #</th><th>File Name</th><th>Timestamp</th><th>Actions</th></tr>";
     for (let i = 0; i < json.length; i++) {

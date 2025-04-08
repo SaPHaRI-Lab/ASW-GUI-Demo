@@ -84,11 +84,11 @@ function drop(e) {
             } else if (clonedItem.id.startsWith('fur-patch')) {
                 clonedItem.setAttribute('data-speed', 400);
             } else if (clonedItem.id.startsWith('battery')) {
-                document.getElementById('bar1').style.opacity = 1;
-                document.getElementById('bar2').style.opacity = 1;
-                document.getElementById('bar3').style.opacity = 1;
-                document.getElementById('bar4').style.opacity = 0;
-                document.getElementById('bar5').style.opacity = 0;
+                clonedItem.querySelector('#bar1').style.opacity = 1;
+                clonedItem.querySelector('#bar2').style.opacity = 1;
+                clonedItem.querySelector('#bar3').style.opacity = 1;
+                clonedItem.querySelector('#bar4').style.opacity = 0;
+                clonedItem.querySelector('#bar5').style.opacity = 0;
             }
             flashAnimation(clonedItem);
             clonedItem.addEventListener('click', function() {
@@ -174,6 +174,9 @@ function selectItem(item) {
     } else if (item.id.startsWith('battery')) {
         document.getElementById('speed-title').textContent = "Battery Level";
         document.getElementById('speed-title').style.marginLeft = "17%";
+        document.getElementById('custom-title').textContent = "Write my own:";
+        document.getElementById('movement-title').textContent = "Movement";
+        document.getElementById('movement-title').style.marginLeft = "";
     } else {
         document.getElementById('movement-title').textContent = "Movement";
         document.getElementById('movement-title').style.marginLeft = "";
@@ -644,6 +647,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 batteryClonedNode.addEventListener('click', function () {
                     selectItem(batteryClonedNode);
                 });
+                batteryClonedNode.querySelector('#bar1').style.opacity = 1;
+                batteryClonedNode.querySelector('#bar2').style.opacity = 1;
+                batteryClonedNode.querySelector('#bar3').style.opacity = 1;
+                batteryClonedNode.querySelector('#bar4').style.opacity = 0;
+                batteryClonedNode.querySelector('#bar5').style.opacity = 0;
                 (currView == "front" ? frontItems : backItems).push(batteryClonedNode);
                 clickItem.style.display = 'none';
                 clickOpen = false;
@@ -822,35 +830,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 const bars = selectedItem.querySelectorAll('.battery-bar');
                 const sliderVal = parseInt(this.value);
                 if (this.value == 1) {
-                    document.getElementById('bar1').style.opacity = 1;
-                    document.getElementById('bar2').style.opacity = 0;
-                    document.getElementById('bar3').style.opacity = 0;
-                    document.getElementById('bar4').style.opacity = 0;
-                    document.getElementById('bar5').style.opacity = 0;
+                    selectedItem.querySelector('#bar1').style.opacity = 1;
+                    selectedItem.querySelector('#bar2').style.opacity = 0;
+                    selectedItem.querySelector('#bar3').style.opacity = 0;
+                    selectedItem.querySelector('#bar4').style.opacity = 0;
+                    selectedItem.querySelector('#bar5').style.opacity = 0;
                 } else if (this.value == 2) {
-                    document.getElementById('bar1').style.opacity = 1;
-                    document.getElementById('bar2').style.opacity = 1;
-                    document.getElementById('bar3').style.opacity = 0;
-                    document.getElementById('bar4').style.opacity = 0;
-                    document.getElementById('bar5').style.opacity = 0;
+                    selectedItem.querySelector('#bar1').style.opacity = 1;
+                    selectedItem.querySelector('#bar2').style.opacity = 1;
+                    selectedItem.querySelector('#bar3').style.opacity = 0;
+                    selectedItem.querySelector('#bar4').style.opacity = 0;
+                    selectedItem.querySelector('#bar5').style.opacity = 0;
                 } else if (this.value == 3) {
-                    document.getElementById('bar1').style.opacity = 1;
-                    document.getElementById('bar2').style.opacity = 1;
-                    document.getElementById('bar3').style.opacity = 1;
-                    document.getElementById('bar4').style.opacity = 0;
-                    document.getElementById('bar5').style.opacity = 0;
+                    selectedItem.querySelector('#bar1').style.opacity = 1;
+                    selectedItem.querySelector('#bar2').style.opacity = 1;
+                    selectedItem.querySelector('#bar3').style.opacity = 1;
+                    selectedItem.querySelector('#bar4').style.opacity = 0;
+                    selectedItem.querySelector('#bar5').style.opacity = 0;
                 } else if (this.value == 4) {
-                    document.getElementById('bar1').style.opacity = 1;
-                    document.getElementById('bar2').style.opacity = 1;
-                    document.getElementById('bar3').style.opacity = 1;
-                    document.getElementById('bar4').style.opacity = 1;
-                    document.getElementById('bar5').style.opacity = 0;
+                    selectedItem.querySelector('#bar1').style.opacity = 1;
+                    selectedItem.querySelector('#bar2').style.opacity = 1;
+                    selectedItem.querySelector('#bar3').style.opacity = 1;
+                    selectedItem.querySelector('#bar4').style.opacity = 1;
+                    selectedItem.querySelector('#bar5').style.opacity = 0;
                 } else if (this.value == 5) {
-                    document.getElementById('bar1').style.opacity = 1;
-                    document.getElementById('bar2').style.opacity = 1;
-                    document.getElementById('bar3').style.opacity = 1;
-                    document.getElementById('bar4').style.opacity = 1;
-                    document.getElementById('bar5').style.opacity = 1;
+                    selectedItem.querySelector('#bar1').style.opacity = 1;
+                    selectedItem.querySelector('#bar2').style.opacity = 1;
+                    selectedItem.querySelector('#bar3').style.opacity = 1;
+                    selectedItem.querySelector('#bar4').style.opacity = 1;
+                    selectedItem.querySelector('#bar5').style.opacity = 1;
                 }
             }
                 const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
@@ -1207,6 +1215,11 @@ function duplicate() {
             let formattedRadioSelection = clonedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
             flashAnimation(clonedItem, formattedRadioSelection);
         }
+        if (furAnimItems.has(selectedItem)) {
+            furAnimItems.add(clonedItem);
+            let formattedRadioSelection = clonedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
+            furAnimation(clonedItem, formattedRadioSelection);
+        }
         selectItem(clonedItem);
     }
 }
@@ -1345,7 +1358,7 @@ async function saveFile() {
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
     formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Video_${videoNum}.csv`);
-    const response = await fetch("http://localhost:3000/upload-csv", {
+    const response = await fetch("http://localhost:3000/upload-csv", {//("http://xxx.xx.xxx.xx:3000/upload-csv", {
         method: "POST",
         body: formData
     });

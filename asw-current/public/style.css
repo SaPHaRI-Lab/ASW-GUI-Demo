@@ -732,15 +732,15 @@ body {
 .battery-bar {
   position: absolute;
   height: 100%;
-  width: 11px;
+  width: 9px;
   background-color: green;
   opacity: 0;
 }
 #bar1 {left: 0px;}
-#bar2 {left: 11px;}
-#bar3 {left: 22px;}
-#bar4 {left: 33px;}
-#bar5 {left: 44px;}
+#bar2 {left: 11.5px;}
+#bar3 {left: 23px;}
+#bar4 {left: 34.5px;}
+#bar5 {left: 46px;}
 
 .display {
   height: 25px;
