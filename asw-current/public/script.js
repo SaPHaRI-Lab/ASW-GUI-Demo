@@ -461,11 +461,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
                 selectedItem.style.backgroundColor = selectedColor;
-                selectedItem.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
+                selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
                     part.style.backgroundColor = selectedColor;
                 });
                 if (flashingItems.has(selectedItem)) {
                     selectedItem.setAttribute('data-flashing-color', selectedColor);
+                }
+                if (selectedItem.classList.contains('battery')) {
+                    selectedItem.querySelectorAll('.battery-bar').forEach(bar => {
+                        bar.style.backgroundColor = selectedColor;
+                    });
                 }
                 selectedItem.color = selectedColor;
                 document.getElementById('color-range').style.background = `linear-gradient(to right, white, ${baseColor}, black)`;
@@ -534,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     //shift click
     /*document.addEventListener("click", function(e) {
-        const item = e.target.closest(".dropped-item"); 
+        const item = e.target.closest(".dropped-item");
         if (item) {
             selectItem(item, e);
         }
@@ -810,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
-            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedColor, colorX, colorY, gradient);
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, "undefined", colorX, colorY, gradient);
             selectedItem.userinput = document.getElementById("custom-input").value;
         }
     });
@@ -868,6 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
+            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));
             //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
@@ -878,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (furAnimItems.has(selectedItem)) {
                 furAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
-            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
+            //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
         }
     });
     //delete item
