@@ -1351,6 +1351,14 @@ function continueToGUI() {
     document.body.removeChild(link);
 }*/
 async function saveFile() {
+    const completedDesign = document.getElementById('jacketbox');
+    html2canvas(completedDesign).then(canvas => {
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `GUIImg_Participant_${participantNum}_Design_${videoNum}.png`;
+        link.click();
+    });
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
     var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,X Position,Y Position\n";
@@ -1363,7 +1371,7 @@ async function saveFile() {
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
-    formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Video_${videoNum}.csv`);
+    formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Design_${videoNum}.csv`);
     const response = await fetch("http://localhost:3000/upload-csv", {//("http://xxx.xx.xxx.xx:3000/upload-csv", {
         method: "POST",
         body: formData
