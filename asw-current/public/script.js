@@ -1359,6 +1359,14 @@ async function saveFile() {
         link.download = `GUIImg_Participant_${participantNum}_Design_${videoNum}.png`;
         link.click();
     });
+    switchView();
+    html2canvas(completedDesign).then(canvas => {
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `GUIImg_Participant_${participantNum}_Design_${videoNum}.png`;
+        link.click();
+    });
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
     var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,X Position,Y Position\n";
