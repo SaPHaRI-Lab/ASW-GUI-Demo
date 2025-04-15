@@ -15,7 +15,7 @@ app.listen(port, () => {
 });
 
 //use this for tablet
-/*const localIP = 'xxx.xx.xxx.xxx';
+/*const localIP = 'xxx.xx.xxx.xx';
 app.listen(port, localIP, () => {
   console.log(`Server is running on http://${localIP}:${port}`);
 });*/
@@ -34,6 +34,8 @@ const db = new sqlite3.Database("participant_designs.db", (err) => {
           video_num TEXT NOT NULL,
           file_name TEXT NOT NULL,
           file_data BLOB NOT NULL,
+          gui_img1 BLOB NOT NULL,
+          gui_img2 BLOB NOT NULL,
           timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )
   `);
@@ -41,7 +43,7 @@ const db = new sqlite3.Database("participant_designs.db", (err) => {
 });
 
 app.get("/files", (req, res) => {
-  db.all("SELECT id, participant_num, video_num, file_name, timestamp FROM participant_designs", [], (err, rows) => {
+  db.all("SELECT id, participant_num, video_num, file_name, gui_img1, gui_img2, timestamp FROM participant_designs", [], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: "Failed to retrieve files" });
     }
@@ -53,14 +55,22 @@ app.get("/ASWGUIdash", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
 
-app.post("/upload-csv", upload.single("csv_file"), (req, res) => {
+/*app.post("/upload-csv", upload.single("csv_file"), (req, res) => {
   const {participant_num, video_num} = req.body;
   const fileName = req.file.originalname;
   const fileData = req.file.buffer;
   db.run(`INSERT INTO participant_designs (participant_num, video_num, file_name, file_data) VALUES (?, ?, ?, ?)`, [participant_num, video_num, fileName, fileData]);
+});*/
+app.post("/upload-csv", upload.fields([{name: "csv_file", maxCount: 1}, {name: "gui_image1", maxCount: 1}, {name: "gui_image2", maxCount: 1}]), (req, res) => {
+  const {participant_num, video_num} = req.body;
+  const fileName = req.files["csv_file"][0].originalname;
+  const fileData = req.files["csv_file"][0].buffer;
+  const guiImg1 = req.files["gui_image1"][0].buffer;
+  const guiImg2 = req.files["gui_image2"][0].buffer;
+  db.run(`INSERT INTO participant_designs (participant_num, video_num, file_name, file_data, gui_img1, gui_img2) VALUES (?, ?, ?, ?, ?, ?)`, [participant_num, video_num, fileName, fileData, guiImg1, guiImg2]);
 });
 
-app.get("/download/:id", (req, res) => {
+app.get("/download/:id", (req, res) => { //for csv
   const fileID = req.params.id;
   db.get("SELECT file_name, file_data FROM participant_designs WHERE id = ?", [fileID], (err, row) => {
     if (err || !row) {
@@ -69,6 +79,23 @@ app.get("/download/:id", (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${row.file_name}"`);
     res.setHeader("Content-Type", "text/csv");
     res.send(row.file_data);
+  });
+});
+app.get("/download-image/:id/:which", (req, res) => { //for pngs
+  const {id, which} = req.params;
+  let col;
+  if (which == "1") {
+    col = "gui_img1";
+  } else {
+    col = "gui_img2";
+  }
+  db.get(`SELECT ${col} FROM participant_designs WHERE id = ?`, [id], (err, row) => {
+    if (err || !row) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+    res.setHeader("Content-Disposition", `attachment; filename="gui_${id}_${which}.png"`);
+    res.setHeader("Content-Type", "image/png");
+    res.send(row[col]);
   });
 });
 

@@ -1,9 +1,9 @@
 async function fetchFiles() {
     const response = await fetch("http://localhost:3000/files");//("http://xxx.xx.xxx.xx:3000/files");
     const json = await response.json();
-    let fileList = "<table border='1'><tr><th>Participant #</th><th>Video #</th><th>File Name</th><th>Timestamp</th><th>Actions</th></tr>";
+    let fileList = "<table border='1'><tr><th>Participant #</th><th>Video #</th><th>File Name</th><th>GUI1</th><th>GUI2</th><th>Timestamp</th><th>Actions</th></tr>";
     for (let i = 0; i < json.length; i++) {
-        fileList += `<tr><td>${json[i].participant_num}</td><td>${json[i].video_num}</td><td>${json[i].file_name}</td><td>${json[i].timestamp}</td>
+        fileList += `<tr><td>${json[i].participant_num}</td><td>${json[i].video_num}</td><td>${json[i].file_name}</td><td><button onclick="downloadFile('${json[i].id}', 1)">Download</button></td><td><button onclick="downloadFile('${json[i].id}', 2)">Download</button></td><td>${json[i].timestamp}</td>
         <td><button onclick="downloadFile('${json[i].id}', '${json[i].file_name}')">Download</button><button onclick="deleteFile('${json[i].id}', '${json[i].file_name}')">Delete</button></td>
         </tr>`
     }
@@ -12,11 +12,18 @@ async function fetchFiles() {
 }
 
 async function downloadFile(fileID, fileName) {
-    const response = await fetch(`/download/${fileID}`);
+    let response, downloadName;
+    if (fileName != 1 && fileName != 2) {
+        response = await fetch(`/download/${fileID}`);
+        downloadName = fileName;
+    } else {
+        response = await fetch(`/download-image/${fileID}/${fileName}`);
+        downloadName = `GUI${fileName}`;//_participant${fileID.participant_num}_design${fileID.video_num}.png`;
+    }
     const blob = await response.blob();
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = fileName;
+    link.download = downloadName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

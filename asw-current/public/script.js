@@ -1352,21 +1352,11 @@ function continueToGUI() {
 }*/
 async function saveFile() {
     const completedDesign = document.getElementById('jacketbox');
-    html2canvas(completedDesign).then(canvas => {
-        const image = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `GUIImg_Participant_${participantNum}_Design_${videoNum}.png`;
-        link.click();
-    });
+    const canvas1 = await html2canvas(completedDesign);
+    const blob1 = await new Promise(resolve => canvas1.toBlob(resolve));
     switchView();
-    html2canvas(completedDesign).then(canvas => {
-        const image = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `GUIImg_Participant_${participantNum}_Design_${videoNum}.png`;
-        link.click();
-    });
+    const canvas2 = await html2canvas(completedDesign);
+    const blob2 = await new Promise(resolve => canvas2.toBlob(resolve));
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
     var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,X Position,Y Position\n";
@@ -1379,7 +1369,12 @@ async function saveFile() {
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
-    formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Design_${videoNum}.csv`);
+    //formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Design_${videoNum}.csv`);
+    const csvBlob = new Blob([csvFile], { type: "text/csv" });
+    const csvFileForUpload = new File([csvBlob], `Participant_${participantNum}_Design_${videoNum}.csv`, { type: "text/csv" });
+    formData.append("csv_file", csvFileForUpload);
+    formData.append("gui_image1", blob1);
+    formData.append("gui_image2", blob2);
     const response = await fetch("http://localhost:3000/upload-csv", {//("http://xxx.xx.xxx.xx:3000/upload-csv", {
         method: "POST",
         body: formData
