@@ -43,7 +43,6 @@ function drag(e) {
 }
 function drop(e) {
     e.preventDefault();
-    //saveState();
     var data = e.dataTransfer.getData("text");
     const item = document.getElementById(data);
     const dropArea = document.getElementById('jacketbox');
@@ -100,6 +99,7 @@ function drop(e) {
                 backItems.push(clonedItem);
             }
             selectItem(clonedItem);
+            saveState();
         } else {
             return;
         }
@@ -125,6 +125,7 @@ function positionItem(item, e, area) {
         item.style.left=`${xVal-20}px`;
         item.style.top=`${yVal-20}px`;
     }
+    saveState();
     item.x = xVal;
     item.y = yVal;
 }
@@ -331,10 +332,6 @@ var itemSelections = {
 };
 function saveItemSelections(itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient) {
     itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient};
-    /*const prevState = {itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient};
-    undoStack.push({...prevState});
-    redoStack = [];
-    itemSelections[currView][itemID] = {...prevState};*/
 }
 function loadItemSelections(itemID) {
     const selection = itemSelections[currView][itemID];
@@ -455,6 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedItem = document.querySelector('.dropped-item.selected-item');
             const other = document.querySelector('.other');
             if (selectedItem) {
+                saveState();
                 if (selectedItem == other) {
                     other.style.borderBottomColor = selectedColor;
                     other.style.backgroundColor = transparent;
@@ -489,7 +487,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         radioValue = null;
                     }
                 //}
-                //saveState();
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
@@ -512,9 +509,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 other.style.backgroundColor = transparent;
             }
             selectedItem.style.backgroundColor = selectedColor;
-            selectedItem.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
+            selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
                 part.style.backgroundColor = selectedColor;
             });
+            if (selectedItem.classList.contains('battery')) {
+                selectedItem.querySelectorAll('.battery-bar').forEach(bar => {
+                    bar.style.backgroundColor = selectedColor;
+                });
+            }
             if (flashingItems.has(selectedItem)) {
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
             }
@@ -735,6 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }*/
                 //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+                saveState();
                 saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
@@ -906,6 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
             }
         }
+        saveState();
     });
     //user input for popup
     const p1 = document.getElementById("participant1");
@@ -1230,20 +1234,23 @@ function duplicate() {
     }
 }
 
-/*let undoStack = [];
+let undoStack = [];
 let redoStack = [];
 function undo() {
-    if (undoStack.length > 0) {
+    if (undoStack.length < 2) {
+        return;
+    } else if (undoStack.length > 0) {
         const lastState = undoStack.pop();
         redoStack.push(lastState);
         loadState(undoStack[undoStack.length - 1]);
     }
 }
 function redo() {
-    if (redoStack.length > 0) {
+    if (redoStack.length == 0) {
+        return;
+    } else if (redoStack.length > 0) {
         const lastState = redoStack.pop();
         undoStack.push(lastState);
-        //itemSelections[currView][lastState.id] = {...lastState};
         loadState(lastState);
     }
 }
@@ -1267,6 +1274,11 @@ function saveState() {
 function loadState(state) {
     const dropArea = document.getElementById("jacketbox");
     dropArea.querySelectorAll('.dropped-item').forEach(item => item.remove());
+    document.querySelectorAll('input[name="item-movement"]').forEach(radio => {
+        radio.checked = false;
+    });
+    flashingItems.clear();
+    furAnimItems.clear();
     state.forEach(data => {
         const newItem = document.createElement("div");
         newItem.id = data.id;
@@ -1275,38 +1287,27 @@ function loadState(state) {
         newItem.innerHTML = data.html;
         newItem.setAttribute('data-flashing-color', data.flashingColor);
         newItem.setAttribute('data-speed', data.speed);
+        newItem.setAttribute("draggable", "true");
+        newItem.ondragstart = (e) => drag(e);
         dropArea.appendChild(newItem);
         if (!itemSelections[data.view]) {
             itemSelections[data.view] = {};
         }
         itemSelections[data.view][data.id] = data.settings;
         newItem.addEventListener('click', () => selectItem(newItem));
+        const radioVal = data.settings?.radioSelection?.toLowerCase().replace(/\s+/g, '-');
         if (flashingItems.has(newItem)) {
             let flashType = data.settings && data.settings.radioSelection ? data.settings.radioSelection.toLowerCase().replace(/\s+/g, '-') : null;
             flashAnimation(newItem, flashType);
         }
     });
-}*/
+}
 
 //delete selected item
 function deleteItem() {
     const selectedItem = document.querySelector('.dropped-item.selected-item');
     if (selectedItem) {
-        /*const prevState = {
-            itemID: selectedItem.id,
-            innerHTML: selectedItem.innerHTML,
-            position: {left: selectedItem.style.left, top: selectedItem.style.top},
-            radioSelection: itemSelections[currView][selectedItem.id].radioSelection,
-            sliderValue: itemSelections[currView][selectedItem.id].sliderValue,
-            userInput: itemSelections[currView][selectedItem.id].userInput,
-            itemColor: itemSelections[currView][selectedItem.id].itemColor,
-            colorX: itemSelections[currView][selectedItem.id].colorX,
-            colorY: itemSelections[currView][selectedItem.id].colorY,
-            gradient: itemSelections[currView][selectedItem.id].gradient
-        };
-        undoStack.push({...prevState});
-        redoStack = [];
-        saveState(currView);*/
+        saveState(currView);
         if (currView == 'front') {
             for (let i = 0; i < frontItems.length; i++) {
                 if (frontItems[i].id == selectedItem.id) {
