@@ -108,8 +108,6 @@ function drop(e) {
 
 function positionItem(item, e, area) {
     const rect = area.getBoundingClientRect();
-    //const offsetX = -345;
-    //const offsetY = -30;
     const xVal = e.clientX-rect.left-item.offsetWidth/2;//-offsetX;
     const yVal = e.clientY-rect.top-item.offsetHeight/2;//-offsetY;
     item.style.position = 'absolute';
@@ -139,7 +137,7 @@ function selectItem(item) {
         }
     });
     item.classList.add('selected-item');
-    const rotateCircle = document.createElement('div');
+    const rotateCircle = document.createElement('div'); //for rotation
     rotateCircle.classList.add('rotate-circle');
     item.appendChild(rotateCircle);
     rotateItem(item, rotateCircle);
@@ -155,6 +153,15 @@ function selectItem(item) {
     } else if (item.id.startsWith('fur-patch')) {
         rotateCircle.style.transform = 'translateX(100%)';
         item.style.transformOrigin = "20px 20px";
+    }
+    const sizeScale = document.querySelector('.size-scaling'); //for scaling
+    const amountScale = document.querySelector('.amount-scaling');
+    if (item.id.startsWith('light-strip') || item.id.startsWith('fur-patch')) {
+        sizeScale.style.display = 'block';
+        amountScale.style.display = 'block';
+    } else {
+        sizeScale.style.display = 'block';
+        amountScale.style.display = 'none';
     }
     item.querySelectorAll('.rectangle, .circle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.add('selected-item'));
     document.querySelectorAll('.movement > div').forEach(div => {
@@ -325,6 +332,13 @@ function getCurrAngle(item) {
     return Math.atan2(parseFloat(matrix[1]),parseFloat(matrix[0]));
 }
 
+function scaleSize(item, num) {
+
+}
+function scaleAmount(item, num) {
+
+}
+
 //saving and loading item selections/customizations
 var itemSelections = {
     front: {},
@@ -443,7 +457,6 @@ document.addEventListener('DOMContentLoaded', function() {
         colorY = e.clientY - rect.top;
         let selectedItem = null;
         if (rgba[3] !== 0) { //if click isnt on transparent area of image
-            //selectedColor = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
             let baseColor = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
             rgba2[0] = rgba[0];
             rgba2[1] = rgba[1];
@@ -710,11 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     //slider functionality
     var slider = document.getElementById("speed-range");
-    //var output = document.getElementById("value");
-    //output.innerHTML = slider.value;
     slider.oninput = function() {
-        //output.innerHTML = this.value;
-        //currSpeed = this.value * 10;
         document.querySelector('.dropped-item.selected-item').setAttribute('data-speed', updateSpeed(this.value));//this.value*100);
     }
     //saving radio button selection
@@ -742,53 +751,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
                 } else if (radio.value.includes('Flash')) {
-                    //updateSpeed(sliderVal);
                     flashAnimation(selectedItem);
-                    //document.getElementById("speed-range").addEventListener('input', function() {
-                        const currMovement = document.querySelector('input[name="item-movement"]:checked');
-                        if (currMovement && currMovement.value.includes('Light on')) {
-                            stopFlash(selectedItem);
-                            return;
-                        }
-                        //updateSpeed(this.value);
-                        flashAnimation(selectedItem);
-                    //});
+                    const currMovement = document.querySelector('input[name="item-movement"]:checked');
+                    if (currMovement && currMovement.value.includes('Light on')) {
+                        stopFlash(selectedItem);
+                        return;
+                    }
+                    flashAnimation(selectedItem);
                 } else if (radio.value.includes('Trickle up')) {
-                    //updateSpeed(sliderVal);
                     flashAnimation(selectedItem, 'trickle-up');
-                    //document.getElementById("speed-range").addEventListener('input', function() {
-                        const currMovement = document.querySelector('input[name="item-movement"]:checked');
-                        if (currMovement && currMovement.value.includes('Light on')) {
-                            stopFlash(selectedItem);
-                            return;
-                        }
-                        //updateSpeed(this.value);
-                        flashAnimation(selectedItem, 'trickle-up');
-                    //});
+                    const currMovement = document.querySelector('input[name="item-movement"]:checked');
+                    if (currMovement && currMovement.value.includes('Light on')) {
+                        stopFlash(selectedItem);
+                        return;
+                    }
+                    flashAnimation(selectedItem, 'trickle-up');
                 } else if (radio.value.includes('Trickle down')) {
-                    //updateSpeed(sliderVal);
                     flashAnimation(selectedItem, 'trickle-down');
-                    //document.getElementById("speed-range").addEventListener('input', function() {
-                        const currMovement = document.querySelector('input[name="item-movement"]:checked');
-                        if (currMovement && currMovement.value.includes('Light on')) {
-                            stopFlash(selectedItem);
-                            return;
-                        }
-                        //updateSpeed(this.value);
-                        flashAnimation(selectedItem, 'trickle-down');
-                    //});
+                    const currMovement = document.querySelector('input[name="item-movement"]:checked');
+                    if (currMovement && currMovement.value.includes('Light on')) {
+                        stopFlash(selectedItem);
+                        return;
+                    }
+                    flashAnimation(selectedItem, 'trickle-down');
                 } else if (radio.value.includes('Random fl')) {
-                    //updateSpeed(sliderVal);
                     flashAnimation(selectedItem, 'random-fl');
-                    //document.getElementById("speed-range").addEventListener('input', function() {
-                        const currMovement = document.querySelector('input[name="item-movement"]:checked');
-                        if (currMovement && currMovement.value.includes('Light on')) {
-                            stopFlash(selectedItem);
-                            return;
-                        }
-                        //updateSpeed(this.value);
-                        flashAnimation(selectedItem, 'random-fl');
-                    //});
+                    const currMovement = document.querySelector('input[name="item-movement"]:checked');
+                    if (currMovement && currMovement.value.includes('Light on')) {
+                        stopFlash(selectedItem);
+                        return;
+                    }
+                    flashAnimation(selectedItem, 'random-fl');
                 } else if (radio.value.includes('Shake')) {
                     furAnimation(selectedItem, 'shake');
                 } else if (radio.value.includes('Stick up')) {
@@ -911,6 +904,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         saveState();
     });
+    //scaling items based on size & amount
+    document.getElementById('size-dec').addEventListener('click', () => {
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        if (selectedItem) {
+            scaleSize(selectedItem, -1);
+        }
+    });
+    document.getElementById('size-inc').addEventListener('click', () => {
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        if (selectedItem) {
+            scaleSize(selectedItem, +1);
+        }
+    });
+    document.getElementById('amount-dec').addEventListener('click', () => {
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        if (selectedItem) {
+            scaleAmount(selectedItem, -1);
+        }
+    });
+    document.getElementById('amount-inc').addEventListener('click', () => {
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        if (selectedItem) {
+            scaleAmount(selectedItem, +1);
+        }
+    });
     //user input for popup
     const p1 = document.getElementById("participant1");
     const vN1 = document.getElementById("videoNum1")
@@ -951,6 +969,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rotateHandle) {
                 rotateHandle.remove();
             }
+            document.querySelector('.size-scaling').style.display = 'none';
+            document.querySelector('.amount-scaling').style.display = 'none';
             //document.querySelectorAll('.color, .speed').style.display = 'none';
         /*} else if (e.target == selectedItem) {
             //selectedItem.classList.add();
@@ -1331,26 +1351,6 @@ function continueToGUI() {
     document.getElementById("videoNum").value = document.getElementById("videoNum1").value;
 }
 
-//saves participant design data to a CSV
-/*function saveFile() {
-    const participantNum = document.getElementById('participant').value;
-    const videoNum = document.getElementById('videoNum').value;
-    var csvFile = "data:text/csv;charset=utf-8,";
-    csvFile += "Jacket Side,Item ID,Customization,Speed,User Input,Color,X Position,Y Position\n";
-    for (let i = 0; i < frontItems.length; i++) { //items on jacket front  selectedItem.userinput = document.getElementById(selectedItem.custom-1).value;
-        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},${frontItems[i].userinput},"${frontItems[i].color}",${frontItems[i].x},${frontItems[i].y}\n`;
-    }
-    for (let i = 0; i < backItems.length; i++) { //items on jacket back
-        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},${backItems[i].userinput},"${backItems[i].color}",${backItems[i].x},${backItems[i].y}\n`;
-    }
-    const encodedUri = encodeURI(csvFile);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Participant_${participantNum}_Video_${videoNum}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}*/
 async function saveFile() {
     const completedDesign = document.getElementById('jacketbox');
     const canvas1 = await html2canvas(completedDesign);
@@ -1370,7 +1370,6 @@ async function saveFile() {
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
-    //formData.append("csv_file", new Blob([csvFile], { type: "text/csv" }), `Participant_${participantNum}_Design_${videoNum}.csv`);
     const csvBlob = new Blob([csvFile], { type: "text/csv" });
     const csvFileForUpload = new File([csvBlob], `Participant_${participantNum}_Design_${videoNum}.csv`, { type: "text/csv" });
     formData.append("csv_file", csvFileForUpload);

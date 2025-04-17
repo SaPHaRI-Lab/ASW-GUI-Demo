@@ -533,9 +533,44 @@ body {
   border-color: #ffa8a8 !important;
 }
 
-#back-view:hover, #front-view:hover, #undo:hover, #redo:hover, #duplicate:hover {
+#back-view:hover, #front-view:hover, #undo:hover, #redo:hover, #duplicate:hover, .size-scaling button:hover, .amount-scaling button:hover {
   background-color: #b6edff !important;
   border-color: #b6edff !important;
+}
+
+.scaling {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 10px;
+}
+.size-scaling, .amount-scaling {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#size-title, #amount-title {
+  color: white;
+  font-size: 15px;
+  font-weight: lighter;
+  margin-bottom: 5px;
+}
+.scaling-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+}
+.size-scaling button, .amount-scaling button {
+  cursor: pointer;
+  background-color: #9be4fc;
+  border-radius: 50%;
+  border-color: #9be4fc;
+  color: black;
+  margin: 3px 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  font-size: 23px;
 }
 
 #movement-title {
@@ -545,7 +580,6 @@ body {
   margin-top: 35px;
   margin-left: 55px;
 }
-
 .movement {
   color: white;
 }
