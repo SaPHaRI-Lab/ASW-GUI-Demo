@@ -159,6 +159,9 @@ function selectItem(item) {
     if (item.id.startsWith('light-strip') || item.id.startsWith('fur-patch')) {
         sizeScale.style.display = 'block';
         amountScale.style.display = 'block';
+    } else if (item.id.startsWith('speaker')) {
+        sizeScale.style.display = 'none';
+        amountScale.style.display = 'none';
     } else {
         sizeScale.style.display = 'block';
         amountScale.style.display = 'none';
@@ -310,7 +313,10 @@ function rotateItem(item, rotateCircle) {
             const yVal = e.clientY;
             const currAngle = Math.atan2(yVal-centerY, xVal-centerX);
             const rotationAngle = currAngle - ogAngle;
-            item.style.transform = `rotate(${rotationAngle*(180/Math.PI)}deg)`;
+            item.setAttribute('data-rotation', rotationAngle*(180/Math.PI));
+            const size = item.getAttribute('data-size') || 1;
+            item.style.transform = `scale(${size}) rotate(${rotationAngle*(180/Math.PI)}deg)`;
+            item.rotation = rotationAngle*(-180/Math.PI);
         }
     });
     document.addEventListener('mouseup', function() {
@@ -333,10 +339,27 @@ function getCurrAngle(item) {
 }
 
 function scaleSize(item, num) {
-
+    const currSize = parseFloat(item.getAttribute('data-size')) || 1;
+    let newSize = currSize + num;
+    newSize = Math.max(0.5, Math.min(newSize, 2));
+    item.setAttribute('data-size', newSize);
+    const rotation = item.getAttribute('data-rotation') || 0;
+    item.style.transform = `scale(${newSize}) rotate(${rotation}deg)`;
 }
 function scaleAmount(item, num) {
+    if (item.id.startsWith('light-strip')) {
+        const currLights = parseInt(item.getAttribute('data-amount')) || 6;
+        let newLights = currLights + num;
+        newLights = Math.max(3, Math.min(newLights, 10));
+        item.setAttribute('data-amount', newLights);
 
+    } else if (item.id.startsWith('fur-patch')) {
+        const currFur = parseInt(item.getAttribute('data-amount')) || 5;
+        let newFur = currFur + num;
+        newFur = Math.max(3, Math.min(newFur, 10));
+        item.setAttribute('data-amount', newFur);
+
+    }
 }
 
 //saving and loading item selections/customizations
@@ -908,13 +931,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('size-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) {
-            scaleSize(selectedItem, -1);
+            scaleSize(selectedItem, -0.1);
         }
     });
     document.getElementById('size-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) {
-            scaleSize(selectedItem, +1);
+            scaleSize(selectedItem, +0.1);
         }
     });
     document.getElementById('amount-dec').addEventListener('click', () => {
@@ -1160,11 +1183,19 @@ function furAnimation(item, shakePattern) {
         });
         let direction = 1;
         item.shakeInterval = setInterval(() => {
-            item.style.transform = `rotate(${5*direction}deg)`;
+            /*item.style.transform = `rotate(${5*direction}deg)`;
+            direction *= -1;*/
+            furs.forEach(fur => {
+                if (fur.classList.contains('fur1')) {
+                    fur.style.transform = `rotate(${7*direction}deg)`;
+                } else if (fur.classList.contains('fur2')) {
+                    fur.style.transform = `rotate(${-7*direction}deg)`;
+                }
+            });
             direction *= -1;
         }, currSpeed);
     } else if (shakePattern == 'stick-up') {
-        item.style.transform = 'rotate(0deg)';
+        //item.style.transform = 'rotate(0deg)';
         furs.forEach(fur => {
             fur.style.transition = 'transform 0.3s ease';
             fur.style.transform = 'rotate(-40deg)';
@@ -1360,12 +1391,12 @@ async function saveFile() {
     const blob2 = await new Promise(resolve => canvas2.toBlob(resolve));
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
-    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,X Position,Y Position\n";
+    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,X Position,Y Position\n";
     for (let i = 0; i < frontItems.length; i++) { //items on jacket front
-        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},${frontItems[i].userinput},"${frontItems[i].color}",${frontItems[i].x},${frontItems[i].y}\n`;
+        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},${frontItems[i].userinput},"${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].x},${frontItems[i].y}\n`;
     }
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
-        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},${backItems[i].userinput},"${backItems[i].color}",${backItems[i].x},${backItems[i].y}\n`;
+        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},${backItems[i].userinput},"${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
     }
     const formData = new FormData();
     formData.append("participant_num", participantNum);
