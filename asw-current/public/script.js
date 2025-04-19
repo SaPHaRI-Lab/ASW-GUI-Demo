@@ -64,7 +64,6 @@ function drop(e) {
             clonedItem.id = uniqueId;
             clonedItem.className = item.className + ' dropped-item';
             clonedItem.style.cssText = item.style.cssText;
-            //saveState();
             dropArea.appendChild(clonedItem);
             positionItem(clonedItem, e, dropArea);
             selectItem(clonedItem);
@@ -99,7 +98,7 @@ function drop(e) {
                 backItems.push(clonedItem);
             }
             selectItem(clonedItem);
-            saveState();
+            //saveState();
         } else {
             return;
         }
@@ -123,7 +122,7 @@ function positionItem(item, e, area) {
         item.style.left=`${xVal-20}px`;
         item.style.top=`${yVal-20}px`;
     }
-    saveState();
+    //saveState();
     item.x = xVal;
     item.y = yVal;
 }
@@ -488,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedItem = document.querySelector('.dropped-item.selected-item');
             const other = document.querySelector('.other');
             if (selectedItem) {
-                saveState();
+                //saveState();
                 if (selectedItem == other) {
                     other.style.borderBottomColor = selectedColor;
                     other.style.backgroundColor = transparent;
@@ -769,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }*/
                 //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
-                saveState();
+                //saveState();
                 saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
@@ -925,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
             }
         }
-        saveState();
+        //saveState();
     });
     //scaling items based on size & amount
     document.getElementById('size-dec').addEventListener('click', () => {
@@ -1285,7 +1284,7 @@ function duplicate() {
     }
 }
 
-let undoStack = [];
+/*let undoStack = [];
 let redoStack = [];
 function undo() {
     if (undoStack.length < 2) {
@@ -1352,13 +1351,13 @@ function loadState(state) {
             flashAnimation(newItem, flashType);
         }
     });
-}
+}*/
 
 //delete selected item
 function deleteItem() {
     const selectedItem = document.querySelector('.dropped-item.selected-item');
     if (selectedItem) {
-        saveState(currView);
+        //saveState(currView);
         if (currView == 'front') {
             for (let i = 0; i < frontItems.length; i++) {
                 if (frontItems[i].id == selectedItem.id) {
