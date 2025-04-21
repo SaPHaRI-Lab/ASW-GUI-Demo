@@ -34,11 +34,21 @@ function switchView() {
     }
 }
 
+//let cursorOffsetX = 0, cursorOffsetY = 0; //change this to setattributedata-cursorx
 //drag and drop functionality
 function dragOver(e) {
     e.preventDefault();
 }
 function drag(e) {
+    const item = document.getElementById(e.target.id);
+    const itemArea = item.getBoundingClientRect();
+    //cursorOffsetX = e.clientX - itemArea.left;
+    //cursorOffsetY = e.clientY - itemArea.top;
+    item.setAttribute('data-cursorX', (e.clientX-itemArea.left));
+    item.setAttribute('data-cursorY', (e.clientY-itemArea.top));
+    if (item.classList.contains('dropped-item')) {
+        selectItem(item);
+    }
     e.dataTransfer.setData("text", document.getElementById(e.target.id).id);
 }
 function drop(e) {
@@ -64,6 +74,7 @@ function drop(e) {
             clonedItem.id = uniqueId;
             clonedItem.className = item.className + ' dropped-item';
             clonedItem.style.cssText = item.style.cssText;
+            //saveState();
             dropArea.appendChild(clonedItem);
             positionItem(clonedItem, e, dropArea);
             selectItem(clonedItem);
@@ -98,7 +109,7 @@ function drop(e) {
                 backItems.push(clonedItem);
             }
             selectItem(clonedItem);
-            //saveState();
+            saveState();
         } else {
             return;
         }
@@ -110,21 +121,25 @@ function positionItem(item, e, area) {
     const xVal = e.clientX-rect.left-item.offsetWidth/2;//-offsetX;
     const yVal = e.clientY-rect.top-item.offsetHeight/2;//-offsetY;
     item.style.position = 'absolute';
-    item.style.left = `${xVal}px`;
-    item.style.top = `${yVal}px`;
+    //item.style.left = `${xVal}px`;
+    //item.style.top = `${yVal}px`;
+    item.style.left = e.clientX-rect.left-item.getAttribute('data-cursorX');
+    item.style.top = e.clientY-rect.top-item.getAttribute('data-cursorY');
     item.style.zIndex = '10';
-    if (item.id.startsWith('light-strip')) {
-        item.style.left=`${xVal-10}px`;
+    /*if (item.id.startsWith('light-strip')) {
+        //item.style.left=`${xVal-10}px`;
+        item.style.left = e.clientX-rect.left-item.getAttribute('data-cursorX');//`${e.clientX-rect.left-cursorOffsetX}px`;
+        item.style.top = e.clientY-rect.top-item.getAttribute('data-cursorY');//`${e.clientY-rect.top-cursorOffsetY}px`;
     } else if (item.id.startsWith('battery')) {
         item.style.left=`${xVal-30}px`;
         item.style.top=`${yVal-10}px`;
     } else if (item.id.startsWith('fur-patch')) {
         item.style.left=`${xVal-20}px`;
         item.style.top=`${yVal-20}px`;
-    }
-    //saveState();
-    item.x = xVal;
-    item.y = yVal;
+    }*/
+    saveState();
+    item.x = parseInt(item.style.left);//xVal;
+    item.y = parseInt(item.style.top);//yVal;
 }
 
 function selectItem(item) {
@@ -448,6 +463,7 @@ const defaultColor = 'grey';
 let rgba2 = [];
 let colorX = null, colorY = null;
 let gradient = 5;
+let startTime, totalTime;
 
 document.addEventListener('DOMContentLoaded', function() {
     //draw jacket & color images to canvas
@@ -487,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedItem = document.querySelector('.dropped-item.selected-item');
             const other = document.querySelector('.other');
             if (selectedItem) {
-                //saveState();
+                saveState();
                 if (selectedItem == other) {
                     other.style.borderBottomColor = selectedColor;
                     other.style.backgroundColor = transparent;
@@ -768,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }*/
                 //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
-                //saveState();
+                saveState();
                 saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
@@ -924,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
             }
         }
-        //saveState();
+        saveState();
     });
     //scaling items based on size & amount
     document.getElementById('size-dec').addEventListener('click', () => {
@@ -1284,7 +1300,7 @@ function duplicate() {
     }
 }
 
-/*let undoStack = [];
+let undoStack = [];
 let redoStack = [];
 function undo() {
     if (undoStack.length < 2) {
@@ -1351,13 +1367,13 @@ function loadState(state) {
             flashAnimation(newItem, flashType);
         }
     });
-}*/
+}
 
 //delete selected item
 function deleteItem() {
     const selectedItem = document.querySelector('.dropped-item.selected-item');
     if (selectedItem) {
-        //saveState(currView);
+        saveState(currView);
         if (currView == 'front') {
             for (let i = 0; i < frontItems.length; i++) {
                 if (frontItems[i].id == selectedItem.id) {
@@ -1379,9 +1395,11 @@ function continueToGUI() {
     document.querySelector(".popup").style.display = 'none';
     document.getElementById("participant").value = document.getElementById("participant1").value;
     document.getElementById("videoNum").value = document.getElementById("videoNum1").value;
+    startTime = Date.now();
 }
 
 async function saveFile() {
+    totalTime = (Date.now()-startTime)/1000;
     const completedDesign = document.getElementById('jacketbox');
     const canvas1 = await html2canvas(completedDesign);
     const blob1 = await new Promise(resolve => canvas1.toBlob(resolve));
@@ -1397,6 +1415,7 @@ async function saveFile() {
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
         csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},${backItems[i].userinput},"${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
     }
+    csvFile += `Total time: ${totalTime}`;
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
