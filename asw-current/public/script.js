@@ -538,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         radioValue = null;
                     }
                 //}
+                selectedItem.setAttribute('data-color', selectedColor);
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
@@ -785,7 +786,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }*/
                 //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 saveState();
-                saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+                saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
                 } else if (radio.value.includes('Flash')) {
@@ -849,7 +850,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
-            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, "undefined", colorX, colorY, gradient);
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
             selectedItem.userinput = document.getElementById("custom-input").value;
         }
     });
@@ -907,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
-            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));
             //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
@@ -1410,10 +1411,10 @@ async function saveFile() {
     const videoNum = document.getElementById('videoNum').value;
     var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,X Position,Y Position\n";
     for (let i = 0; i < frontItems.length; i++) { //items on jacket front
-        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},${frontItems[i].userinput},"${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].x},${frontItems[i].y}\n`;
+        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},"${frontItems[i].userinput}","${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].x},${frontItems[i].y}\n`;
     }
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
-        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},${backItems[i].userinput},"${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
+        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
     }
     csvFile += `Total time: ${totalTime}`;
     const formData = new FormData();
@@ -1432,7 +1433,9 @@ async function saveFile() {
     alert(result.message);
 }
 function submitPopup() {
-    document.querySelector('.popup-submit').style.display = 'block';
+    /*document.querySelector('.popup-submit').style.display = 'block';
     document.querySelector('.popup').style.display = 'block';
-    document.querySelector('.popup-instructions').style.display = 'none';
+    document.querySelector('.popup-instructions').style.display = 'none';*/
+    document.getElementById('save-button').disabled = true;
+    document.getElementById('save-button').style.opacity = 0.5;
 }
