@@ -36,6 +36,7 @@ const db = new sqlite3.Database("participant_designs.db", (err) => {
           file_data BLOB NOT NULL,
           gui_img1 BLOB NOT NULL,
           gui_img2 BLOB NOT NULL,
+          keystroke_data BLOB NOT NULL,
           timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )
   `);
@@ -43,7 +44,7 @@ const db = new sqlite3.Database("participant_designs.db", (err) => {
 });
 
 app.get("/files", (req, res) => {
-  db.all("SELECT id, participant_num, video_num, file_name, gui_img1, gui_img2, timestamp FROM participant_designs", [], (err, rows) => {
+  db.all("SELECT id, participant_num, video_num, file_name, gui_img1, gui_img2, keystroke_data, timestamp FROM participant_designs", [], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: "Failed to retrieve files" });
     }
@@ -61,13 +62,14 @@ app.get("/ASWGUIdash", (req, res) => {
   const fileData = req.file.buffer;
   db.run(`INSERT INTO participant_designs (participant_num, video_num, file_name, file_data) VALUES (?, ?, ?, ?)`, [participant_num, video_num, fileName, fileData]);
 });*/
-app.post("/upload-csv", upload.fields([{name: "csv_file", maxCount: 1}, {name: "gui_image1", maxCount: 1}, {name: "gui_image2", maxCount: 1}]), (req, res) => {
+app.post("/upload-csv", upload.fields([{name: "csv_file", maxCount: 1}, {name: "gui_image1", maxCount: 1}, {name: "gui_image2", maxCount: 1}, {name: "keystroke_file", maxCount: 1}]), (req, res) => {
   const {participant_num, video_num} = req.body;
   const fileName = req.files["csv_file"][0].originalname;
   const fileData = req.files["csv_file"][0].buffer;
   const guiImg1 = req.files["gui_image1"][0].buffer;
   const guiImg2 = req.files["gui_image2"][0].buffer;
-  db.run(`INSERT INTO participant_designs (participant_num, video_num, file_name, file_data, gui_img1, gui_img2) VALUES (?, ?, ?, ?, ?, ?)`, [participant_num, video_num, fileName, fileData, guiImg1, guiImg2]);
+  const keystrokeData = req.files["keystroke_file"][0].buffer;
+  db.run(`INSERT INTO participant_designs (participant_num, video_num, file_name, file_data, gui_img1, gui_img2, keystroke_data) VALUES (?, ?, ?, ?, ?, ?, ?)`, [participant_num, video_num, fileName, fileData, guiImg1, guiImg2, keystrokeData]);
 });
 
 app.get("/download/:id", (req, res) => { //for csv
@@ -79,6 +81,17 @@ app.get("/download/:id", (req, res) => { //for csv
     res.setHeader("Content-Disposition", `attachment; filename="${row.file_name}"`);
     res.setHeader("Content-Type", "text/csv");
     res.send(row.file_data);
+  });
+});
+app.get("/download-keystrokes/:id", (req, res) => { //for keystrokes csv
+  const fileID = req.params.id;
+  db.get("SELECT file_name, keystroke_data FROM participant_designs WHERE id = ?", [fileID], (err, row) => {
+    if (err || !row) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    res.setHeader("Content-Disposition", `attachment; filename="keystrokes_${row.file_name}"`);
+    res.setHeader("Content-Type", "text/csv");
+    res.send(row.keystroke_data);
   });
 });
 app.get("/download-image/:id/:which", (req, res) => { //for pngs

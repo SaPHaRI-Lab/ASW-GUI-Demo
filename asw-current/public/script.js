@@ -19,6 +19,7 @@ function switchView() {
         currView = "back";
         document.getElementById('front-view').style.display = 'block';
         document.getElementById('back-view').style.display = 'none';
+        logAction('switched_view', {from: 'front', to: 'back'});
     } else {
         for (let i = 0; i < frontItems.length; i++) {
             frontItems[i].style.display = 'block';
@@ -31,6 +32,7 @@ function switchView() {
         currView = "front";
         document.getElementById('back-view').style.display = 'block';
         document.getElementById('front-view').style.display = 'none';
+        logAction('switched_view', {from: 'back', to: 'front'});
     }
 }
 
@@ -42,8 +44,6 @@ function dragOver(e) {
 function drag(e) {
     const item = document.getElementById(e.target.id);
     const itemArea = item.getBoundingClientRect();
-    //cursorOffsetX = e.clientX - itemArea.left;
-    //cursorOffsetY = e.clientY - itemArea.top;
     item.setAttribute('data-cursorX', (e.clientX-itemArea.left));
     item.setAttribute('data-cursorY', (e.clientY-itemArea.top));
     if (item.classList.contains('dropped-item')) {
@@ -137,6 +137,7 @@ function positionItem(item, e, area) {
         item.style.left=`${xVal-20}px`;
         item.style.top=`${yVal-20}px`;
     }*/
+    logAction('dropped_item', {itemID: item.id, x: parseInt(item.style.left), y: parseInt(item.style.top)});
     saveState();
     item.x = parseInt(item.style.left);//xVal;
     item.y = parseInt(item.style.top);//yVal;
@@ -168,6 +169,11 @@ function selectItem(item) {
         rotateCircle.style.transform = 'translateX(100%)';
         item.style.transformOrigin = "20px 20px";
     }
+    document.querySelector('.color').style.display = 'block';
+    document.querySelector('.speed').style.display = 'block';
+    document.getElementById('movement-title').style.display = 'block';
+    document.querySelector('.movement').style.display = 'block';
+    document.querySelector('.custom-user-input').style.display = 'block';
     const sizeScale = document.querySelector('.size-scaling'); //for scaling
     const amountScale = document.querySelector('.amount-scaling');
     if (item.id.startsWith('light-strip') || item.id.startsWith('fur-patch')) {
@@ -221,93 +227,11 @@ function selectItem(item) {
     }
     loadItemSelections(item.id);
 }
-/*let selectedItems = new Set();
-function selectItem(item, e=null) {
-    const itemType = item.id.split('-')[0];
-    if (!e || !e.shiftKey) {
-        //selectedItems.forEach(selected => selected.classList.remove('selected-item'));
-        document.querySelectorAll('.dropped-item').forEach(item => {
-            item.classList.remove('selected-item');
-            item.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.remove('selected-item'));
-            if (item.querySelector('.rotate-circle')) {
-                item.querySelector('.rotate-circle').remove();
-            }
-        });
-        selectedItems.clear();
-    }
-    if (e && e.shiftKey && selectedItems.has(item)) {//(e && e.shiftKey) {
-        if (selectedItems.size > 0) {
-            const firstItemType = [...selectedItems][0].id.split('-')[0];
-            if (firstItemType !== itemType) {
-                return;
-            }
-        }
-        if (selectedItems.has(item)) {
-            selectedItems.delete(item);
-            item.classList.remove('selected-item');
-        /*} else {
-            selectedItems.add(item);
-            item.classList.add('selected-item');*/
-            /*item.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
-                part.classList.remove('selected-item');
-            });
-            if (item.querySelector('.rotate-circle')) {
-                rotateCircle.remove();
-            }
-        } else {
-            selectedItems.add(item);
-            item.classList.add('selected-item');
-        }
-    } else {
-        selectedItems.add(item);
-        item.classList.add('selected-item');
-    }
-    selectedItems.forEach(selected => {
-        const rotateCircle = document.createElement('div');
-        rotateCircle.classList.add('rotate-circle');
-        selected.appendChild(rotateCircle);
-        rotateItem(selected, rotateCircle);
-        if (selected.id.startsWith('light-strip') || selected.id.startsWith('battery') || selected.id.startsWith('speaker') || selected.id.startsWith('fur-patch')) {
-            selected.style.border = 'none';
-        }
-        if (selected.id.startsWith('light-strip')) {
-            rotateCircle.style.top = '-27px';
-            rotateCircle.style.transform = 'translateX(30%)';
-        } else if (selected.id.startsWith('battery')) {
-            rotateCircle.style.transform = 'translateX(125%)';
-            selected.style.transformOrigin = "30px 10px";
-        } else if (selected.id.startsWith('fur-patch')) {
-            rotateCircle.style.transform = 'translateX(100%)';
-            selected.style.transformOrigin = "20px 20px";
-        }
-        selected.querySelectorAll('.rectangle, .circle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.add('selected-item'));
-        document.querySelectorAll('.movement > div').forEach(div => {
-            div.style.display = 'none';
-        });
-        if (selected.id.startsWith('speaker')) {
-            document.getElementById('movement-title').textContent = "Sound";
-            document.getElementById('custom-title').textContent = "Describe the desired sound:";
-        } else {
-            document.getElementById('movement-title').textContent = "Movement";
-            document.getElementById('custom-title').textContent = "Write my own:";
-        }
-    });
-    let baseId = item.id;
-    if (baseId.includes('CLONED')) {
-        baseId = item.id.split('-').slice(0, -2).join('-');
-    } else {
-        baseId = item.id.split('-').slice(0, -1).join('-');
-    }
-    const movementElement = document.getElementById(`${baseId}-movement`);
-    if (movementElement) {
-        movementElement.style.display = 'block';
-    }
-    loadItemSelections(item.id);
-}*/
 
 function rotateItem(item, rotateCircle) {
     let rotating = false;
     let ogAngle = 0;
+    let logRotation;
     rotateCircle.addEventListener('mousedown', function(e) {
         rotating = true;
         const rect = item.getBoundingClientRect();
@@ -317,6 +241,7 @@ function rotateItem(item, rotateCircle) {
         const yVal = e.clientY;
         ogAngle = Math.atan2(yVal-centerY, xVal-centerX) - getCurrAngle(item);
         e.preventDefault();
+        logAction('rotated_item', {itemID: item.id});
     });
     document.addEventListener('mousemove', function(e) {
         if (rotating) {
@@ -330,11 +255,14 @@ function rotateItem(item, rotateCircle) {
             item.setAttribute('data-rotation', rotationAngle*(180/Math.PI));
             const size = item.getAttribute('data-size') || 1;
             item.style.transform = `scale(${size}) rotate(${rotationAngle*(180/Math.PI)}deg)`;
+            logRotation = rotationAngle*(-180/Math.PI);
             item.rotation = rotationAngle*(-180/Math.PI);
+            //logAction('rotated_item', {itemID: item.id, angle: item.getAttribute('data-rotation')});
         }
     });
     document.addEventListener('mouseup', function() {
         rotating = false;
+        //logAction('rotated_item', {itemID: item.id});
     });
 }
 function getCurrAngle(item) {
@@ -359,6 +287,7 @@ function scaleSize(item, num) {
     item.setAttribute('data-size', newSize);
     const rotation = item.getAttribute('data-rotation') || 0;
     item.style.transform = `scale(${newSize}) rotate(${rotation}deg)`;
+    logAction('scaled_item', {itemID: item.id, type: 'size', amount: item.getAttribute('data-size')});
 }
 function scaleAmount(item, num) {
     if (item.id.startsWith('light-strip')) {
@@ -366,13 +295,13 @@ function scaleAmount(item, num) {
         let newLights = currLights + num;
         newLights = Math.max(3, Math.min(newLights, 10));
         item.setAttribute('data-amount', newLights);
-
+        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: item.getAttribute('data-amount')});
     } else if (item.id.startsWith('fur-patch')) {
         const currFur = parseInt(item.getAttribute('data-amount')) || 5;
         let newFur = currFur + num;
         newFur = Math.max(3, Math.min(newFur, 10));
         item.setAttribute('data-amount', newFur);
-
+        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: item.getAttribute('data-amount')});
     }
 }
 
@@ -456,9 +385,6 @@ function resetColor() {
     colorRange.style.background = `linear-gradient(to right, white, rgba(128, 128, 128, 1), black)`;
 }
 
-//let flashInterval = null;
-//let currSpeed = null;
-//let selectedColor = null;
 const defaultColor = 'grey';
 let rgba2 = [];
 let colorX = null, colorY = null;
@@ -466,6 +392,7 @@ let gradient = 5;
 let startTime, totalTime;
 
 document.addEventListener('DOMContentLoaded', function() {
+    deselectedSidebar();
     //draw jacket & color images to canvas
     const jacketCanvas = document.getElementById('jacketCanvas');
     const jacketCtx = jacketCanvas.getContext('2d');
@@ -524,21 +451,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.color = selectedColor;
                 document.getElementById('color-range').style.background = `linear-gradient(to right, white, ${baseColor}, black)`;
                 let radioValue;
-                /*if (selectedItem.classList.contains('speaker')) {
-                    const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
-                    const values = Array.from(checkboxes).map(function(cb) {
-                        return cb.value;
-                    });
-                    radioValue = values.join(', ');
-                } else {*/
-                    const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                    if (selectedRadio) {
-                        radioValue = selectedRadio.value;
-                    } else {
-                        radioValue = null;
-                    }
-                //}
+                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                if (selectedRadio) {
+                    radioValue = selectedRadio.value;
+                } else {
+                    radioValue = null;
+                }
                 selectedItem.setAttribute('data-color', selectedColor);
+                logAction('changed_color', {itemID: selectedItem.id, color: selectedItem.getAttribute('data-color')});
                 saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
@@ -574,30 +494,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             selectedItem.color = selectedColor;
             let radioValue;
-            /*if (selectedItem.classList.contains('speaker')) {
-                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
-                const values = Array.from(checkboxes).map(function(cb) {
-                    return cb.value;
-                });
-                radioValue = values.join(', ');
-            } else {*/
-                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                if (selectedRadio) {
-                    radioValue = selectedRadio.value;
-                } else {
-                    radioValue = null;
-                }
-            //}
+            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+            if (selectedRadio) {
+                radioValue = selectedRadio.value;
+            } else {
+                radioValue = null;
+            }
+            logAction('changed_color', {itemID: selectedItem.id, color: selectedColor});
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
         }
     });
-    //shift click
-    /*document.addEventListener("click", function(e) {
-        const item = e.target.closest(".dropped-item");
-        if (item) {
-            selectItem(item, e);
-        }
-    });*/
     //create item when clicking jacket
     let clickOpen = false;
     const clickItem = document.querySelector('.click-create');
@@ -771,20 +677,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedItem = document.querySelector('.dropped-item.selected-item');
             if (selectedItem) {
                 const sliderVal = document.getElementById("speed-range").value;
-                /*let radioValue;
-                if (selectedItem.classList.contains('speaker')) {
-                    const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
-                    const values = Array.from(checkboxes).map(function(cb) {
-                        return cb.value;
-                    });
-                    radioValue = values.join(', ');
-                } else {
-                    const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                    if (selectedRadio) {
-                        radioValue = this.value;
-                    }
-                }*/
                 //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
+                logAction('changed_button', {itemID: selectedItem.id, button: radio.value});
                 saveState();
                 saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
@@ -825,6 +719,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     furAnimation(selectedItem, 'shake');
                 } else if (radio.value.includes('Stick up')) {
                     furAnimation(selectedItem, 'stick-up');
+                } else if (radio.value.includes('Both')) {
+                    furAnimation(selectedItem, 'both');
                 }
                 selectedItem.radioSelection = this.value;
                 selectedItem.speed = sliderVal;
@@ -836,22 +732,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            /*if (selectedItem.classList.contains('speaker')) {
-                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
-                const values = Array.from(checkboxes).map(function(cb) {
-                    return cb.value;
-                });
-                radioValue = values.join(', ');
-            } else {*/
-                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                if (selectedRadio) {
-                    radioValue = selectedRadio.value;
-                } else {
-                    radioValue = null;
-                }
-            //}
+            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+            if (selectedRadio) {
+                radioValue = selectedRadio.value;
+            } else {
+                radioValue = null;
+            }
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
             selectedItem.userinput = document.getElementById("custom-input").value;
+            logAction('custom_input', {itemID: selectedItem.id, input: document.getElementById("custom-input").value});
         }
     });
     //saving slider selection
@@ -859,13 +748,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
-            /*if (selectedItem.classList.contains('speaker')) {
-                const checkboxes = document.querySelectorAll('input[name="item-movement"]:checked');
-                const values = Array.from(checkboxes).map(function(cb) {
-                    return cb.value;
-                });
-                radioValue = values.join(', ');
-            } else {*/
             if (selectedItem.classList.contains('battery')) {
                 const bars = selectedItem.querySelectorAll('.battery-bar');
                 const sliderVal = parseInt(this.value);
@@ -908,6 +790,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
             //}
+            logAction('adjusted_slider', {itemID: selectedItem.id, slider: this.value});
             saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));
             //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
@@ -931,14 +814,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedItem) {
             if (e.key == 'Delete' || e.key == 'Backspace') {
                 deleteItem();
+                logAction('deleted_item', {itemID: selectedItem.id});
             } else if (e.key == 'ArrowUp') {
                 selectedItem.style.top = `${parseInt(selectedItem.style.top)-10}px`;
+                selectedItem.x = parseInt(selectedItem.style.left);
+                selectedItem.y = parseInt(selectedItem.style.top);
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
             } else if (e.key == 'ArrowDown') {
                 selectedItem.style.top = `${parseInt(selectedItem.style.top)+10}px`;
+                selectedItem.x = parseInt(selectedItem.style.left);
+                selectedItem.y = parseInt(selectedItem.style.top);
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
             } else if (e.key == 'ArrowLeft') {
                 selectedItem.style.left = `${parseInt(selectedItem.style.left)-10}px`;
+                selectedItem.x = parseInt(selectedItem.style.left);
+                selectedItem.y = parseInt(selectedItem.style.top);
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
             } else if (e.key == 'ArrowRight') {
                 selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
+                selectedItem.x = parseInt(selectedItem.style.left);
+                selectedItem.y = parseInt(selectedItem.style.top);
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
             }
         }
         saveState();
@@ -1008,8 +904,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rotateHandle) {
                 rotateHandle.remove();
             }
-            document.querySelector('.size-scaling').style.display = 'none';
-            document.querySelector('.amount-scaling').style.display = 'none';
+            //document.querySelector('.size-scaling').style.display = 'none';
+            //document.querySelector('.amount-scaling').style.display = 'none';
+            deselectedSidebar();
             //document.querySelectorAll('.color, .speed').style.display = 'none';
         /*} else if (e.target == selectedItem) {
             //selectedItem.classList.add();
@@ -1022,6 +919,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function deselectedSidebar() {
+    document.querySelector('.size-scaling').style.display = 'none';
+    document.querySelector('.amount-scaling').style.display = 'none';
+    document.querySelector('.color').style.display = 'none';
+    document.querySelector('.speed').style.display = 'none';
+    document.getElementById('movement-title').style.display = 'none';
+    document.querySelector('.movement').style.display = 'none';
+    document.querySelector('.custom-user-input').style.display = 'none';
+}
 
 function clickPositionItem(item, xClick, yClick, area) {
     const rect = area.getBoundingClientRect();
@@ -1216,6 +1123,15 @@ function furAnimation(item, shakePattern) {
             fur.style.transition = 'transform 0.3s ease';
             fur.style.transform = 'rotate(-40deg)';
         });
+    } else if (shakePattern == 'both') {
+        furAnimation(item, 'stick-up');
+        let direction = 1;
+        item.shakeInterval = setInterval(() => {
+            furs.forEach(fur => {
+                fur.style.transform = `rotate(${-7*direction}deg)`;
+            });
+            direction *= -1;
+        }, currSpeed);
     }
 }
 function stopFur(item) {
@@ -1299,6 +1215,15 @@ function duplicate() {
         }
         selectItem(clonedItem);
     }
+}
+
+let keystrokeLog = [];
+function logAction(action, info) {
+    keystrokeLog.push({
+        timestamp: new Date().toISOString(),
+        action: action,
+        info: info
+    });
 }
 
 let undoStack = [];
@@ -1389,6 +1314,8 @@ function deleteItem() {
             }
         }
         selectedItem.remove();
+        logAction('deleted_item', {itemID: selectedItem.id});
+        deselectedSidebar();
     }
 }
 
@@ -1417,12 +1344,20 @@ async function saveFile() {
         csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
     }
     csvFile += `Total time: ${totalTime}`;
+    let keystrokeFile = "Timestamp,Action,Info\n";
+    for (const i of keystrokeLog) {
+        const { timestamp, action, ...info } = i;
+        keystrokeFile += `${timestamp},${action},"${JSON.stringify(info).replace(/"/g, '""')}"\n`;
+    }
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
     const csvBlob = new Blob([csvFile], { type: "text/csv" });
     const csvFileForUpload = new File([csvBlob], `Participant_${participantNum}_Design_${videoNum}.csv`, { type: "text/csv" });
     formData.append("csv_file", csvFileForUpload);
+    const keystrokeBlob = new Blob([keystrokeFile], { type: "text/csv" });
+    const keystrokeFileForUpload = new File([keystrokeBlob], `KEYSTROKES_Participant_${participantNum}_Design_${videoNum}.csv`, { type: "text/csv" });
+    formData.append("keystroke_file", keystrokeFileForUpload);
     formData.append("gui_image1", blob1);
     formData.append("gui_image2", blob2);
     const response = await fetch("http://localhost:3000/upload-csv", {//("http://xxx.xx.xxx.xx:3000/upload-csv", {
