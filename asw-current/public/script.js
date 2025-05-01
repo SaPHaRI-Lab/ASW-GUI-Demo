@@ -805,36 +805,52 @@ document.addEventListener('DOMContentLoaded', function() {
             //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
         }
     });
-    //delete item
+    //delete & move item with keys
     document.addEventListener('keydown', (e) => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (document.activeElement.id.startsWith('custom-input')) {
             return;
         }
         if (selectedItem) {
+            let newX = parseInt(selectedItem.style.left);
+            let newY = parseInt(selectedItem.style.top);
             if (e.key == 'Delete' || e.key == 'Backspace') {
                 deleteItem();
                 logAction('deleted_item', {itemID: selectedItem.id});
             } else if (e.key == 'ArrowUp') {
-                selectedItem.style.top = `${parseInt(selectedItem.style.top)-10}px`;
+                /*selectedItem.style.top = `${parseInt(selectedItem.style.top)-10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
+                newY -= 10;
             } else if (e.key == 'ArrowDown') {
-                selectedItem.style.top = `${parseInt(selectedItem.style.top)+10}px`;
+                /*selectedItem.style.top = `${parseInt(selectedItem.style.top)+10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
+                newY += 10;
             } else if (e.key == 'ArrowLeft') {
-                selectedItem.style.left = `${parseInt(selectedItem.style.left)-10}px`;
+                /*selectedItem.style.left = `${parseInt(selectedItem.style.left)-10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
+                newX -= 10;
             } else if (e.key == 'ArrowRight') {
-                selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
+                /*selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
+                newX += 10;
+            }
+            const tempItem = {
+                style: {x: `${newX}px`, y: `${newY}px`}
+            };
+            if (!isTransparent(tempItem)) {
+                selectedItem.style.left = `${newX}px`;
+                selectedItem.style.top = `${newY}px`;
+                selectedItem.x = newX;
+                selectedItem.y = newY;
+                logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
             }
         }
         saveState();
@@ -928,6 +944,14 @@ function deselectedSidebar() {
     document.getElementById('movement-title').style.display = 'none';
     document.querySelector('.movement').style.display = 'none';
     document.querySelector('.custom-user-input').style.display = 'none';
+}
+
+function isTransparent(item) {
+    const jacketCanvas = document.getElementById('jacketCanvas');
+    const jacketCtx = jacketCanvas.getContext('2d');
+    var imgData = jacketCtx.getImageData(parseInt(item.style.x)-130, parseInt(item.style.y), 1, 1);
+    var rgba = imgData.data;
+    return rgba[3] == 0;
 }
 
 function clickPositionItem(item, xClick, yClick, area) {
@@ -1201,6 +1225,7 @@ function duplicate() {
                 rotateHandle.remove();
             }
         });
+        logAction('duplicated_item', {itemID: selectedItem.id});
         selectItem(clonedItem);
         clonedItem.setAttribute('data-flashing-color', selectedItem.getAttribute('data-flashing-color'));
         if (flashingItems.has(selectedItem)) {
