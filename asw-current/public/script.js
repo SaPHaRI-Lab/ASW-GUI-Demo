@@ -126,6 +126,8 @@ function positionItem(item, e, area) {
     item.style.left = e.clientX-rect.left-item.getAttribute('data-cursorX');
     item.style.top = e.clientY-rect.top-item.getAttribute('data-cursorY');
     item.style.zIndex = '10';
+    item.setAttribute('data-cloneX', item.style.left);
+    item.setAttribute('data-cloneY', item.style.top);
     /*if (item.id.startsWith('light-strip')) {
         //item.style.left=`${xVal-10}px`;
         item.style.left = e.clientX-rect.left-item.getAttribute('data-cursorX');//`${e.clientX-rect.left-cursorOffsetX}px`;
@@ -806,14 +808,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     //delete & move item with keys
+    let isCopied = false;
+    let copiedItem = null;
     document.addEventListener('keydown', (e) => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (document.activeElement.id.startsWith('custom-input')) {
             return;
         }
+        const isMac = navigator.platform.toUpperCase().includes('MAC');
+        const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+        if (ctrlOrCmd && e.key.toLowerCase() == 'c') { //copy item
+            if (selectedItem) {
+                isCopied = true;
+                copiedItem = selectedItem;
+            }
+            return;
+        }
+        if (ctrlOrCmd && e.key.toLowerCase() == 'v') { //paste item
+            if (isCopied) {
+                duplicate(copiedItem);
+                //logAction('pasted_item', {itemID: copiedItem.id});
+            }
+            isCopied = false;
+            return;
+        }
         if (selectedItem) {
             let newX = parseInt(selectedItem.style.left);
             let newY = parseInt(selectedItem.style.top);
+            let tempItem = null;
             if (e.key == 'Delete' || e.key == 'Backspace') {
                 deleteItem();
                 logAction('deleted_item', {itemID: selectedItem.id});
@@ -823,34 +845,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.y = parseInt(selectedItem.style.top);
                 logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newY -= 10;
+                tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
+                if (!isTransparent(tempItem)) {
+                    selectedItem.style.left = `${newX}px`;
+                    selectedItem.style.top = `${newY}px`;
+                    selectedItem.x = newX;
+                    selectedItem.y = newY;
+                    logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
+                }
             } else if (e.key == 'ArrowDown') {
                 /*selectedItem.style.top = `${parseInt(selectedItem.style.top)+10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
                 logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newY += 10;
+                tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
+                if (!isTransparent(tempItem)) {
+                    selectedItem.style.left = `${newX}px`;
+                    selectedItem.style.top = `${newY}px`;
+                    selectedItem.x = newX;
+                    selectedItem.y = newY;
+                    logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
+                }
             } else if (e.key == 'ArrowLeft') {
                 /*selectedItem.style.left = `${parseInt(selectedItem.style.left)-10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
                 logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newX -= 10;
+                tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
+                if (!isTransparent(tempItem)) {
+                    selectedItem.style.left = `${newX}px`;
+                    selectedItem.style.top = `${newY}px`;
+                    selectedItem.x = newX;
+                    selectedItem.y = newY;
+                    logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
+                }
             } else if (e.key == 'ArrowRight') {
                 /*selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
                 selectedItem.x = parseInt(selectedItem.style.left);
                 selectedItem.y = parseInt(selectedItem.style.top);
                 logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newX += 10;
-            }
-            const tempItem = {
-                style: {x: `${newX}px`, y: `${newY}px`}
-            };
-            if (!isTransparent(tempItem)) {
-                selectedItem.style.left = `${newX}px`;
-                selectedItem.style.top = `${newY}px`;
-                selectedItem.x = newX;
-                selectedItem.y = newY;
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
+                tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
+                if (!isTransparent(tempItem)) {
+                    selectedItem.style.left = `${newX}px`;
+                    selectedItem.style.top = `${newY}px`;
+                    selectedItem.x = newX;
+                    selectedItem.y = newY;
+                    logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
+                }
             }
         }
         saveState();
@@ -912,7 +956,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //clicking to deselect
     document.querySelector('.container').addEventListener('click', function(e) {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem && e.target != selectedItem && !e.target.closest('.customization') && !e.target.closest('.rotate-circle')) {
+        if (selectedItem && e.target != selectedItem && !e.target.closest('.customization') && !e.target.closest('.rotate-circle') && !e.target.closest('#back-view') && !e.target.closest('#front-view')) {
             selectedItem.classList.remove('selected-item');
             selectedItem.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2')
             .forEach(part => part.classList.remove('selected-item'));
@@ -1167,8 +1211,8 @@ function stopFur(item) {
 }
 
 //duplicate selected item
-function duplicate() {
-    const selectedItem = document.querySelector('.dropped-item.selected-item');
+function duplicate(item=null) {
+    const selectedItem = item || document.querySelector('.dropped-item.selected-item');
     if (selectedItem) {
         const clonedItem = selectedItem.cloneNode(true);
         //const tempId = selectedItem.id.split('-').slice(0, -1).join('-');
@@ -1183,18 +1227,27 @@ function duplicate() {
         clonedItem.className = selectedItem.className + ' dropped-item';
         clonedItem.style.cssText = selectedItem.style.cssText;
         const dropArea = document.getElementById('jacketbox');
-        const rect = selectedItem.getBoundingClientRect();
-        const xVal = rect.left-dropArea.offsetLeft+10;
-        const yVal = rect.top-dropArea.offsetTop+10;
+        //const rect = selectedItem.getBoundingClientRect();
+        let xVal = parseInt(selectedItem.getAttribute('data-cloneX'))+20;//rect.left-dropArea.offsetLeft+10;
+        let yVal = parseInt(selectedItem.getAttribute('data-cloneY'))+20;//rect.top-dropArea.offsetTop+10;
         clonedItem.style.position = 'absolute';
         clonedItem.style.left = `${xVal}px`;
         clonedItem.style.top = `${yVal}px`;
         clonedItem.style.zIndex = '10';
+        const jacketCanvas = document.getElementById('jacketCanvas');
+        const jacketCtx = jacketCanvas.getContext('2d');
+        var imgData = jacketCtx.getImageData(parseInt(clonedItem.style.left)-130, parseInt(clonedItem.style.top), 1, 1);
+        var rgba = imgData.data;
+        if (rgba[3] == 0) {
+            return;
+        }
         dropArea.appendChild(clonedItem);
         if (currView === 'front') {
             frontItems.push(clonedItem);
+            clonedItem.style.display = 'block';
         } else if (currView === 'back') {
             backItems.push(clonedItem);
+            clonedItem.style.display = 'block';
         }
         const ogCustomizations = itemSelections[currView][selectedItem.id];
         if (ogCustomizations) {
@@ -1205,7 +1258,9 @@ function duplicate() {
             clonedItem.userinput = ogCustomizations.userInput;
             clonedItem.color = ogCustomizations.itemColor;
             clonedItem.x = xVal;
-            clonedItem.y = yVal; //maybe double check the coords
+            clonedItem.y = yVal;
+            clonedItem.setAttribute('data-cloneX', xVal);
+            clonedItem.setAttribute('data-cloneY', yVal);
         } else {
             clonedItem.radioSelection = null;
             clonedItem.speed = null;
@@ -1213,10 +1268,9 @@ function duplicate() {
             clonedItem.color = null;
             clonedItem.x = xVal;
             clonedItem.y = yVal;
+            clonedItem.setAttribute('data-cloneX', xVal);
+            clonedItem.setAttribute('data-cloneY', yVal);
         }
-        /*clonedItem.addEventListener('click', function() {
-            selectItem(clonedItem);
-        });*/
         document.querySelectorAll('.dropped-item.selected-item').forEach(item => {
             item.classList.remove('selected-item');
             item.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.remove('selected-item'));
