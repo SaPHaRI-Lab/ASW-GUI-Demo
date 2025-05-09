@@ -147,7 +147,7 @@ body {
   height: 100vh;
   position: absolute;
   left: 0;
-  top: 0;
+  top: -10px;
   bottom: 0;
   /*background-color: #232323;*/
   padding: 50px 70px 15px;
@@ -163,6 +163,10 @@ body {
   padding: 10px;
   margin: 10px;
   color: white;
+}
+.option-txt {
+  text-align: center;
+  margin-left: -35%;
 }
 
 /*.sidebar {
@@ -441,7 +445,7 @@ body {
   color: white;
   width: 40%;
   margin-top: 35px;
-  margin-left: 20px;
+  margin-left: 15px;
 }
 #save-button:hover {
   background-color: #4190ff !important; 
@@ -814,11 +818,16 @@ body {
 }
 
 .other {
-  width: 0;
+  /*width: 0;
 	height: 0;
 	border-left: 20px solid transparent;
 	border-right: 20px solid transparent;
-	border-bottom: 35px solid #bbb;
+	border-bottom: 35px solid #bbb;*/
+  height: 35px;
+  width: 65px;
+  background-color: rgba(187, 187, 187, 1);/*#bbb;*/
+  border-radius: 50%;
+  cursor: grab;
 }
 
 .item-container {

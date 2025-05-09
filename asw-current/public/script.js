@@ -198,6 +198,7 @@ function selectItem(item) {
         document.getElementById('custom-title').textContent = "Describe the desired sound:";
         document.getElementById('speed-title').textContent = "Volume";
         document.getElementById('speed-title').style.marginLeft = "";
+        document.querySelector('.color').style.display = "none";
     } else if (item.id.startsWith('display')) {
         document.getElementById('movement-title').textContent = "Display";
         document.getElementById('movement-title').style.marginLeft = "45%";
@@ -289,6 +290,7 @@ function scaleSize(item, num) {
     item.setAttribute('data-size', newSize);
     const rotation = item.getAttribute('data-rotation') || 0;
     item.style.transform = `scale(${newSize}) rotate(${rotation}deg)`;
+    item.scale = newSize;
     logAction('scaled_item', {itemID: item.id, type: 'size', amount: item.getAttribute('data-size')});
 }
 function scaleAmount(item, num) {
@@ -430,13 +432,13 @@ document.addEventListener('DOMContentLoaded', function() {
             rgba2[2] = rgba[2];
             let selectedColor = updateShade(gradient);
             selectedItem = document.querySelector('.dropped-item.selected-item');
-            const other = document.querySelector('.other');
+            //const other = document.querySelector('.other');
             if (selectedItem) {
                 saveState();
-                if (selectedItem == other) {
+                /*if (selectedItem == other) {
                     other.style.borderBottomColor = selectedColor;
                     other.style.backgroundColor = transparent;
-                }
+                }*/
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
                 selectedItem.style.backgroundColor = selectedColor;
                 selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
@@ -476,12 +478,12 @@ document.addEventListener('DOMContentLoaded', function() {
         gradient = this.value;
         let selectedColor = updateShade(gradient);
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        const other = document.querySelector('.other');
+        //const other = document.querySelector('.other');
         if (selectedItem) {
-            if (selectedItem == other) {
+            /*if (selectedItem == other) {
                 other.style.borderBottomColor = selectedColor;
                 other.style.backgroundColor = transparent;
-            }
+            }*/
             selectedItem.style.backgroundColor = selectedColor;
             selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
                 part.style.backgroundColor = selectedColor;
@@ -797,7 +799,6 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));
             //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
-            //updateSpeed(this.value);
             if (flashingItems.has(selectedItem)) {
                 flashAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
@@ -838,12 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let tempItem = null;
             if (e.key == 'Delete' || e.key == 'Backspace') {
                 deleteItem();
-                logAction('deleted_item', {itemID: selectedItem.id});
             } else if (e.key == 'ArrowUp') {
-                /*selectedItem.style.top = `${parseInt(selectedItem.style.top)-10}px`;
-                selectedItem.x = parseInt(selectedItem.style.left);
-                selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newY -= 10;
                 tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
                 if (!isTransparent(tempItem)) {
@@ -854,10 +850,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
                 }
             } else if (e.key == 'ArrowDown') {
-                /*selectedItem.style.top = `${parseInt(selectedItem.style.top)+10}px`;
-                selectedItem.x = parseInt(selectedItem.style.left);
-                selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newY += 10;
                 tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
                 if (!isTransparent(tempItem)) {
@@ -868,10 +860,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
                 }
             } else if (e.key == 'ArrowLeft') {
-                /*selectedItem.style.left = `${parseInt(selectedItem.style.left)-10}px`;
-                selectedItem.x = parseInt(selectedItem.style.left);
-                selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newX -= 10;
                 tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
                 if (!isTransparent(tempItem)) {
@@ -882,10 +870,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     logAction('moved_item_with_key', {itemID: selectedItem.id, x: newX, y: newY});
                 }
             } else if (e.key == 'ArrowRight') {
-                /*selectedItem.style.left = `${parseInt(selectedItem.style.left)+10}px`;
-                selectedItem.x = parseInt(selectedItem.style.left);
-                selectedItem.y = parseInt(selectedItem.style.top);
-                logAction('moved_item_with_key', {itemID: selectedItem.id, x: parseInt(selectedItem.style.left), y: parseInt(selectedItem.style.top)});*/
                 newX += 10;
                 tempItem = {style: {x: `${newX}px`, y: `${newY}px`}};
                 if (!isTransparent(tempItem)) {
@@ -902,27 +886,19 @@ document.addEventListener('DOMContentLoaded', function() {
     //scaling items based on size & amount
     document.getElementById('size-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem) {
-            scaleSize(selectedItem, -0.1);
-        }
+        if (selectedItem) scaleSize(selectedItem, -0.1);
     });
     document.getElementById('size-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem) {
-            scaleSize(selectedItem, +0.1);
-        }
+        if (selectedItem) scaleSize(selectedItem, +0.1);
     });
     document.getElementById('amount-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem) {
-            scaleAmount(selectedItem, -1);
-        }
+        if (selectedItem) scaleAmount(selectedItem, -1);
     });
     document.getElementById('amount-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem) {
-            scaleAmount(selectedItem, +1);
-        }
+        if (selectedItem) scaleAmount(selectedItem, +1);
     });
     //user input for popup
     const p1 = document.getElementById("participant1");
@@ -964,14 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rotateHandle) {
                 rotateHandle.remove();
             }
-            //document.querySelector('.size-scaling').style.display = 'none';
-            //document.querySelector('.amount-scaling').style.display = 'none';
             deselectedSidebar();
-            //document.querySelectorAll('.color, .speed').style.display = 'none';
-        /*} else if (e.target == selectedItem) {
-            //selectedItem.classList.add();
-            //document.querySelectorAll('.color, .speed').style.display = 'block'; //alter this querySelectorAll '.customization test, etcetc
-        }*/
         }
         if (e.target.closest('.dropped-item')) {
             const item = e.target.closest('.dropped-item');
@@ -1186,7 +1155,6 @@ function furAnimation(item, shakePattern) {
             direction *= -1;
         }, currSpeed);
     } else if (shakePattern == 'stick-up') {
-        //item.style.transform = 'rotate(0deg)';
         furs.forEach(fur => {
             fur.style.transition = 'transform 0.3s ease';
             fur.style.transform = 'rotate(-40deg)';
@@ -1415,12 +1383,12 @@ async function saveFile() {
     const blob2 = await new Promise(resolve => canvas2.toBlob(resolve));
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
-    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,X Position,Y Position\n";
+    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Scale,X Position,Y Position\n";
     for (let i = 0; i < frontItems.length; i++) { //items on jacket front
-        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},"${frontItems[i].userinput}","${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].x},${frontItems[i].y}\n`;
+        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},"${frontItems[i].userinput}","${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].scale},${frontItems[i].x},${frontItems[i].y}\n`;
     }
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
-        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${backItems[i].x},${backItems[i].y}\n`;
+        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${frontItems[i].scale},${backItems[i].x},${backItems[i].y}\n`;
     }
     csvFile += `Total time: ${totalTime}`;
     let keystrokeFile = "Timestamp,Action,Info\n";
@@ -1428,6 +1396,9 @@ async function saveFile() {
         const { timestamp, action, ...info } = i;
         keystrokeFile += `${timestamp},${action},"${JSON.stringify(info).replace(/"/g, '""')}"\n`;
     }
+    let rows = keystrokeFile.trim().split('\n'); //removes last row of keystrokes csv due to switching view
+    if (rows.length > 1) rows.pop();
+    keystrokeFile = rows.join('\n') + '\n';
     const formData = new FormData();
     formData.append("participant_num", participantNum);
     formData.append("video_num", videoNum);
