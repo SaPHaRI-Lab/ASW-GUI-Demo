@@ -230,13 +230,13 @@ function selectItem(item) {
     const amountScale = document.querySelector('.amount-scaling');
     if (item.id.startsWith('light-strip') || item.id.startsWith('fur-patch')) {
         sizeScale.style.display = 'block';
-        amountScale.style.display = 'block';
+        //amountScale.style.display = 'block';
     } else if (item.id.startsWith('speaker')) {
         sizeScale.style.display = 'none';
-        amountScale.style.display = 'none';
+        //amountScale.style.display = 'none';
     } else {
         sizeScale.style.display = 'block';
-        amountScale.style.display = 'none';
+        //amountScale.style.display = 'none';
     }
     item.querySelectorAll('.rectangle, .circle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.add('selected-item'));
     document.querySelectorAll('.movement > div').forEach(div => {
@@ -1408,6 +1408,10 @@ function saveState() {
             const isFrontItem = frontItems.find(frontItem => frontItem.id == item.id);
             let view = isFrontItem ? 'front' : 'back';
             if (visibleItems.includes(item)) view = currView;
+            const settings = itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : {};
+            settings.rotation = item.rotation || 0;
+            settings.scale = parseFloat(item.getAttribute('data-size')) || 1;
+            itemSelections[view][item.id] = settings;
             return {
                 id: item.id,
                 className: item.className,
@@ -1416,16 +1420,15 @@ function saveState() {
                 flashingColor: item.getAttribute('data-flashing-color'),
                 speed: item.getAttribute('data-speed'),
                 view,
-                settings: itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : null
+                settings//: itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : null
             };
         });
     if (undoStack.length == 0) {
         undoStack.push({
-            items: allItems,
-            selectedId: selectedItem?.id || null,
+            items: [],
+            selectedId: null,
             view: currView
         });
-        return;
     }
     const lastState = undoStack[undoStack.length-1];
     if (lastState.items.length != allItems.length ||
@@ -1469,13 +1472,48 @@ function loadState(state) {
             newItem.style.display = (currView == 'back') ? 'block' : 'none';
         }
         if (!itemSelections[data.view]) itemSelections[data.view] = {};
-        if (data.settings) itemSelections[data.view][data.id] = data.settings;
+        /*if (data.settings) itemSelections[data.view][data.id] = data.settings;
         newItem.addEventListener('click', () => selectItem(newItem));
         if (data.settings?.radioSelection?.toLowerCase().includes("flash")) {
             const radioVal = data.settings.radioSelection.toLowerCase().replace(/\s+/g, '-');
             flashingItems.add(newItem);
             flashAnimation(newItem, radioVal);
+        }*/
+       if (data.settings) {
+            itemSelections[data.view][data.id] = data.settings;
+            newItem.radioSelection = data.settings.radioSelection;
+            if (data.settings.rotation != undefined) {
+                newItem.rotation = data.settings.rotation;
+                const scale = data.settings.scale || 1;
+                newItem.setAttribute('data-size', scale);
+                newItem.style.transform = `scale(${scale}) rotate(${data.settings.rotation}deg)`;
+            }
+            if (data.settings.radioSelection) {
+                const radioPattern = data.settings.radioSelection.toLowerCase();
+                if (radioPattern.includes('flash') || radioPattern.includes('trickle')) {
+                    flashingItems.add(newItem);
+                    if (radioPattern.includes('trickle up')) {
+                        flashAnimation(newItem, 'trickle-up');
+                    } else if (radioPattern.includes('trickle down')) {
+                        flashAnimation(newItem, 'trickle-down');
+                    } else if (radioPattern.includes('random')) {
+                        flashAnimation(newItem, 'random-fl');
+                    } else {
+                        flashAnimation(newItem);
+                    }
+                } else if (radioPattern.includes('shake') || radioPattern.includes('stick') || radioPattern.includes('both')) {
+                    furAnimItems.add(newItem);
+                    if (radioPattern.includes('both')) {
+                        furAnimation(newItem, 'both');
+                    } else if (radioPattern.includes('stick')) {
+                        furAnimation(newItem, 'stick-up');
+                    } else {
+                        furAnimation(newItem, 'shake');
+                    }
+                }
+            }
         }
+        newItem.addEventListener('click', () => selectItem(newItem));
     });
     frontItems.forEach(item => {
         item.style.display = (currView == 'front') ? 'block' : 'none';
