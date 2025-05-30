@@ -152,6 +152,7 @@ body {
   /*background-color: #232323;*/
   padding: 50px 70px 15px;
   overflow-y: auto;
+  align-items: center;
 }
 .sidebar::after {
   content: ''; 
@@ -254,7 +255,7 @@ body {
 .identifiers {
   /*border: 1.5px solid gray;
   border-radius: 10px;*/
-  margin-bottom: 40px;
+  margin-bottom: 65px;
 }
 
 #participant {
@@ -277,7 +278,7 @@ body {
 }
 
 #pNum, #vNum {
-  font-size: 12px;
+  font-size: 10px;
   color: white;
 }
 
@@ -302,7 +303,7 @@ body {
 #vNum, #videoNum {
   display: inline-block;
   vertical-align: middle;
-  margin-top: 25px;
+  margin-top: 20px;
 }
 
 #jacket-front {
@@ -534,6 +535,18 @@ body {
 #delete:hover {
   background-color: #ffa8a8 !important;
   border-color: #ffa8a8 !important;
+}
+
+.jacketcolor {
+  margin-top: 20px;
+  margin-left: 30px;
+}
+#jacketcollabel {
+  color: white;
+  font-size: 15px;
+}
+#jacketcol {
+  width: 25%;
 }
 
 #back-view:hover, #front-view:hover, #undo:hover, #redo:hover, #duplicate:hover, .size-scaling button:hover, .amount-scaling button:hover {
@@ -828,6 +841,62 @@ body {
   background-color: rgba(187, 187, 187, 1);/*#bbb;*/
   border-radius: 50%;
   cursor: grab;
+}
+.popup-cyo {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  visibility: hidden;
+}
+.popup-cyo.show {
+  visibility: visible;
+  opacity: 1;
+}
+.popup-cyo2 {
+  background: #bbbbbb;
+  border-radius: 10px;
+  width: 25%;
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+}
+#cyo-title {
+  font-weight: normal;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+#cyo-name-label, #cyo-desc-label {
+  font-size: 15px;
+  color: black;
+}
+#cyo-name-label, #cyo-name {
+  display: inline-block;
+  vertical-align: middle;
+}
+#cyo-name, #cyo-desc {
+  padding: 3px 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.popup-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+.popup-buttons {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+  gap: 10px;
 }
 
 .item-container {

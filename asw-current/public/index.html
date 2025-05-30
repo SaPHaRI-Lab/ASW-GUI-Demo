@@ -47,6 +47,23 @@
       <h1 id="info-title">Instructions</h1>
       <p id="info-text">Drag & drop features from the left sidebar onto the jacket image based on the video you have watched. From the right sidebar, you can make customizations and selections for various actuation methods. When you're done with your design, click the "Submit Design" button at the bottom right.</p>
     </div>
+    <div class="popup-cyo">
+      <div class="popup-cyo2">
+        <h2 id="cyo-title">New Item</h1>
+        <div class="cyo-field">
+          <label for="cyo-name" id="cyo-name-label">Item name:</label>
+          <input type="text" id="cyo-name"/>
+        </div>
+        <div class="cyo-field">
+          <label for="cyo-desc" id="cyo-desc-label">Description:</label>
+          <input type="text" id="cyo-desc"/>
+        </div>
+        <div class="cyo-buttons">
+          <button id="cyo-save">Ok</button>
+          <button id="cyo-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="sidebar">
       <div class="identifiers">
         <label for="participant" id="pNum">Participant #:</label>
@@ -55,7 +72,7 @@
         <input type="text" id="videoNum"/>
       </div>
       <div class="option">
-        <div class="option-txt">Create My Own Item</div>
+        <div class="option-txt">Create Item</div>
         <div class="item-container" id="other-cont">
           <div class= "other" id="other" draggable="true" ondragstart="drag(event)"></div>
         </div>
@@ -143,6 +160,10 @@
         <button id="duplicate" onclick="duplicate()">Duplicate</button>
         <button id="delete" onclick="deleteItem()">Delete</button>
       </div>
+      <div class="jacketcolor">
+        <label for="jacketcol" id="jacketcollabel">Jacket color:</label>
+        <input type="color" id="jacketcol" name="jacketcol" value="#ffffff">
+      </div>
       <div class="scaling">
         <div class="size-scaling" style="display: none;">
           <h3 id="size-title">Size</h3>
@@ -208,6 +229,8 @@
             <label for="discontinuous">Discontinuous</label><br>
         </div>
         <div id="other-movement" style="display: none;">
+          <label for="cyo-name2" id="cyo-name2-label">Item name:</label>
+          <input type="text" id="cyo-name2">
         </div>
       </div>
       <div class="custom-user-input">

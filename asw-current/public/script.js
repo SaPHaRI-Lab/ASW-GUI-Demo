@@ -2,20 +2,24 @@
 var frontItems = [];
 var backItems = [];
 var currView = "front";
-function switchView() {
+/*function switchView(view=null) {
     const front = document.getElementById('jacket-front');
     const back = document.getElementById('jacket-back');
     const jacketCanvas = document.getElementById('jacketCanvas');
     const jacketCtx = jacketCanvas.getContext('2d');
-    if (currView == "front") {
+    const jacketColSelect = hexToRgb(document.getElementById('jacketcol').value);
+    const nextView = view || (currView == 'front' ? 'back' : 'front');
+    if (nextView == currView) return;
+    if (nextView == "back") {
         for (let i = 0; i < frontItems.length; i++) {
             frontItems[i].style.display = 'none';
         }
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'block';
         }
-        jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        jacketCtx.drawImage(back,0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.drawImage(back,0,0,jacketCanvas.width,jacketCanvas.height);
+        drawCanvasFrontBack(back, jacketCtx, jacketCanvas, jacketColSelect);
         currView = "back";
         document.getElementById('front-view').style.display = 'block';
         document.getElementById('back-view').style.display = 'none';
@@ -27,12 +31,68 @@ function switchView() {
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'none';
         }
-        jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        jacketCtx.drawImage(front,0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.drawImage(front,0,0,jacketCanvas.width,jacketCanvas.height);
+        drawCanvasFrontBack(front, jacketCtx, jacketCanvas, jacketColSelect);
         currView = "front";
         document.getElementById('back-view').style.display = 'block';
         document.getElementById('front-view').style.display = 'none';
         logAction('switched_view', {from: 'back', to: 'front'});
+    }
+}*/
+function switchView(view=null) {
+    const front = document.getElementById('jacket-front');
+    const back = document.getElementById('jacket-back');
+    const jacketCanvas = document.getElementById('jacketCanvas');
+    const jacketCtx = jacketCanvas.getContext('2d');
+    const jacketColSelect = hexToRgb(document.getElementById('jacketcol').value);
+    const nextView = view || (currView == 'front' ? 'back' : 'front');
+    if (nextView == currView) return;
+    const prevView = currView;
+    currView = nextView;
+    if (nextView == "back") {
+        for (let i = 0; i < frontItems.length; i++) {
+            frontItems[i].style.display = 'none';
+        }
+        for (let i = 0; i < backItems.length; i++) {
+            backItems[i].style.display = 'block';
+        }
+        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.drawImage(back,0,0,jacketCanvas.width,jacketCanvas.height);
+        drawCanvasFrontBack(back, jacketCtx, jacketCanvas, jacketColSelect);
+        document.getElementById('front-view').style.display = 'block';
+        document.getElementById('back-view').style.display = 'none';
+        logAction('switched_view', {from: prevView, to: 'back'});
+    } else {
+        for (let i = 0; i < frontItems.length; i++) {
+            frontItems[i].style.display = 'block';
+        }
+        for (let i = 0; i < backItems.length; i++) {
+            backItems[i].style.display = 'none';
+        }
+        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
+        //jacketCtx.drawImage(front,0,0,jacketCanvas.width,jacketCanvas.height);
+        drawCanvasFrontBack(front, jacketCtx, jacketCanvas, jacketColSelect);
+        document.getElementById('back-view').style.display = 'block';
+        document.getElementById('front-view').style.display = 'none';
+        logAction('switched_view', {from: prevView, to: 'front'});
+    }
+}
+function drawCanvasFrontBack(img, ctx, canvas, jacketCol=null) {
+    if (img.complete) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        if (jacketCol) {
+            changeJacketCol(ctx, canvas, jacketCol);
+        }
+    } else {
+        img.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (jacketCol) {
+                changeJacketCol(ctx, canvas, jacketCol);
+            }
+        };
     }
 }
 
@@ -74,7 +134,6 @@ function drop(e) {
             clonedItem.id = uniqueId;
             clonedItem.className = item.className + ' dropped-item';
             clonedItem.style.cssText = item.style.cssText;
-            //saveState();
             dropArea.appendChild(clonedItem);
             positionItem(clonedItem, e, dropArea);
             selectItem(clonedItem);
@@ -98,6 +157,9 @@ function drop(e) {
                 clonedItem.querySelector('#bar3').style.opacity = 1;
                 clonedItem.querySelector('#bar4').style.opacity = 0;
                 clonedItem.querySelector('#bar5').style.opacity = 0;
+            } else if (clonedItem.id.startsWith('other')) {
+                document.querySelector('.popup-cyo').classList.add('show');
+                resetCYOPopup();
             }
             flashAnimation(clonedItem);
             clonedItem.addEventListener('click', function() {
@@ -115,7 +177,6 @@ function drop(e) {
         }
     }
 }
-
 function positionItem(item, e, area) {
     const rect = area.getBoundingClientRect();
     const xVal = e.clientX-rect.left-item.offsetWidth/2;//-offsetX;
@@ -128,17 +189,6 @@ function positionItem(item, e, area) {
     item.style.zIndex = '10';
     item.setAttribute('data-cloneX', item.style.left);
     item.setAttribute('data-cloneY', item.style.top);
-    /*if (item.id.startsWith('light-strip')) {
-        //item.style.left=`${xVal-10}px`;
-        item.style.left = e.clientX-rect.left-item.getAttribute('data-cursorX');//`${e.clientX-rect.left-cursorOffsetX}px`;
-        item.style.top = e.clientY-rect.top-item.getAttribute('data-cursorY');//`${e.clientY-rect.top-cursorOffsetY}px`;
-    } else if (item.id.startsWith('battery')) {
-        item.style.left=`${xVal-30}px`;
-        item.style.top=`${yVal-10}px`;
-    } else if (item.id.startsWith('fur-patch')) {
-        item.style.left=`${xVal-20}px`;
-        item.style.top=`${yVal-20}px`;
-    }*/
     logAction('dropped_item', {itemID: item.id, x: parseInt(item.style.left), y: parseInt(item.style.top)});
     saveState();
     item.x = parseInt(item.style.left);//xVal;
@@ -314,8 +364,8 @@ var itemSelections = {
     front: {},
     back: {}
 };
-function saveItemSelections(itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient) {
-    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient};
+function saveItemSelections(itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName='') {
+    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName};
 }
 function loadItemSelections(itemID) {
     const selection = itemSelections[currView][itemID];
@@ -337,6 +387,14 @@ function loadItemSelections(itemID) {
                 userInputBox.value = selection.userInput;
             } else {
                 userInputBox.value = '';
+            }
+        }
+        const cyoNameBox = document.getElementById('cyo-name2');
+        if (cyoNameBox) {
+            if (selection.cyoName) {
+                cyoNameBox.value = selection.cyoName;
+            } else {
+                cyoNameBox.value = '';
             }
         }
         if (selection.itemColor) {
@@ -373,9 +431,7 @@ function resetSlider() {
 }
 function resetUserInput() {
     const userInputBox = document.getElementById('custom-input');
-    if (userInputBox) {
-        userInputBox.value = '';
-    }
+    if (userInputBox) userInputBox.value = '';
 }
 function resetColor() {
     const colorCanvas = document.getElementById('colorCanvas');
@@ -387,6 +443,32 @@ function resetColor() {
     colorRange.value = 5;
     gradient = 5;
     colorRange.style.background = `linear-gradient(to right, white, rgba(128, 128, 128, 1), black)`;
+}
+function resetCYOPopup() {
+    if (document.getElementById('cyo-name')) document.getElementById('cyo-name').value = '';
+    if (document.getElementById('cyo-desc')) document.getElementById('cyo-desc').value = '';
+    if (document.getElementById('cyo-desc')) document.getElementById('cyo-desc').value = '';
+}
+function hexToRgb(hex) {
+    const hexVal = parseInt(hex.slice(1), 16);
+    return {
+        r: (hexVal>>16) & 255,
+        g: (hexVal>>8) & 255,
+        b: hexVal & 255
+    };
+}
+function changeJacketCol(ctx, canvas, jacketCol) {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const rgb = imgData.data;
+    for (let i = 0; i < rgb.length; i += 4) {
+        const r = rgb[i], g = rgb[i+1], b = rgb[i+2];
+        if (r>200 && g>200 && b>200) {
+            rgb[i] = jacketCol.r;
+            rgb[i+1] = jacketCol.g;
+            rgb[i+2] = jacketCol.b;
+        }
+    }
+    ctx.putImageData(imgData, 0, 0);
 }
 
 const defaultColor = 'grey';
@@ -404,19 +486,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const colorCtx = colorCanvas.getContext('2d');
     const jacketImg = document.getElementById('jacket-front');
     const colorImg = document.getElementById('color-wheel');
-    function drawCanvasImage(img, ctx, canvas) {
+    const jacketColSelect =  document.getElementById('jacketcol');
+    function drawCanvasImage(img, ctx, canvas, jacketCol=null) {
         if (img.complete) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (jacketCol) {
+                changeJacketCol(ctx, canvas, jacketCol);
+            }
         } else {
             img.onload = function() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                if (jacketCol) {
+                    changeJacketCol(ctx, canvas, jacketCol);
+                }
             };
         }
     }
-    drawCanvasImage(jacketImg, jacketCtx, jacketCanvas);
-    drawCanvasImage(colorImg, colorCtx, colorCanvas);
+    drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
+    jacketColSelect.addEventListener('input', function() {
+        const front = document.getElementById('jacket-front');
+        const back = document.getElementById('jacket-back');
+        if (currView == 'front') {
+            drawCanvasImage(front, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
+        } else {
+            drawCanvasImage(back, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
+        }
+        logAction('changed_jacket_col', `r:${hexToRgb(jacketColSelect.value).r}, g:${hexToRgb(jacketColSelect.value).g}, b:${hexToRgb(jacketColSelect.value).b}`);
+    });
+    drawCanvasImage(colorImg, colorCtx, colorCanvas, null);
     //color selecting functionality
     colorCanvas.addEventListener('click', function(e) {
         var imgData = colorCtx.getImageData(e.offsetX, e.offsetY, 1, 1);
@@ -434,7 +533,6 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedItem = document.querySelector('.dropped-item.selected-item');
             //const other = document.querySelector('.other');
             if (selectedItem) {
-                saveState();
                 /*if (selectedItem == other) {
                     other.style.borderBottomColor = selectedColor;
                     other.style.backgroundColor = transparent;
@@ -462,8 +560,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     radioValue = null;
                 }
                 selectedItem.setAttribute('data-color', selectedColor);
+                saveState();
                 logAction('changed_color', {itemID: selectedItem.id, color: selectedItem.getAttribute('data-color')});
-                saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
+                saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient, selectedItem.cyoName);
             }
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
             colorCtx.drawImage(document.getElementById('color-wheel'),0,0,colorCanvas.width,colorCanvas.height);
@@ -504,8 +603,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 radioValue = null;
             }
+            saveState();
             logAction('changed_color', {itemID: selectedItem.id, color: selectedColor});
-            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient, selectedItem.cyoName);
         }
     });
     //create item when clicking jacket
@@ -681,9 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedItem = document.querySelector('.dropped-item.selected-item');
             if (selectedItem) {
                 const sliderVal = document.getElementById("speed-range").value;
-                //saveItemSelections(selectedItem.id, radioValue, sliderVal, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
                 logAction('changed_button', {itemID: selectedItem.id, button: radio.value});
-                saveState();
                 saveItemSelections(selectedItem.id, this.value, sliderVal, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
                 if (radio.value.includes('Light on')) {
                     stopFlash(selectedItem);
@@ -728,6 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 selectedItem.radioSelection = this.value;
                 selectedItem.speed = sliderVal;
+                saveState();
             }
         });
     });
@@ -742,7 +841,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 radioValue = null;
             }
-            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
+            saveState();
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, this.value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, selectedItem.cyoName);
             selectedItem.userinput = document.getElementById("custom-input").value;
             logAction('custom_input', {itemID: selectedItem.id, input: document.getElementById("custom-input").value});
         }
@@ -753,51 +853,24 @@ document.addEventListener('DOMContentLoaded', function() {
         let radioValue;
         if (selectedItem) {
             if (selectedItem.classList.contains('battery')) {
-                const bars = selectedItem.querySelectorAll('.battery-bar');
-                const sliderVal = parseInt(this.value);
-                if (this.value == 1) {
-                    selectedItem.querySelector('#bar1').style.opacity = 1;
-                    selectedItem.querySelector('#bar2').style.opacity = 0;
-                    selectedItem.querySelector('#bar3').style.opacity = 0;
-                    selectedItem.querySelector('#bar4').style.opacity = 0;
-                    selectedItem.querySelector('#bar5').style.opacity = 0;
-                } else if (this.value == 2) {
-                    selectedItem.querySelector('#bar1').style.opacity = 1;
-                    selectedItem.querySelector('#bar2').style.opacity = 1;
-                    selectedItem.querySelector('#bar3').style.opacity = 0;
-                    selectedItem.querySelector('#bar4').style.opacity = 0;
-                    selectedItem.querySelector('#bar5').style.opacity = 0;
-                } else if (this.value == 3) {
-                    selectedItem.querySelector('#bar1').style.opacity = 1;
-                    selectedItem.querySelector('#bar2').style.opacity = 1;
-                    selectedItem.querySelector('#bar3').style.opacity = 1;
-                    selectedItem.querySelector('#bar4').style.opacity = 0;
-                    selectedItem.querySelector('#bar5').style.opacity = 0;
-                } else if (this.value == 4) {
-                    selectedItem.querySelector('#bar1').style.opacity = 1;
-                    selectedItem.querySelector('#bar2').style.opacity = 1;
-                    selectedItem.querySelector('#bar3').style.opacity = 1;
-                    selectedItem.querySelector('#bar4').style.opacity = 1;
-                    selectedItem.querySelector('#bar5').style.opacity = 0;
-                } else if (this.value == 5) {
-                    selectedItem.querySelector('#bar1').style.opacity = 1;
-                    selectedItem.querySelector('#bar2').style.opacity = 1;
-                    selectedItem.querySelector('#bar3').style.opacity = 1;
-                    selectedItem.querySelector('#bar4').style.opacity = 1;
-                    selectedItem.querySelector('#bar5').style.opacity = 1;
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= this.value) {
+                        selectedItem.querySelector('#bar'+i).style.opacity = 1;
+                    } else {
+                        selectedItem.querySelector('#bar'+i).style.opacity = 0;
+                    }
                 }
             }
-                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
-                if (selectedRadio) {
-                    radioValue = selectedRadio.value;
-                } else {
-                    radioValue = null;
-                }
-            //}
+            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+            if (selectedRadio) {
+                radioValue = selectedRadio.value;
+            } else {
+                radioValue = null;
+            }
+            saveState();
             logAction('adjusted_slider', {itemID: selectedItem.id, slider: this.value});
-            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient);
+            saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, selectedItem.cyoName);
             selectedItem.setAttribute('data-speed', updateSpeed(this.value));
-            //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient);
             selectedItem.speed = this.value;
             if (flashingItems.has(selectedItem)) {
                 flashAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
@@ -805,7 +878,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (furAnimItems.has(selectedItem)) {
                 furAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
-            //saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, "undefined", colorX, colorY, gradient);
         }
     });
     //delete & move item with keys
@@ -813,9 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let copiedItem = null;
     document.addEventListener('keydown', (e) => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (document.activeElement.id.startsWith('custom-input')) {
-            return;
-        }
+        if (document.activeElement.tagName == 'INPUT' || document.activeElement.tagName == 'TEXTAREA') return;
         const isMac = navigator.platform.toUpperCase().includes('MAC');
         const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
         if (ctrlOrCmd && e.key.toLowerCase() == 'c') { //copy item
@@ -826,11 +896,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         if (ctrlOrCmd && e.key.toLowerCase() == 'v') { //paste item
-            if (isCopied) {
-                duplicate(copiedItem);
-                //logAction('pasted_item', {itemID: copiedItem.id});
-            }
-            isCopied = false;
+            if (isCopied) duplicate(copiedItem);
+            //isCopied = false;
             return;
         }
         if (selectedItem) {
@@ -887,10 +954,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('size-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) scaleSize(selectedItem, -0.1);
+        saveState();
     });
     document.getElementById('size-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) scaleSize(selectedItem, +0.1);
+        saveState();
     });
     document.getElementById('amount-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
@@ -899,6 +968,45 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('amount-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) scaleAmount(selectedItem, +1);
+    });
+    //cyo new item popup
+    document.getElementById("cyo-save").addEventListener('click', function(e) {
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        let radioValue;
+        if (selectedItem) {
+            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+            if (selectedRadio) {
+                radioValue = selectedRadio.value;
+            } else {
+                radioValue = null;
+            }
+            document.getElementById('cyo-name2').value = document.getElementById('cyo-name').value;
+            document.getElementById('custom-input').value = document.getElementById('cyo-desc').value;
+            document.querySelector('.popup-cyo').classList.remove('show');
+            selectedItem.cyoName = document.getElementById("cyo-name").value;
+            selectedItem.userinput = document.getElementById("custom-input").value;
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, selectedItem.userinput, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, selectedItem.cyoName);
+            logAction('created_item', {itemID: selectedItem.id, name: document.getElementById("cyo-name").value});
+        }
+    });
+    document.getElementById("cyo-cancel").addEventListener('click', function(e) {
+        document.querySelector('.popup-cyo').classList.remove('show');
+        deleteItem();
+    });
+    document.getElementById("cyo-name2").addEventListener('input', function(){
+        const selectedItem = document.querySelector('.dropped-item.selected-item');
+        let radioValue;
+        if (selectedItem) {
+            const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+            if (selectedRadio) {
+                radioValue = selectedRadio.value;
+            } else {
+                radioValue = null;
+            }
+            saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, selectedItem.userinput, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, this.value);
+            selectedItem.cyoName = document.getElementById("cyo-name2").value;
+            logAction('changed_item_name', {itemID: selectedItem.id, input: document.getElementById("cyo-name2").value});
+        }
     });
     //user input for popup
     const p1 = document.getElementById("participant1");
@@ -932,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //clicking to deselect
     document.querySelector('.container').addEventListener('click', function(e) {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        if (selectedItem && e.target != selectedItem && !e.target.closest('.customization') && !e.target.closest('.rotate-circle') && !e.target.closest('#back-view') && !e.target.closest('#front-view')) {
+        if (selectedItem && e.target != selectedItem && !e.target.closest('.customization') && !e.target.closest('.rotate-circle') && !e.target.closest('#back-view') && !e.target.closest('#front-view') && !e.target.closest('.popup-cyo')) {
             selectedItem.classList.remove('selected-item');
             selectedItem.querySelectorAll('.circle, .rectangle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2')
             .forEach(part => part.classList.remove('selected-item'));
@@ -1125,9 +1233,7 @@ function furAnimation(item, shakePattern) {
     if (item.shakeInterval) {
         clearInterval(item.shakeInterval);
     }
-    /*if (!item.hasAttribute('data-speed')) {
-        item.setAttribute('data-speed', 400);
-    }*/
+    //if (!item.hasAttribute('data-speed')) item.setAttribute('data-speed', 400);
     furAnimItems.add(item);
     const furs = item.querySelectorAll('.fur1, .fur2');
     let currSpeed = parseInt(item.getAttribute('data-speed'));
@@ -1224,6 +1330,7 @@ function duplicate(item=null) {
             clonedItem.speed = ogCustomizations.sliderValue;
             clonedItem.setAttribute('data-speed', updateSpeed(ogCustomizations.sliderValue));//ogCustomizations.sliderValue*100);
             clonedItem.userinput = ogCustomizations.userInput;
+            clonedItem.cyoName = ogCustomizations.cyoName;
             clonedItem.color = ogCustomizations.itemColor;
             clonedItem.x = xVal;
             clonedItem.y = yVal;
@@ -1233,6 +1340,7 @@ function duplicate(item=null) {
             clonedItem.radioSelection = null;
             clonedItem.speed = null;
             clonedItem.userinput = null;
+            clonedItem.cyoName = null;
             clonedItem.color = null;
             clonedItem.x = xVal;
             clonedItem.y = yVal;
@@ -1261,6 +1369,7 @@ function duplicate(item=null) {
             furAnimation(clonedItem, formattedRadioSelection);
         }
         selectItem(clonedItem);
+        saveState();
     }
 }
 
@@ -1276,49 +1385,72 @@ function logAction(action, info) {
 let undoStack = [];
 let redoStack = [];
 function undo() {
-    if (undoStack.length < 2) {
-        return;
-    } else if (undoStack.length > 0) {
-        const lastState = undoStack.pop();
-        redoStack.push(lastState);
-        loadState(undoStack[undoStack.length - 1]);
-    }
+    if (undoStack.length < 2) return;
+    const lastState = undoStack.pop();
+    redoStack.push(lastState);
+    loadState(undoStack[undoStack.length - 1]);
 }
 function redo() {
-    if (redoStack.length == 0) {
-        return;
-    } else if (redoStack.length > 0) {
-        const lastState = redoStack.pop();
-        undoStack.push(lastState);
-        loadState(lastState);
-    }
+    if (redoStack.length == 0) return;
+    const redoState = redoStack.pop();
+    undoStack.push(redoState);
+    loadState(redoState);
 }
 function saveState() {
     const dropArea = document.getElementById("jacketbox");
-    const allItems = Array.from(dropArea.querySelectorAll('.dropped-item')).map(item => {
-        return {
-            id: item.id,
-            className: item.className,
-            style: item.style.cssText,
-            html: item.innerHTML,
-            flashingColor: item.getAttribute('data-flashing-color'),
-            speed: item.getAttribute('data-speed'),
-            view: currView,
-            settings: itemSelections[currView] && itemSelections[currView][item.id] && { ...itemSelections[currView][item.id] }
-        };
-    });
-    undoStack.push(allItems);
-    redoStack = [];
+    const selectedItem = document.querySelector('.dropped-item.selected-item');
+    const visibleItems = Array.from(dropArea.querySelectorAll('.dropped-item')).filter(item => 
+        item.style.display != 'none' && !item.id.startsWith('DELETED')
+    );
+    const allItems = Array.from(dropArea.querySelectorAll('.dropped-item'))
+        .filter(item => !item.id.startsWith('DELETED'))
+        .map(item => {
+            const isFrontItem = frontItems.find(frontItem => frontItem.id == item.id);
+            let view = isFrontItem ? 'front' : 'back';
+            if (visibleItems.includes(item)) view = currView;
+            return {
+                id: item.id,
+                className: item.className,
+                style: item.style.cssText,
+                html: item.innerHTML,
+                flashingColor: item.getAttribute('data-flashing-color'),
+                speed: item.getAttribute('data-speed'),
+                view,
+                settings: itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : null
+            };
+        });
+    if (undoStack.length == 0) {
+        undoStack.push({
+            items: allItems,
+            selectedId: selectedItem?.id || null,
+            view: currView
+        });
+        return;
+    }
+    const lastState = undoStack[undoStack.length-1];
+    if (lastState.items.length != allItems.length ||
+        lastState.view != currView ||
+        lastState.selectedId != (selectedItem?.id || null) ||
+        JSON.stringify(lastState.items) != JSON.stringify(allItems)) {
+        undoStack.push({
+            items: allItems,
+            selectedId: selectedItem?.id || null,
+            view: currView
+        });
+        redoStack = [];
+    }
 }
 function loadState(state) {
+    const { items, selectedId, view } = state;
     const dropArea = document.getElementById("jacketbox");
     dropArea.querySelectorAll('.dropped-item').forEach(item => item.remove());
-    document.querySelectorAll('input[name="item-movement"]').forEach(radio => {
-        radio.checked = false;
-    });
+    document.querySelectorAll('input[name="item-movement"]').forEach(radio => radio.checked = false);
     flashingItems.clear();
     furAnimItems.clear();
-    state.forEach(data => {
+    frontItems.length = 0;
+    backItems.length = 0;
+    if (view != currView) switchView(view);
+    items.forEach(data => {
         const newItem = document.createElement("div");
         newItem.id = data.id;
         newItem.className = data.className;
@@ -1329,17 +1461,39 @@ function loadState(state) {
         newItem.setAttribute("draggable", "true");
         newItem.ondragstart = (e) => drag(e);
         dropArea.appendChild(newItem);
-        if (!itemSelections[data.view]) {
-            itemSelections[data.view] = {};
+        if (data.view == 'front') {
+            frontItems.push(newItem);
+            newItem.style.display = (currView == 'front') ? 'block' : 'none';
+        } else {
+            backItems.push(newItem);
+            newItem.style.display = (currView == 'back') ? 'block' : 'none';
         }
-        itemSelections[data.view][data.id] = data.settings;
+        if (!itemSelections[data.view]) itemSelections[data.view] = {};
+        if (data.settings) itemSelections[data.view][data.id] = data.settings;
         newItem.addEventListener('click', () => selectItem(newItem));
-        const radioVal = data.settings?.radioSelection?.toLowerCase().replace(/\s+/g, '-');
-        if (flashingItems.has(newItem)) {
-            let flashType = data.settings && data.settings.radioSelection ? data.settings.radioSelection.toLowerCase().replace(/\s+/g, '-') : null;
-            flashAnimation(newItem, flashType);
+        if (data.settings?.radioSelection?.toLowerCase().includes("flash")) {
+            const radioVal = data.settings.radioSelection.toLowerCase().replace(/\s+/g, '-');
+            flashingItems.add(newItem);
+            flashAnimation(newItem, radioVal);
         }
     });
+    frontItems.forEach(item => {
+        item.style.display = (currView == 'front') ? 'block' : 'none';
+    });
+    backItems.forEach(item => {
+        item.style.display = (currView == 'back') ? 'block' : 'none';
+    });
+    if (selectedId) {
+        const itemToSelect = dropArea.querySelector(`#${selectedId}`);
+        const isItemInCurrentView = (currView == 'front' && frontItems.includes(itemToSelect)) || (currView == 'back' && backItems.includes(itemToSelect));
+        if (itemToSelect && isItemInCurrentView) {
+            selectItem(itemToSelect);
+        } else {
+            deselectedSidebar();
+        }
+    } else {
+        deselectedSidebar();
+    }
 }
 
 //delete selected item
@@ -1390,7 +1544,8 @@ async function saveFile() {
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
         csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${frontItems[i].scale},${backItems[i].x},${backItems[i].y}\n`;
     }
-    csvFile += `Total time: ${totalTime}`;
+    csvFile += `JACKET COLOR: ${document.getElementById('jacketcol').value}`;
+    csvFile += `\nTOTAL TIME: ${totalTime}`;
     let keystrokeFile = "Timestamp,Action,Info\n";
     for (const i of keystrokeLog) {
         const { timestamp, action, ...info } = i;
@@ -1418,9 +1573,6 @@ async function saveFile() {
     alert(result.message);
 }
 function submitPopup() {
-    /*document.querySelector('.popup-submit').style.display = 'block';
-    document.querySelector('.popup').style.display = 'block';
-    document.querySelector('.popup-instructions').style.display = 'none';*/
     document.getElementById('save-button').disabled = true;
     document.getElementById('save-button').style.opacity = 0.5;
 }
