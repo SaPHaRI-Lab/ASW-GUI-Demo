@@ -230,13 +230,13 @@ function selectItem(item) {
     const amountScale = document.querySelector('.amount-scaling');
     if (item.id.startsWith('light-strip') || item.id.startsWith('fur-patch')) {
         sizeScale.style.display = 'block';
-        //amountScale.style.display = 'block';
+        amountScale.style.display = 'block';
     } else if (item.id.startsWith('speaker')) {
         sizeScale.style.display = 'none';
-        //amountScale.style.display = 'none';
+        amountScale.style.display = 'none';
     } else {
         sizeScale.style.display = 'block';
-        //amountScale.style.display = 'none';
+        amountScale.style.display = 'none';
     }
     item.querySelectorAll('.rectangle, .circle, .battery1, .battery2, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => part.classList.add('selected-item'));
     document.querySelectorAll('.movement > div').forEach(div => {
@@ -334,6 +334,27 @@ function getCurrAngle(item) {
 }
 
 function scaleSize(item, num) {
+    /*if (item.id.startsWith('light-strip')) {
+        const currSize = parseFloat(item.getAttribute('data-size')) || 1;
+        let newSize = currSize + num * 0.1;
+        newSize = Math.max(0.5, Math.min(newSize, 2));
+        item.setAttribute('data-size', newSize);
+        const rect = item.querySelector('.rectangle');
+        const baseHeight = 200;
+        rect.style.height = `${baseHeight*newSize}px`;
+        const circles = item.querySelectorAll('.circle');
+        const spacing = 40 * newSize;
+        circles.forEach((circle, index) => {
+            circle.style.top = `${-3 + spacing * index}px`;
+        });
+        item.scale = newSize;
+        logAction('scaled_item', {
+            itemID: item.id,
+            type: 'length',
+            amount: item.getAttribute('data-size')
+        });
+        return;
+    }*/
     const currSize = parseFloat(item.getAttribute('data-size')) || 1;
     let newSize = currSize + num;
     newSize = Math.max(0.5, Math.min(newSize, 2));
@@ -347,15 +368,48 @@ function scaleAmount(item, num) {
     if (item.id.startsWith('light-strip')) {
         const currLights = parseInt(item.getAttribute('data-amount')) || 6;
         let newLights = currLights + num;
-        newLights = Math.max(3, Math.min(newLights, 10));
+        newLights = Math.max(2, Math.min(newLights, 12));
         item.setAttribute('data-amount', newLights);
-        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: item.getAttribute('data-amount')});
+        const rectangle = item.querySelector('.rectangle');
+        const totalHeight = 210;
+        item.querySelectorAll('.circle').forEach(c => c.remove());
+        const gap = (totalHeight-20) / (newLights-1);
+        for (let i = 0; i < newLights; i++) {
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.style.top = `${i*gap-3}px`;
+            item.appendChild(circle);
+        }
+        if (rectangle && !item.contains(rectangle)) item.insertBefore(rectangle, item.firstChild);
+        selectItem(item);
+        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: newLights});
     } else if (item.id.startsWith('fur-patch')) {
         const currFur = parseInt(item.getAttribute('data-amount')) || 5;
         let newFur = currFur + num;
-        newFur = Math.max(3, Math.min(newFur, 10));
+        newFur = Math.max(1, Math.min(newFur, 10));
         item.setAttribute('data-amount', newFur);
-        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: item.getAttribute('data-amount')});
+        item.innerHTML = '';
+        for (let i = 0; i < newFur; i++) {
+            const left = i * 9;
+            const fur1Top = [0, 20];
+            const fur2Top = [10];
+            fur1Top.forEach(top => {
+                const div = document.createElement('div');
+                div.className = 'fur1';
+                div.style.top = `${top}px`;
+                div.style.left = `${left}px`;
+                item.appendChild(div);
+            });
+            fur2Top.forEach(top => {
+                const div = document.createElement('div');
+                div.className = 'fur2';
+                div.style.top = `${top}px`;
+                div.style.left = `${left}px`;
+                item.appendChild(div);
+            });
+        }
+        selectItem(item);
+        logAction('scaled_item', {itemID: item.id, type: 'amount', amount: newFur});
     }
 }
 
@@ -980,20 +1034,38 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 radioValue = null;
             }
-            document.getElementById('cyo-name2').value = document.getElementById('cyo-name').value;
+            const cyoFullName = document.getElementById('cyo-name').value;
+            document.getElementById('cyo-name2').value = cyoFullName;
             document.getElementById('custom-input').value = document.getElementById('cyo-desc').value;
             document.querySelector('.popup-cyo').classList.remove('show');
-            selectedItem.cyoName = document.getElementById("cyo-name").value;
+            selectedItem.cyoName = cyoFullName;
             selectedItem.userinput = document.getElementById("custom-input").value;
+            let cyoMiddleTxt = selectedItem.querySelector('.cyo-text');
+            if (!cyoMiddleTxt) {
+                cyoMiddleTxt = document.createElement('div');
+                cyoMiddleTxt.className = 'cyo-text';
+                cyoMiddleTxt.style.position = 'absolute';
+                cyoMiddleTxt.style.top = '50%';
+                cyoMiddleTxt.style.left = '50%';
+                cyoMiddleTxt.style.transform = 'translate(-50%, -50%)';
+                cyoMiddleTxt.style.textAlign = 'center';
+                cyoMiddleTxt.style.fontSize = '15px';
+                cyoMiddleTxt.style.fontWeight = 'bold';
+                cyoMiddleTxt.style.color = 'white';
+                cyoMiddleTxt.style.pointerEvents = 'none';
+                cyoMiddleTxt.style.webkitTextStroke = '0.5px black';
+                selectedItem.appendChild(cyoMiddleTxt);
+            }
+            cyoMiddleTxt.textContent = cyoFullName.substring(0, 5);
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, selectedItem.userinput, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, selectedItem.cyoName);
-            logAction('created_item', {itemID: selectedItem.id, name: document.getElementById("cyo-name").value});
+            logAction('created_item', {itemID: selectedItem.id, name: cyoFullName});
         }
     });
     document.getElementById("cyo-cancel").addEventListener('click', function(e) {
         document.querySelector('.popup-cyo').classList.remove('show');
         deleteItem();
     });
-    document.getElementById("cyo-name2").addEventListener('input', function(){
+    document.getElementById("cyo-name2").addEventListener('input', function() {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         let radioValue;
         if (selectedItem) {
@@ -1003,9 +1075,28 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 radioValue = null;
             }
+            const cyoFullName = this.value;
+            selectedItem.cyoName = cyoFullName;
+            let cyoMiddleTxt = selectedItem.querySelector('.cyo-text');
+            if (!cyoMiddleTxt) {
+                cyoMiddleTxt = document.createElement('div');
+                cyoMiddleTxt.className = 'cyo-text';
+                cyoMiddleTxt.style.position = 'absolute';
+                cyoMiddleTxt.style.top = '50%';
+                cyoMiddleTxt.style.left = '50%';
+                cyoMiddleTxt.style.transform = 'translate(-50%, -50%)';
+                cyoMiddleTxt.style.textAlign = 'center';
+                cyoMiddleTxt.style.fontSize = '12px';
+                cyoMiddleTxt.style.fontWeight = 'bold';
+                cyoMiddleTxt.style.color = 'white';
+                cyoMiddleTxt.style.pointerEvents = 'none';
+                cyoMiddleTxt.style.webkitTextStroke = '0.5px black';
+                selectedItem.appendChild(cyoMiddleTxt);
+            }
+            cyoMiddleTxt.textContent = cyoFullName.substring(0, 5);
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, selectedItem.userinput, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, this.value);
             selectedItem.cyoName = document.getElementById("cyo-name2").value;
-            logAction('changed_item_name', {itemID: selectedItem.id, input: document.getElementById("cyo-name2").value});
+            logAction('changed_item_name', {itemID: selectedItem.id, input: cyoFullName});
         }
     });
     //user input for popup
@@ -1472,21 +1563,31 @@ function loadState(state) {
             newItem.style.display = (currView == 'back') ? 'block' : 'none';
         }
         if (!itemSelections[data.view]) itemSelections[data.view] = {};
-        /*if (data.settings) itemSelections[data.view][data.id] = data.settings;
-        newItem.addEventListener('click', () => selectItem(newItem));
-        if (data.settings?.radioSelection?.toLowerCase().includes("flash")) {
-            const radioVal = data.settings.radioSelection.toLowerCase().replace(/\s+/g, '-');
-            flashingItems.add(newItem);
-            flashAnimation(newItem, radioVal);
-        }*/
-       if (data.settings) {
+        if (data.settings) {
             itemSelections[data.view][data.id] = data.settings;
             newItem.radioSelection = data.settings.radioSelection;
-            if (data.settings.rotation != undefined) {
-                newItem.rotation = data.settings.rotation;
+            if (data.settings.cyoName && newItem.id.startsWith('other')) {
+                const cyoMiddleTxt = document.createElement('div');
+                cyoMiddleTxt.className = 'cyo-text';
+                cyoMiddleTxt.style.position = 'absolute';
+                cyoMiddleTxt.style.top = '50%';
+                cyoMiddleTxt.style.left = '50%';
+                cyoMiddleTxt.style.transform = 'translate(-50%, -50%)';
+                cyoMiddleTxt.style.textAlign = 'center';
+                cyoMiddleTxt.style.fontSize = '12px';
+                cyoMiddleTxt.style.fontWeight = 'bold';
+                cyoMiddleTxt.style.color = 'white';
+                cyoMiddleTxt.style.pointerEvents = 'none';
+                cyoMiddleTxt.style.webkitTextStroke = '0.5px black';
+                cyoMiddleTxt.textContent = data.settings.cyoName.substring(0, 5);
+                newItem.appendChild(cyoMiddleTxt);
+            }
+            if (data.settings.rotation != undefined || data.settings.scale != undefined) {
+                const rotation = data.settings.rotation || 0;
                 const scale = data.settings.scale || 1;
+                newItem.rotation = rotation;
                 newItem.setAttribute('data-size', scale);
-                newItem.style.transform = `scale(${scale}) rotate(${data.settings.rotation}deg)`;
+                newItem.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
             }
             if (data.settings.radioSelection) {
                 const radioPattern = data.settings.radioSelection.toLowerCase();
@@ -1526,6 +1627,10 @@ function loadState(state) {
         const isItemInCurrentView = (currView == 'front' && frontItems.includes(itemToSelect)) || (currView == 'back' && backItems.includes(itemToSelect));
         if (itemToSelect && isItemInCurrentView) {
             selectItem(itemToSelect);
+            if (itemToSelect.radioSelection) {
+                const radio = document.querySelector(`input[name="item-movement"][value="${itemToSelect.radioSelection}"]`);
+                if (radio) radio.checked = true;
+            }
         } else {
             deselectedSidebar();
         }

@@ -1,5 +1,5 @@
 body {
-  font-family: 'Arial';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -29,38 +29,36 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 #popup-title {
-  font-weight: normal;
-  font-size: 27px;
+  font-weight: 600;
+  font-size: 25px;
   padding-top: 12px;
+  color: rgb(60, 60, 60);
 }
 .popup-instructions {
-  background: #e7e7e7;
-  text-align: center;
+  background: #ffffff;
+  text-align: left;
   border-radius: 10px;
-  width: 42%;
+  width: 32%;
+  padding: 2% 2%;
 }
 #popup-text {
-  color: black;
-  font-size: 17px;
-  padding-left: 7%;
-  padding-right: 7%;
+  color: rgb(68, 68, 68);
+  font-size: 16px;
+  line-height: 1.5;
 }
 .popup-identifiers {
   margin-bottom: 40px;
 }
-#participant1 {
-  background-color: transparent;
+#participant1, #videoNum1 {
+  background-color: #f9f9f9;
   color: black;
-  outline: none;
-  outline-style: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  border-bottom: solid black 1px;
-  padding: 3px 10px;
-  width: 50px;
+  border: solid rgb(148, 148, 148) 1px;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 80px;
 }
 #pNum1, #vNum1 {
   font-size: 15px;
@@ -73,30 +71,28 @@ body {
 #participant1 {
   margin-right: 5%;
 }
-#videoNum1 {
-  background-color: transparent;
-  color: black;
-  outline: none;
-  outline-style: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  border-bottom: solid black 1px;
-  padding: 3px 10px;
-  width: 50px;
-}
 #vNum1, #videoNum1 {
   display: inline-block;
   vertical-align: middle;
 }
 #continue-button {
   cursor: pointer;
-  background-color: #9be4fc;
+  background-color: #0077ff;
   border-radius: 3px;
-  border-color: #9be4fc;
+  border-color: #0077ff;
   padding: 8px;
   font-size: 15px;
-  margin-bottom: 20px;
+  display: block;
+  margin-left: auto;
+  width: 20%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+}
+#continue-button:disabled {
+  background-color: #5fa9ff;
+  border-color: #5fa9ff;
+  color: #e4e4e4;
+  cursor: not-allowed;
 }
 
 .box {
@@ -329,6 +325,7 @@ body {
   border-color: #9be4fc;
   padding: 8px;
   font-size: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 #front-view {
   position: absolute;
@@ -341,6 +338,7 @@ body {
   border-color: #9be4fc;
   padding: 8px;
   font-size: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #jacketCanvas {
@@ -432,25 +430,26 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #006BFF;
+  background: #0077ff;
 }
 
 #save-button {
   position: absolute;
   cursor: pointer;
-  background-color: #006BFF;
+  background-color: #0077ff;
   border-radius: 3px;
-  border-color: #006BFF;
+  border-color: #0077ff;
   padding: 10px;
   font-size: 15px;
   color: white;
   width: 40%;
   margin-top: 35px;
   margin-left: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 #save-button:hover {
-  background-color: #4190ff !important; 
-  border-color: #4190ff !important;
+  background-color: #0068de !important; 
+  border-color: #0068de !important;
 }
 .popup-submit {
   background: #e7e7e7;
@@ -520,21 +519,23 @@ body {
   color: black;
   grid-column: 1;
   grid-row: 2;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 #delete {
   cursor: pointer;
-  background-color: #ff8383;
+  background-color: #f87171;
   border-radius: 3px;
-  border-color: #ff8383;
+  border-color: #f87171;
   padding: 8px;
   font-size: 14px;
   color: black;
   grid-column: 2;
   grid-row: 2;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 #delete:hover {
-  background-color: #ffa8a8 !important;
-  border-color: #ffa8a8 !important;
+  background-color: #f45757 !important;
+  border-color: #f45757 !important;
 }
 
 .jacketcolor {
@@ -547,11 +548,6 @@ body {
 }
 #jacketcol {
   width: 25%;
-}
-
-#back-view:hover, #front-view:hover, #undo:hover, #redo:hover, #duplicate:hover, .size-scaling button:hover, .amount-scaling button:hover {
-  background-color: #b6edff !important;
-  border-color: #b6edff !important;
 }
 
 .scaling {
