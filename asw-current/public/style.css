@@ -78,9 +78,10 @@ body {
 #continue-button {
   cursor: pointer;
   background-color: #0077ff;
-  border-radius: 3px;
-  border-color: #0077ff;
-  padding: 8px;
+  border-radius: 5px;
+  /*border-color: #0077ff;*/
+  border: none;
+  padding: 10px;
   font-size: 15px;
   display: block;
   margin-left: auto;
@@ -160,6 +161,10 @@ body {
   padding: 10px;
   margin: 10px;
   color: white;
+  transition: transform 0.2s;
+}
+.option:hover {
+  transform: scale(1.05);
 }
 .option-txt {
   text-align: center;
@@ -225,7 +230,7 @@ body {
   margin-top: 3%;
   margin-left: 57%;
   background: white;
-  border-color: gray;
+  border-color: rgb(188, 188, 188);
   height: 250px;
   width: 350px;
   z-index: 1000;
@@ -313,32 +318,21 @@ body {
   height: 90%;
   z-index: 1;
 }
-
-#back-view {
+#back-view, #front-view {
   position: absolute;
   bottom: 22px;
   right: 22px;
   z-index: 10;
   cursor: pointer;
   background-color: #9be4fc;
-  border-radius: 3px;
-  border-color: #9be4fc;
-  padding: 8px;
+  border-radius: 5px;
+  border: none;
+  padding: 12px;
   font-size: 15px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-#front-view {
-  position: absolute;
-  bottom: 22px;
-  right: 22px;
-  z-index: 10;
-  cursor: pointer;
-  background-color: #9be4fc;
-  border-radius: 3px;
-  border-color: #9be4fc;
-  padding: 8px;
-  font-size: 15px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+#back-view:hover, #front-view:hover {
+  background-color: #6bd4f8 !important;
 }
 
 #jacketCanvas {
@@ -437,9 +431,9 @@ body {
   position: absolute;
   cursor: pointer;
   background-color: #0077ff;
-  border-radius: 3px;
-  border-color: #0077ff;
-  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  padding: 14px;
   font-size: 15px;
   color: white;
   width: 40%;
@@ -449,7 +443,6 @@ body {
 }
 #save-button:hover {
   background-color: #0068de !important; 
-  border-color: #0068de !important;
 }
 .popup-submit {
   background: #e7e7e7;
@@ -477,15 +470,18 @@ body {
   gap: 10px 7px;
   width: max-content;
   justify-content: center;
-  margin-left: 10px; 
+  margin-left: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 8px;
 }
 #undo, #redo {
   width: 60px;
   height: 30px;
   cursor: pointer;
   background-color: #9be4fc;
-  border-radius: 3px;
-  border-color: #9be4fc;
+  border-radius: 5px;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -503,6 +499,9 @@ body {
   grid-column: 2;
   grid-row: 1;
 }
+#undo:hover, #redo:hover {
+  background-color: #6bd4f8 !important; 
+}
 .undoredo {
   grid-column: span 2;
   display: flex;
@@ -512,8 +511,8 @@ body {
 #duplicate {
   cursor: pointer;
   background-color: #9be4fc;
-  border-radius: 3px;
-  border-color: #9be4fc;
+  border-radius: 5px;
+  border: none;
   padding: 8px;
   font-size: 14px;
   color: black;
@@ -521,11 +520,14 @@ body {
   grid-row: 2;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+#duplicate:hover {
+  background-color: #6bd4f8 !important; 
+}
 #delete {
   cursor: pointer;
   background-color: #f87171;
-  border-radius: 3px;
-  border-color: #f87171;
+  border-radius: 5px;
+  border: none;
   padding: 8px;
   font-size: 14px;
   color: black;
@@ -535,7 +537,6 @@ body {
 }
 #delete:hover {
   background-color: #f45757 !important;
-  border-color: #f45757 !important;
 }
 
 .jacketcolor {
@@ -566,11 +567,15 @@ body {
   font-size: 15px;
   font-weight: lighter;
   margin-bottom: 5px;
+  text-align: center;
+  width: 100%;
 }
 .scaling-btns {
   display: flex;
   gap: 8px;
   margin-top: 5px;
+  justify-content: center;
+  width: 100%;
 }
 .size-scaling button, .amount-scaling button {
   cursor: pointer;
@@ -583,6 +588,12 @@ body {
   height: 30px;
   border: none;
   font-size: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#size-dec:hover, #size-inc:hover, #amount-dec:hover, #amount-inc:hover {
+  background-color: #6bd4f8 !important; 
 }
 
 #movement-title {
@@ -590,7 +601,7 @@ body {
   color: white;
   font-size: 17px;/*20px;*/
   margin-top: 35px;
-  margin-left: 55px;
+  margin-left: 70px;
 }
 .movement {
   color: white;
@@ -661,17 +672,6 @@ body {
   background: white;
   margin-bottom: 15%;
 }
-
-#red { background: red; }
-#orange { background: orange; }
-#yellow { background: yellow; }
-#green { background: green; }
-#blue { background: blue; }
-#purple { background: purple; }
-#pink { background: rgb(255, 136, 211); }
-#black { background: black; }
-#gray { background: gray; }
-#lightyellow { background: lightyellow; }
 
 .selected-col {
   border: 1.5px solid white;
@@ -827,11 +827,6 @@ body {
 }
 
 .other {
-  /*width: 0;
-	height: 0;
-	border-left: 20px solid transparent;
-	border-right: 20px solid transparent;
-	border-bottom: 35px solid #bbb;*/
   height: 35px;
   width: 65px;
   background-color: rgba(187, 187, 187, 1);/*#bbb;*/
@@ -847,26 +842,33 @@ body {
   height: 100%;
   z-index: 1000;
   visibility: hidden;
+  background: rgba(0, 0, 0, 0.7);
 }
 .popup-cyo.show {
   visibility: visible;
   opacity: 1;
 }
 .popup-cyo2 {
-  background: #bbbbbb;
+  background: #ffffff;
   border-radius: 10px;
-  width: 25%;
-  height: 25%;
+  width: 20%;
+  height: 33%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
+  gap: 12px;
+  padding: 20px;
 }
 #cyo-title {
   font-weight: normal;
   font-size: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+}
+#cyo-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 #cyo-name-label, #cyo-desc-label {
   font-size: 15px;
@@ -877,22 +879,44 @@ body {
   vertical-align: middle;
 }
 #cyo-name, #cyo-desc {
-  padding: 3px 10px;
+  padding: 8px 10px;
   width: 100%;
   box-sizing: border-box;
+  background-color: #f9f9f9;
+  border: solid rgb(148, 148, 148) 1px;
+  border-radius: 6px;
+  font-size: 14px;
 }
-.popup-field {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-}
-.popup-buttons {
+.cyo-buttons {
   display: flex;
   justify-content: center;
   width: 100%;
   margin-top: 20px;
   gap: 10px;
+}
+#cyo-save, #cyo-cancel {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+#cyo-save {
+  background-color: #0077ff;
+  color: white;
+}
+#cyo-save:hover {
+  background-color: #0068de !important;
+}
+#cyo-cancel {
+  background-color: #f8f9fa;
+  color: #484848;
+  border: solid #ddd 1px;
+}
+#cyo-cancel:hover {
+  background-color: #dcdcdc !important;
 }
 
 .item-container {

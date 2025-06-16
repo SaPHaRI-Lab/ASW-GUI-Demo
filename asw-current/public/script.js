@@ -2,44 +2,6 @@
 var frontItems = [];
 var backItems = [];
 var currView = "front";
-/*function switchView(view=null) {
-    const front = document.getElementById('jacket-front');
-    const back = document.getElementById('jacket-back');
-    const jacketCanvas = document.getElementById('jacketCanvas');
-    const jacketCtx = jacketCanvas.getContext('2d');
-    const jacketColSelect = hexToRgb(document.getElementById('jacketcol').value);
-    const nextView = view || (currView == 'front' ? 'back' : 'front');
-    if (nextView == currView) return;
-    if (nextView == "back") {
-        for (let i = 0; i < frontItems.length; i++) {
-            frontItems[i].style.display = 'none';
-        }
-        for (let i = 0; i < backItems.length; i++) {
-            backItems[i].style.display = 'block';
-        }
-        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        //jacketCtx.drawImage(back,0,0,jacketCanvas.width,jacketCanvas.height);
-        drawCanvasFrontBack(back, jacketCtx, jacketCanvas, jacketColSelect);
-        currView = "back";
-        document.getElementById('front-view').style.display = 'block';
-        document.getElementById('back-view').style.display = 'none';
-        logAction('switched_view', {from: 'front', to: 'back'});
-    } else {
-        for (let i = 0; i < frontItems.length; i++) {
-            frontItems[i].style.display = 'block';
-        }
-        for (let i = 0; i < backItems.length; i++) {
-            backItems[i].style.display = 'none';
-        }
-        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        //jacketCtx.drawImage(front,0,0,jacketCanvas.width,jacketCanvas.height);
-        drawCanvasFrontBack(front, jacketCtx, jacketCanvas, jacketColSelect);
-        currView = "front";
-        document.getElementById('back-view').style.display = 'block';
-        document.getElementById('front-view').style.display = 'none';
-        logAction('switched_view', {from: 'back', to: 'front'});
-    }
-}*/
 function switchView(view=null) {
     const front = document.getElementById('jacket-front');
     const back = document.getElementById('jacket-back');
@@ -57,8 +19,6 @@ function switchView(view=null) {
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'block';
         }
-        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        //jacketCtx.drawImage(back,0,0,jacketCanvas.width,jacketCanvas.height);
         drawCanvasFrontBack(back, jacketCtx, jacketCanvas, jacketColSelect);
         document.getElementById('front-view').style.display = 'block';
         document.getElementById('back-view').style.display = 'none';
@@ -70,8 +30,6 @@ function switchView(view=null) {
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'none';
         }
-        //jacketCtx.clearRect(0,0,jacketCanvas.width,jacketCanvas.height);
-        //jacketCtx.drawImage(front,0,0,jacketCanvas.width,jacketCanvas.height);
         drawCanvasFrontBack(front, jacketCtx, jacketCanvas, jacketColSelect);
         document.getElementById('back-view').style.display = 'block';
         document.getElementById('front-view').style.display = 'none';
@@ -259,10 +217,10 @@ function selectItem(item) {
         document.getElementById('speed-title').textContent = "Battery Level";
         document.getElementById('speed-title').style.marginLeft = "17%";
         document.getElementById('custom-title').textContent = "Write my own:";
-        document.getElementById('movement-title').textContent = "Movement";
+        document.getElementById('movement-title').textContent = "Action";
         document.getElementById('movement-title').style.marginLeft = "";
     } else {
-        document.getElementById('movement-title').textContent = "Movement";
+        document.getElementById('movement-title').textContent = "Action";
         document.getElementById('movement-title').style.marginLeft = "";
         document.getElementById('custom-title').textContent = "Write my own:";
         document.getElementById('speed-title').textContent = "Speed";
@@ -314,7 +272,11 @@ function rotateItem(item, rotateCircle) {
         }
     });
     document.addEventListener('mouseup', function() {
-        rotating = false;
+        //rotating = false;
+        if (rotating) {
+            rotating = false;
+            saveState();
+        }
         //logAction('rotated_item', {itemID: item.id});
     });
 }
@@ -419,7 +381,7 @@ var itemSelections = {
     back: {}
 };
 function saveItemSelections(itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName='') {
-    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName};
+    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName, rgba2: [...rgba2]};
 }
 function loadItemSelections(itemID) {
     const selection = itemSelections[currView][itemID];
@@ -457,14 +419,22 @@ function loadItemSelections(itemID) {
             const colorImg = document.getElementById('color-wheel');
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
             colorCtx.drawImage(colorImg,0,0,colorCanvas.width,colorCanvas.height);
-            colorCtx.beginPath();
-            colorCtx.arc(selection.colorX, selection.colorY, 6, 0, 2 * Math.PI);
-            colorCtx.lineWidth = 2;
-            colorCtx.strokeStyle = 'black';
-            colorCtx.stroke();
-            const colorRange = document.getElementById('color-range');
-            colorRange.value = selection.gradient;
-            colorRange.style.background = `linear-gradient(to right, white, ${selection.itemColor}, black)`;
+            if (selection.colorX != null && selection.colorY != null) {
+                colorX = selection.colorX;
+                colorY = selection.colorY;
+                rgba2 = selection.rgba2 || [128, 128, 128];
+                gradient = selection.gradient;
+                colorCtx.beginPath();
+                colorCtx.arc(selection.colorX, selection.colorY, 6, 0, 2 * Math.PI);
+                colorCtx.lineWidth = 2;
+                colorCtx.strokeStyle = 'black';
+                colorCtx.stroke();
+                const colorRange = document.getElementById('color-range');
+                colorRange.value = selection.gradient;
+                colorRange.style.background = `linear-gradient(to right, white, ${selection.itemColor}, black)`;
+            }
+        } else {
+            resetColor();
         }
     } else {
         resetRadioButtons();
@@ -496,6 +466,9 @@ function resetColor() {
     const colorRange = document.getElementById('color-range');
     colorRange.value = 5;
     gradient = 5;
+    rgba2 = [128, 128, 128];
+    colorX = null;
+    colorY = null;
     colorRange.style.background = `linear-gradient(to right, white, rgba(128, 128, 128, 1), black)`;
 }
 function resetCYOPopup() {
@@ -585,12 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
             rgba2[2] = rgba[2];
             let selectedColor = updateShade(gradient);
             selectedItem = document.querySelector('.dropped-item.selected-item');
-            //const other = document.querySelector('.other');
             if (selectedItem) {
-                /*if (selectedItem == other) {
-                    other.style.borderBottomColor = selectedColor;
-                    other.style.backgroundColor = transparent;
-                }*/
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
                 selectedItem.style.backgroundColor = selectedColor;
                 selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
@@ -631,12 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         gradient = this.value;
         let selectedColor = updateShade(gradient);
         const selectedItem = document.querySelector('.dropped-item.selected-item');
-        //const other = document.querySelector('.other');
         if (selectedItem) {
-            /*if (selectedItem == other) {
-                other.style.borderBottomColor = selectedColor;
-                other.style.backgroundColor = transparent;
-            }*/
             selectedItem.style.backgroundColor = selectedColor;
             selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
                 part.style.backgroundColor = selectedColor;
@@ -821,6 +784,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (currView == "front" ? frontItems : backItems).push(clickedItem);
                 clickItem.style.display = 'none';
                 clickOpen = false;
+                document.querySelector('.popup-cyo').classList.add('show');
+                resetCYOPopup();
             }
         });
     });
@@ -1018,10 +983,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('amount-dec').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) scaleAmount(selectedItem, -1);
+        saveState();
     });
     document.getElementById('amount-inc').addEventListener('click', () => {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
         if (selectedItem) scaleAmount(selectedItem, +1);
+        saveState();
     });
     //cyo new item popup
     document.getElementById("cyo-save").addEventListener('click', function(e) {
@@ -1500,8 +1467,15 @@ function saveState() {
             let view = isFrontItem ? 'front' : 'back';
             if (visibleItems.includes(item)) view = currView;
             const settings = itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : {};
-            settings.rotation = item.rotation || 0;
-            settings.scale = parseFloat(item.getAttribute('data-size')) || 1;
+            settings.sliderValue = parseFloat(item.getAttribute('data-speed')) || item.speed || 3;
+            settings.userInput = item.userinput;
+            settings.rotation = parseFloat(item.getAttribute('data-rotation')) || item.rotation || 0;
+            settings.scale = parseFloat(item.getAttribute('data-size')) || item.scale || 1;
+            settings.colorX = colorX;
+            settings.colorY = colorY;
+            settings.rgba2 = [...rgba2];
+            settings.gradient = gradient;
+            settings.itemColor = item.getAttribute('data-flashing-color') || item.color;
             itemSelections[view][item.id] = settings;
             return {
                 id: item.id,
@@ -1566,6 +1540,10 @@ function loadState(state) {
         if (data.settings) {
             itemSelections[data.view][data.id] = data.settings;
             newItem.radioSelection = data.settings.radioSelection;
+            newItem.speed = data.settings.sliderValue;
+            newItem.userinput = data.settings.userInput;
+            newItem.color = data.settings.itemColor;
+            newItem.scale = data.settings.scale;
             if (data.settings.cyoName && newItem.id.startsWith('other')) {
                 const cyoMiddleTxt = document.createElement('div');
                 cyoMiddleTxt.className = 'cyo-text';
@@ -1587,6 +1565,7 @@ function loadState(state) {
                 const scale = data.settings.scale || 1;
                 newItem.rotation = rotation;
                 newItem.setAttribute('data-size', scale);
+                newItem.setAttribute('data-rotation', rotation);
                 newItem.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
             }
             if (data.settings.radioSelection) {
@@ -1630,6 +1609,18 @@ function loadState(state) {
             if (itemToSelect.radioSelection) {
                 const radio = document.querySelector(`input[name="item-movement"][value="${itemToSelect.radioSelection}"]`);
                 if (radio) radio.checked = true;
+            }
+            const slider = document.getElementById('speed-range');
+            if (slider && itemToSelect.id.startsWith('battery')) {
+                const bars = Array.from(itemToSelect.querySelectorAll('.battery-bar')).filter(bar => bar.style.opacity == '1').length;
+                slider.value = bars || 3;
+            } else if (slider && itemToSelect.getAttribute('data-speed')) {
+                const speed = parseInt(itemToSelect.getAttribute('data-speed'));
+                if (speed >= 700) slider.value = 1;
+                else if (speed >= 550) slider.value = 2;
+                else if (speed >= 400) slider.value = 3;
+                else if (speed >= 250) slider.value = 4;
+                else slider.value = 5;
             }
         } else {
             deselectedSidebar();
