@@ -108,7 +108,7 @@ body {
 .jacketbox {
   width: 800px;/*for monitor view: 1100px;*/
   height: 600px;/*for monitor view: 700px;*/
-  background-color: #E6E6E6;
+  background-color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -470,7 +470,6 @@ body {
   gap: 10px 7px;
   width: max-content;
   justify-content: center;
-  margin-left: 10px;
   background: rgba(255, 255, 255, 0.03);
   padding: 15px;
   border-radius: 8px;
@@ -540,15 +539,38 @@ body {
 }
 
 .jacketcolor {
-  margin-top: 20px;
-  margin-left: 30px;
+  margin-top: 5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: max-content;
+  margin-left: -15px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 8px;
 }
 #jacketcollabel {
   color: white;
   font-size: 15px;
+  white-space: nowrap;
 }
-#jacketcol {
+/*#jacketcol {
   width: 25%;
+}*/
+.jacket-col-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+.jacket-col-canvas {
+  margin: 0;
+}
+#jacket-col-range {
+  width: 70px;
+  height: 17px;
+  margin: 0;
 }
 
 .scaling {

@@ -161,8 +161,14 @@
         <button id="delete" onclick="deleteItem()">Delete</button>
       </div>
       <div class="jacketcolor">
-        <label for="jacketcol" id="jacketcollabel">Jacket color:</label>
-        <input type="color" id="jacketcol" name="jacketcol" value="#ffffff">
+        <!--<label for="jacketcol" id="jacketcollabel">Jacket Color</label>
+        <input type="color" id="jacketcol" name="jacketcol" value="#ffffff">-->
+        <label for="jacketColCanvas" id="jacketcollabel">Jacket Color:</label>
+        <div class="jacket-col-grid">
+          <img src="colorselect.png" id="jacket-col-wheel" draggable="false" style="display: none;"/>
+          <canvas id="jacketColCanvas" class="jacket-col-canvas" width="80" height="73" draggable="false"></canvas>
+          <input type="range" min="0" max="10" value="5" class="color-slider" id="jacket-col-range">
+        </div>
       </div>
       <div class="scaling">
         <div class="size-scaling" style="display: none;">

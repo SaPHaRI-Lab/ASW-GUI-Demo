@@ -7,7 +7,7 @@ function switchView(view=null) {
     const back = document.getElementById('jacket-back');
     const jacketCanvas = document.getElementById('jacketCanvas');
     const jacketCtx = jacketCanvas.getContext('2d');
-    const jacketColSelect = hexToRgb(document.getElementById('jacketcol').value);
+    //const jacketColSelect = hexToRgb(document.getElementById('jacketcol').value);
     const nextView = view || (currView == 'front' ? 'back' : 'front');
     if (nextView == currView) return;
     const prevView = currView;
@@ -19,7 +19,7 @@ function switchView(view=null) {
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'block';
         }
-        drawCanvasFrontBack(back, jacketCtx, jacketCanvas, jacketColSelect);
+        drawCanvasFrontBack(back, jacketCtx, jacketCanvas, currJacketCol);//jacketColSelect);
         document.getElementById('front-view').style.display = 'block';
         document.getElementById('back-view').style.display = 'none';
         logAction('switched_view', {from: prevView, to: 'back'});
@@ -30,7 +30,7 @@ function switchView(view=null) {
         for (let i = 0; i < backItems.length; i++) {
             backItems[i].style.display = 'none';
         }
-        drawCanvasFrontBack(front, jacketCtx, jacketCanvas, jacketColSelect);
+        drawCanvasFrontBack(front, jacketCtx, jacketCanvas, currJacketCol);//jacketColSelect);
         document.getElementById('back-view').style.display = 'block';
         document.getElementById('front-view').style.display = 'none';
         logAction('switched_view', {from: prevView, to: 'front'});
@@ -170,14 +170,17 @@ function selectItem(item) {
         item.style.border = 'none';
     }
     if (item.id.startsWith('light-strip')) {
-        rotateCircle.style.top = '-27px';
-        rotateCircle.style.transform = 'translateX(30%)';
+        rotateCircle.style.top = '100px';
+        rotateCircle.style.left = '-25px';
+        rotateCircle.style.transform = 'rotate(-90deg)';
+        item.style.transformOrigin = "10px 100px";
     } else if (item.id.startsWith('battery')) {
         rotateCircle.style.transform = 'translateX(125%)';
         item.style.transformOrigin = "30px 10px";
     } else if (item.id.startsWith('fur-patch')) {
-        rotateCircle.style.transform = 'translateX(100%)';
-        item.style.transformOrigin = "20px 20px";
+        const numFurs = parseInt(item.getAttribute('data-amount')) || 5;
+        rotateCircle.style.transform = `translateX(${(numFurs*7)/2}px)`;
+        item.style.transformOrigin = `${(numFurs*7)/2}px 20px`;
     }
     document.querySelector('.color').style.display = 'block';
     document.querySelector('.speed').style.display = 'block';
@@ -242,7 +245,7 @@ function selectItem(item) {
 function rotateItem(item, rotateCircle) {
     let rotating = false;
     let ogAngle = 0;
-    let logRotation;
+    let logRotation = 0;
     rotateCircle.addEventListener('mousedown', function(e) {
         rotating = true;
         const rect = item.getBoundingClientRect();
@@ -251,8 +254,8 @@ function rotateItem(item, rotateCircle) {
         const xVal = e.clientX;
         const yVal = e.clientY;
         ogAngle = Math.atan2(yVal-centerY, xVal-centerX) - getCurrAngle(item);
+        logRotation = getCurrAngle(item) * (180/Math.PI);
         e.preventDefault();
-        logAction('rotated_item', {itemID: item.id});
     });
     document.addEventListener('mousemove', function(e) {
         if (rotating) {
@@ -266,18 +269,17 @@ function rotateItem(item, rotateCircle) {
             item.setAttribute('data-rotation', rotationAngle*(180/Math.PI));
             const size = item.getAttribute('data-size') || 1;
             item.style.transform = `scale(${size}) rotate(${rotationAngle*(180/Math.PI)}deg)`;
-            logRotation = rotationAngle*(-180/Math.PI);
             item.rotation = rotationAngle*(-180/Math.PI);
-            //logAction('rotated_item', {itemID: item.id, angle: item.getAttribute('data-rotation')});
         }
     });
     document.addEventListener('mouseup', function() {
-        //rotating = false;
         if (rotating) {
             rotating = false;
+            if (item.rotation != logRotation) {
+                logAction('rotated_item', {itemID: item.id, start: logRotation, end: item.rotation});
+            }
             saveState();
         }
-        //logAction('rotated_item', {itemID: item.id});
     });
 }
 function getCurrAngle(item) {
@@ -296,27 +298,6 @@ function getCurrAngle(item) {
 }
 
 function scaleSize(item, num) {
-    /*if (item.id.startsWith('light-strip')) {
-        const currSize = parseFloat(item.getAttribute('data-size')) || 1;
-        let newSize = currSize + num * 0.1;
-        newSize = Math.max(0.5, Math.min(newSize, 2));
-        item.setAttribute('data-size', newSize);
-        const rect = item.querySelector('.rectangle');
-        const baseHeight = 200;
-        rect.style.height = `${baseHeight*newSize}px`;
-        const circles = item.querySelectorAll('.circle');
-        const spacing = 40 * newSize;
-        circles.forEach((circle, index) => {
-            circle.style.top = `${-3 + spacing * index}px`;
-        });
-        item.scale = newSize;
-        logAction('scaled_item', {
-            itemID: item.id,
-            type: 'length',
-            amount: item.getAttribute('data-size')
-        });
-        return;
-    }*/
     const currSize = parseFloat(item.getAttribute('data-size')) || 1;
     let newSize = currSize + num;
     newSize = Math.max(0.5, Math.min(newSize, 2));
@@ -350,6 +331,7 @@ function scaleAmount(item, num) {
         let newFur = currFur + num;
         newFur = Math.max(1, Math.min(newFur, 10));
         item.setAttribute('data-amount', newFur);
+        const currentColor = item.color;
         item.innerHTML = '';
         for (let i = 0; i < newFur; i++) {
             const left = i * 9;
@@ -360,6 +342,7 @@ function scaleAmount(item, num) {
                 div.className = 'fur1';
                 div.style.top = `${top}px`;
                 div.style.left = `${left}px`;
+                div.style.backgroundColor = currentColor;
                 item.appendChild(div);
             });
             fur2Top.forEach(top => {
@@ -367,6 +350,7 @@ function scaleAmount(item, num) {
                 div.className = 'fur2';
                 div.style.top = `${top}px`;
                 div.style.left = `${left}px`;
+                div.style.backgroundColor = currentColor;
                 item.appendChild(div);
             });
         }
@@ -503,6 +487,7 @@ let rgba2 = [];
 let colorX = null, colorY = null;
 let gradient = 5;
 let startTime, totalTime;
+let currJacketCol = {r: 227, g: 227, b: 227};
 
 document.addEventListener('DOMContentLoaded', function() {
     deselectedSidebar();
@@ -513,7 +498,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const colorCtx = colorCanvas.getContext('2d');
     const jacketImg = document.getElementById('jacket-front');
     const colorImg = document.getElementById('color-wheel');
-    const jacketColSelect =  document.getElementById('jacketcol');
+    //const jacketColSelect =  document.getElementById('jacketcol');
+    const jacketColCanvas = document.getElementById('jacketColCanvas');
+    const jacketColCtx = jacketColCanvas.getContext('2d');
+    const jacketColImg = document.getElementById('jacket-col-wheel');
+    let jacketRgba = [227, 227, 227];
+    let jacketColX = null, jacketColY = null;
+    let jacketGradient = 5;
+    if (jacketColImg.complete) {
+        jacketColCtx.drawImage(jacketColImg, 0, 0, jacketColCanvas.width, jacketColCanvas.height);
+    } else {
+        jacketColImg.onload = function() {
+            jacketColCtx.drawImage(jacketColImg, 0, 0, jacketColCanvas.width, jacketColCanvas.height);
+        };
+    }
+    drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, currJacketCol);
+    //jacket color wheel selection
+    jacketColCanvas.addEventListener('click', function(e) {
+        const rect = jacketColCanvas.getBoundingClientRect();
+        jacketColX = e.clientX - rect.left;
+        jacketColY = e.clientY - rect.top;
+        const imgData = jacketColCtx.getImageData(jacketColX, jacketColY, 1, 1).data;
+        if (imgData[3] !== 0) {
+            jacketRgba = [imgData[0], imgData[1], imgData[2]];
+            jacketColCtx.clearRect(0, 0, jacketColCanvas.width, jacketColCanvas.height);
+            jacketColCtx.drawImage(jacketColImg, 0, 0, jacketColCanvas.width, jacketColCanvas.height);
+            jacketColCtx.beginPath();
+            jacketColCtx.arc(jacketColX, jacketColY, 5, 0, 2 * Math.PI);
+            jacketColCtx.strokeStyle = 'black';
+            jacketColCtx.stroke();
+            updateJacketCol();
+            saveState();
+            logAction('changed_jacket_col', `r:${imgData[0]}, g:${imgData[1]}, b:${imgData[2]}`);
+        }
+    });
+    //jacket gradient selection
+    document.getElementById('jacket-col-range').addEventListener('input', function(e) {
+        jacketGradient = parseInt(e.target.value);
+        updateJacketCol();
+        saveState();
+        logAction('changed_jacket_col', `r:${currJacketCol.r}, g:${currJacketCol.g}, b:${currJacketCol.b}`);
+    });
+    function updateJacketCol() {
+        let color2 = null;
+        let ratio = null;
+        if (jacketGradient <= 5) {
+            ratio = jacketGradient/5;
+            color2 = [Math.round(255+(jacketRgba[0]-255)*ratio), Math.round(255+(jacketRgba[1]-255)*ratio), Math.round(255+(jacketRgba[2]-255)*ratio)];
+        } else {
+            ratio = (jacketGradient-5)/5;
+            color2 = [Math.round(jacketRgba[0]*(1-ratio)), Math.round(jacketRgba[1]*(1-ratio)), Math.round(jacketRgba[2]*(1-ratio))];
+        }
+        currJacketCol = {r: color2[0], g: color2[1], b: color2[2]};
+        const currentImg = currView === 'front' ? jacketImg : document.getElementById('jacket-back');
+        drawCanvasImage(currentImg, jacketCtx, jacketCanvas, currJacketCol);
+    }
     function drawCanvasImage(img, ctx, canvas, jacketCol=null) {
         if (img.complete) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -531,8 +570,10 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
     }
-    drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
-    jacketColSelect.addEventListener('input', function() {
+    //drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
+    drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, currJacketCol);
+    drawCanvasImage(jacketColImg, jacketColCtx, jacketColCanvas, null);
+    /*jacketColSelect.addEventListener('input', function() {
         const front = document.getElementById('jacket-front');
         const back = document.getElementById('jacket-back');
         if (currView == 'front') {
@@ -541,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             drawCanvasImage(back, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
         }
         logAction('changed_jacket_col', `r:${hexToRgb(jacketColSelect.value).r}, g:${hexToRgb(jacketColSelect.value).g}, b:${hexToRgb(jacketColSelect.value).b}`);
-    });
+    });*/
     drawCanvasImage(colorImg, colorCtx, colorCanvas, null);
     //color selecting functionality
     colorCanvas.addEventListener('click', function(e) {
@@ -886,11 +927,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 radioValue = null;
             }
+            selectedItem.setAttribute('data-speed', updateSpeed(this.value));
+            selectedItem.speed = this.value;
             saveState();
             logAction('adjusted_slider', {itemID: selectedItem.id, slider: this.value});
             saveItemSelections(selectedItem.id, radioValue, this.value, document.getElementById("custom-input").value, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, selectedItem.cyoName);
-            selectedItem.setAttribute('data-speed', updateSpeed(this.value));
-            selectedItem.speed = this.value;
             if (flashingItems.has(selectedItem)) {
                 flashAnimation(selectedItem, selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-'));
             }
@@ -1370,9 +1411,11 @@ function duplicate(item=null) {
         const jacketCtx = jacketCanvas.getContext('2d');
         var imgData = jacketCtx.getImageData(parseInt(clonedItem.style.left)-130, parseInt(clonedItem.style.top), 1, 1);
         var rgba = imgData.data;
-        if (rgba[3] == 0) {
-            return;
-        }
+        if (rgba[3] == 0) return;
+        clonedItem.setAttribute("draggable", "true");
+        clonedItem.addEventListener('dragstart', drag);
+        clonedItem.addEventListener('dragover', dragOver);
+        clonedItem.addEventListener('drop', drop);
         dropArea.appendChild(clonedItem);
         if (currView === 'front') {
             frontItems.push(clonedItem);
@@ -1467,7 +1510,7 @@ function saveState() {
             let view = isFrontItem ? 'front' : 'back';
             if (visibleItems.includes(item)) view = currView;
             const settings = itemSelections[view]?.[item.id] ? { ...itemSelections[view][item.id] } : {};
-            settings.sliderValue = parseFloat(item.getAttribute('data-speed')) || item.speed || 3;
+            settings.sliderValue = item.speed || 3;
             settings.userInput = item.userinput;
             settings.rotation = parseFloat(item.getAttribute('data-rotation')) || item.rotation || 0;
             settings.scale = parseFloat(item.getAttribute('data-size')) || item.scale || 1;
@@ -1476,6 +1519,10 @@ function saveState() {
             settings.rgba2 = [...rgba2];
             settings.gradient = gradient;
             settings.itemColor = item.getAttribute('data-flashing-color') || item.color;
+            settings.cursorX = parseFloat(item.getAttribute('data-cursorX')) || 0;
+            settings.cursorY = parseFloat(item.getAttribute('data-cursorY')) || 0;
+            settings.cloneX = item.getAttribute('data-cloneX');
+            settings.cloneY = item.getAttribute('data-cloneY');
             itemSelections[view][item.id] = settings;
             return {
                 id: item.id,
@@ -1526,8 +1573,14 @@ function loadState(state) {
         newItem.innerHTML = data.html;
         newItem.setAttribute('data-flashing-color', data.flashingColor);
         newItem.setAttribute('data-speed', data.speed);
+        if (data.settings.cursorX != undefined) newItem.setAttribute('data-cursorX', data.settings.cursorX);
+        if (data.settings.cursorY != undefined) newItem.setAttribute('data-cursorY', data.settings.cursorY);
+        if (data.settings.cloneX != undefined) newItem.setAttribute('data-cloneX', data.settings.cloneX);
+        if (data.settings.cloneY != undefined) newItem.setAttribute('data-cloneY', data.settings.cloneY);
         newItem.setAttribute("draggable", "true");
-        newItem.ondragstart = (e) => drag(e);
+        newItem.addEventListener('dragstart', drag);
+        newItem.addEventListener('dragover', dragOver);
+        newItem.addEventListener('drop', drop);
         dropArea.appendChild(newItem);
         if (data.view == 'front') {
             frontItems.push(newItem);
@@ -1544,22 +1597,6 @@ function loadState(state) {
             newItem.userinput = data.settings.userInput;
             newItem.color = data.settings.itemColor;
             newItem.scale = data.settings.scale;
-            if (data.settings.cyoName && newItem.id.startsWith('other')) {
-                const cyoMiddleTxt = document.createElement('div');
-                cyoMiddleTxt.className = 'cyo-text';
-                cyoMiddleTxt.style.position = 'absolute';
-                cyoMiddleTxt.style.top = '50%';
-                cyoMiddleTxt.style.left = '50%';
-                cyoMiddleTxt.style.transform = 'translate(-50%, -50%)';
-                cyoMiddleTxt.style.textAlign = 'center';
-                cyoMiddleTxt.style.fontSize = '12px';
-                cyoMiddleTxt.style.fontWeight = 'bold';
-                cyoMiddleTxt.style.color = 'white';
-                cyoMiddleTxt.style.pointerEvents = 'none';
-                cyoMiddleTxt.style.webkitTextStroke = '0.5px black';
-                cyoMiddleTxt.textContent = data.settings.cyoName.substring(0, 5);
-                newItem.appendChild(cyoMiddleTxt);
-            }
             if (data.settings.rotation != undefined || data.settings.scale != undefined) {
                 const rotation = data.settings.rotation || 0;
                 const scale = data.settings.scale || 1;
@@ -1611,16 +1648,15 @@ function loadState(state) {
                 if (radio) radio.checked = true;
             }
             const slider = document.getElementById('speed-range');
-            if (slider && itemToSelect.id.startsWith('battery')) {
-                const bars = Array.from(itemToSelect.querySelectorAll('.battery-bar')).filter(bar => bar.style.opacity == '1').length;
-                slider.value = bars || 3;
-            } else if (slider && itemToSelect.getAttribute('data-speed')) {
-                const speed = parseInt(itemToSelect.getAttribute('data-speed'));
-                if (speed >= 700) slider.value = 1;
-                else if (speed >= 550) slider.value = 2;
-                else if (speed >= 400) slider.value = 3;
-                else if (speed >= 250) slider.value = 4;
-                else slider.value = 5;
+            if (slider) {
+                if (itemToSelect.id.startsWith('battery')) {
+                    const bars = Array.from(itemToSelect.querySelectorAll('.battery-bar')).filter(bar => bar.style.opacity == '1').length;
+                    slider.value = bars || 3;
+                    document.getElementById('value').innerHTML = bars || 3;
+                } else {
+                    slider.value = itemToSelect.speed || 3;
+                    document.getElementById('value').innerHTML = itemToSelect.speed || 3;
+                }
             }
         } else {
             deselectedSidebar();
@@ -1678,7 +1714,8 @@ async function saveFile() {
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
         csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${frontItems[i].scale},${backItems[i].x},${backItems[i].y}\n`;
     }
-    csvFile += `JACKET COLOR: ${document.getElementById('jacketcol').value}`;
+    //csvFile += `JACKET COLOR: ${document.getElementById('jacketcol').value}`;
+    csvFile += `"JACKET COLOR: rgb(${currJacketCol.r},${currJacketCol.g},${currJacketCol.b})"`;
     csvFile += `\nTOTAL TIME: ${totalTime}`;
     let keystrokeFile = "Timestamp,Action,Info\n";
     for (const i of keystrokeLog) {
