@@ -1188,7 +1188,7 @@ function deselectedSidebar() {
 function isTransparent(item) {
     const jacketCanvas = document.getElementById('jacketCanvas');
     const jacketCtx = jacketCanvas.getContext('2d');
-    var imgData = jacketCtx.getImageData(parseInt(item.style.x)-130, parseInt(item.style.y), 1, 1);
+    var imgData = jacketCtx.getImageData(parseInt(item.style.x)-285, parseInt(item.style.y)-45, 1, 1);
     var rgba = imgData.data;
     return rgba[3] == 0;
 }
