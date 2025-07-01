@@ -325,6 +325,7 @@ function scaleAmount(item, num) {
         }
         if (rectangle && !item.contains(rectangle)) item.insertBefore(rectangle, item.firstChild);
         selectItem(item);
+        item.amount = newLights;
         logAction('scaled_item', {itemID: item.id, type: 'amount', amount: newLights});
     } else if (item.id.startsWith('fur-patch')) {
         const currFur = parseInt(item.getAttribute('data-amount')) || 5;
@@ -355,6 +356,7 @@ function scaleAmount(item, num) {
             });
         }
         selectItem(item);
+        item.amount = newFur;
         logAction('scaled_item', {itemID: item.id, type: 'amount', amount: newFur});
     }
 }
@@ -713,6 +715,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (currView == "front" ? frontItems : backItems).push(furClonedNode);
                 clickItem.style.display = 'none';
                 clickOpen = false;
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-light1') {
                 selectedColor = defaultColor;
                 colorX = null, colorY = null;
@@ -734,9 +738,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('input[name="item-movement"][value="Flash ind"]').dispatchEvent(new Event('change'));
                 clickedItem.setAttribute('data-speed', 400);
                 flashAnimation(clickedItem);
-                clonedItem.addEventListener('click', function() {
+                clickedItem.addEventListener('click', function() {
                     selectItem(clickedItem);
                 });
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-light2') {
                 selectedColor = defaultColor;
                 colorX = null, colorY = null;
@@ -762,6 +768,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 lightClonedNode.addEventListener('click', function() {
                     selectItem(lightClonedNode);
                 });
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-battery') {
                 const ogBattery = document.querySelector('.option #battery');
                 const batteryClonedNode = ogBattery.cloneNode(true);
@@ -782,6 +790,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (currView == "front" ? frontItems : backItems).push(batteryClonedNode);
                 clickItem.style.display = 'none';
                 clickOpen = false;
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-display') {
                 clickedItem = document.getElementById('display').cloneNode(true);
                 clickedItem.id = `${'display'}-${Date.now()}`;
@@ -796,6 +806,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (currView == "front" ? frontItems : backItems).push(clickedItem);
                 clickItem.style.display = 'none';
                 clickOpen = false;
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-speaker') {
                 const ogSpeaker = document.querySelector('.option #speaker');
                 const speakerClonedNode = ogSpeaker.cloneNode(true);
@@ -811,6 +823,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 (currView == "front" ? frontItems : backItems).push(speakerClonedNode);
                 clickItem.style.display = 'none';
                 clickOpen = false;
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             } else if (e.target.id == 'click-other') {
                 clickedItem = document.getElementById('other').cloneNode(true);
                 clickedItem.id = `${'other'}-${Date.now()}`;
@@ -827,6 +841,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 clickOpen = false;
                 document.querySelector('.popup-cyo').classList.add('show');
                 resetCYOPopup();
+                saveState();
+                logAction('propagated_item', {itemID: item.id, x: item.x, y: item.y});
             }
         });
     });
@@ -883,6 +899,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     furAnimation(selectedItem, 'stick-up');
                 } else if (radio.value.includes('Both')) {
                     furAnimation(selectedItem, 'both');
+                } else if (radio.value.includes('Roll')) {
+                    furAnimation(selectedItem, 'roll');
                 }
                 selectedItem.radioSelection = this.value;
                 selectedItem.speed = sliderVal;
@@ -1104,6 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cyoMiddleTxt.textContent = cyoFullName.substring(0, 5);
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, selectedItem.userinput, selectedItem.getAttribute('data-color'), colorX, colorY, gradient, this.value);
             selectedItem.cyoName = document.getElementById("cyo-name2").value;
+            saveState();
             logAction('changed_item_name', {itemID: selectedItem.id, input: cyoFullName});
         }
     });
@@ -1176,8 +1195,8 @@ function isTransparent(item) {
 
 function clickPositionItem(item, xClick, yClick, area) {
     const rect = area.getBoundingClientRect();
-    const xVal = xClick-item.offsetWidth/2;//rect.left-item.offsetWidth/2;
-    const yVal = yClick-item.offsetHeight/2;//rect.top-item.offsetHeight/2;
+    const xVal = xClick+140-item.offsetWidth/2;//rect.left-item.offsetWidth/2;
+    const yVal = yClick+55-item.offsetHeight/2;//rect.top-item.offsetHeight/2;
     item.style.position = 'absolute';
     item.style.left = `${xVal}px`;
     item.style.top = `${yVal}px`;
@@ -1373,6 +1392,56 @@ function furAnimation(item, shakePattern) {
             });
             direction *= -1;
         }, currSpeed);
+    } else if (shakePattern == 'roll') {
+        const topFur = [];
+        const middleFur = [];
+        const bottomFur = [];
+        furs.forEach(fur => {
+            if (parseInt(fur.style.top) == 0) {
+                topFur.push(fur);
+            } else if (parseInt(fur.style.top) == 10) {
+                middleFur.push(fur);
+            } else {
+                bottomFur.push(fur);
+            }
+        });
+        let step = 0, pauseCt = 0;
+        const maxSteps = 6;
+        let direction = 1;
+        item.shakeInterval = setInterval(() => {
+            if (direction == -1 && pauseCt < 3) {
+                pauseCt++;
+                return;
+            }
+            step += direction;
+            let topAngle = 10;
+            let middleAngle = -10;
+            let bottomAngle = 10;
+            if (step == 1) {
+                topAngle += 9;
+            } else if (step == 2) {
+                topAngle += 19;
+                middleAngle += 9;
+            } else if (step == 3) {
+                middleAngle += 25;
+                bottomAngle += 5;
+            } else if (step == 4) {
+                middleAngle += 15;
+                bottomAngle += 15;
+            } else if (step == 5) {
+                bottomAngle += 5;
+            }
+            topFur.forEach(fur => fur.style.transform = `rotate(${topAngle}deg)`);
+            middleFur.forEach(fur => fur.style.transform = `rotate(${middleAngle}deg)`);
+            bottomFur.forEach(fur => fur.style.transform = `rotate(${bottomAngle}deg)`);
+            if (step >= maxSteps) {
+                direction = -1;
+                step = 0;
+                pauseCt = 0;
+            } else if (step <= 0 && direction == -1) {
+                direction = 1;
+            }
+        }, currSpeed/2);
     }
 }
 function stopFur(item) {
@@ -1490,12 +1559,14 @@ function undo() {
     const lastState = undoStack.pop();
     redoStack.push(lastState);
     loadState(undoStack[undoStack.length - 1]);
+    logAction('undo');
 }
 function redo() {
     if (redoStack.length == 0) return;
     const redoState = redoStack.pop();
     undoStack.push(redoState);
     loadState(redoState);
+    logAction('redo');
 }
 function saveState() {
     const dropArea = document.getElementById("jacketbox");
@@ -1514,6 +1585,7 @@ function saveState() {
             settings.userInput = item.userinput;
             settings.rotation = parseFloat(item.getAttribute('data-rotation')) || item.rotation || 0;
             settings.scale = parseFloat(item.getAttribute('data-size')) || item.scale || 1;
+            settings.amount = parseFloat(item.getAttribute('data-amount')) || item.amount || 1;
             settings.colorX = colorX;
             settings.colorY = colorY;
             settings.rgba2 = [...rgba2];
@@ -1571,8 +1643,8 @@ function loadState(state) {
         newItem.className = data.className;
         newItem.style.cssText = data.style;
         newItem.innerHTML = data.html;
-        newItem.setAttribute('data-flashing-color', data.flashingColor);
-        newItem.setAttribute('data-speed', data.speed);
+        newItem.setAttribute('data-flashing-color', data.flashingColor || defaultColor);
+        newItem.setAttribute('data-speed', data.speed || 400);
         if (data.settings.cursorX != undefined) newItem.setAttribute('data-cursorX', data.settings.cursorX);
         if (data.settings.cursorY != undefined) newItem.setAttribute('data-cursorY', data.settings.cursorY);
         if (data.settings.cloneX != undefined) newItem.setAttribute('data-cloneX', data.settings.cloneX);
@@ -1597,13 +1669,16 @@ function loadState(state) {
             newItem.userinput = data.settings.userInput;
             newItem.color = data.settings.itemColor;
             newItem.scale = data.settings.scale;
-            if (data.settings.rotation != undefined || data.settings.scale != undefined) {
+            newItem.amount = data.settings.amount;
+            if (data.settings.rotation != undefined || data.settings.scale != undefined || data.settings.amount != undefined) {
                 const rotation = data.settings.rotation || 0;
                 const scale = data.settings.scale || 1;
+                const amount = data.settings.amount || 1;
                 newItem.rotation = rotation;
                 newItem.setAttribute('data-size', scale);
                 newItem.setAttribute('data-rotation', rotation);
-                newItem.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+                newItem.setAttribute('data-amount', amount);
+                newItem.style.transform = `scale(${scale}) rotate(${rotation}deg) amount(${amount})`;
             }
             if (data.settings.radioSelection) {
                 const radioPattern = data.settings.radioSelection.toLowerCase();
@@ -1618,14 +1693,16 @@ function loadState(state) {
                     } else {
                         flashAnimation(newItem);
                     }
-                } else if (radioPattern.includes('shake') || radioPattern.includes('stick') || radioPattern.includes('both')) {
+                } else if (radioPattern.includes('shake') || radioPattern.includes('stick') || radioPattern.includes('both') || radioPattern.includes('roll')) {
                     furAnimItems.add(newItem);
                     if (radioPattern.includes('both')) {
                         furAnimation(newItem, 'both');
                     } else if (radioPattern.includes('stick')) {
                         furAnimation(newItem, 'stick-up');
-                    } else {
+                    } else if (radioPattern.includes('shake')) {
                         furAnimation(newItem, 'shake');
+                    } else {
+                        furAnimation(newItem, 'roll');
                     }
                 }
             }
@@ -1707,12 +1784,12 @@ async function saveFile() {
     const blob2 = await new Promise(resolve => canvas2.toBlob(resolve));
     const participantNum = document.getElementById('participant').value;
     const videoNum = document.getElementById('videoNum').value;
-    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Scale,X Position,Y Position\n";
+    var csvFile = "Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,X Position,Y Position\n";
     for (let i = 0; i < frontItems.length; i++) { //items on jacket front
-        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},"${frontItems[i].userinput}","${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].scale},${frontItems[i].x},${frontItems[i].y}\n`;
+        csvFile += `front,${frontItems[i].id},${frontItems[i].radioSelection},${frontItems[i].speed},"${frontItems[i].userinput}","${frontItems[i].color}",${frontItems[i].rotation},${frontItems[i].scale},${frontItems[i].amount},${frontItems[i].x},${frontItems[i].y}\n`;
     }
     for (let i = 0; i < backItems.length; i++) { //items on jacket back
-        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${frontItems[i].scale},${backItems[i].x},${backItems[i].y}\n`;
+        csvFile += `back,${backItems[i].id},${backItems[i].radioSelection},${backItems[i].speed},"${backItems[i].userinput}","${backItems[i].color}",${backItems[i].rotation},${frontItems[i].scale},${backItems[i].amount},${backItems[i].x},${backItems[i].y}\n`;
     }
     //csvFile += `JACKET COLOR: ${document.getElementById('jacketcol').value}`;
     csvFile += `"JACKET COLOR: rgb(${currJacketCol.r},${currJacketCol.g},${currJacketCol.b})"`;
