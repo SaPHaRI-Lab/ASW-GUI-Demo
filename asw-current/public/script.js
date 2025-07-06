@@ -213,7 +213,7 @@ function selectItem(item) {
     } else if (item.id.startsWith('display')) {
         document.getElementById('movement-title').textContent = "Display";
         document.getElementById('movement-title').style.marginLeft = "45%";
-        document.getElementById('custom-title').textContent = "Write my own:";
+        document.getElementById('custom-title').textContent = "What should it display?";
         document.getElementById('speed-title').textContent = "Speed";
         document.getElementById('speed-title').style.marginLeft = "";
     } else if (item.id.startsWith('battery')) {
@@ -1155,6 +1155,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('save-button').addEventListener('click', function() {
         submitPopup();
     });
+    document.getElementById('close-save').addEventListener('click', function() {
+        document.querySelector('.popup-submit').style.display = 'none';
+        document.querySelector('.popup').style.display = 'none';
+    });
     //clicking to deselect
     document.querySelector('.container').addEventListener('click', function(e) {
         const selectedItem = document.querySelector('.dropped-item.selected-item');
@@ -1493,7 +1497,8 @@ function duplicate(item=null) {
             backItems.push(clonedItem);
             clonedItem.style.display = 'block';
         }
-        const ogCustomizations = itemSelections[currView][selectedItem.id];
+        const ogView = frontItems.includes(selectedItem) ? 'front' : 'back';
+        const ogCustomizations = itemSelections[ogView][selectedItem.id];
         if (ogCustomizations) {
             itemSelections[currView][clonedItem.id] = {...ogCustomizations};
             clonedItem.radioSelection = ogCustomizations.radioSelection;
@@ -1506,6 +1511,10 @@ function duplicate(item=null) {
             clonedItem.y = yVal;
             clonedItem.setAttribute('data-cloneX', xVal);
             clonedItem.setAttribute('data-cloneY', yVal);
+            if (ogCustomizations.radioSelection) {
+                const radio = document.querySelector(`input[name="item-movement"][value="${ogCustomizations.radioSelection}"]`);
+                if (radio) radio.checked = true;
+            }
         } else {
             clonedItem.radioSelection = null;
             clonedItem.speed = null;
@@ -1530,12 +1539,12 @@ function duplicate(item=null) {
         clonedItem.setAttribute('data-flashing-color', selectedItem.getAttribute('data-flashing-color'));
         if (flashingItems.has(selectedItem)) {
             flashingItems.add(clonedItem);
-            let formattedRadioSelection = clonedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
+            let formattedRadioSelection = selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
             flashAnimation(clonedItem, formattedRadioSelection);
         }
         if (furAnimItems.has(selectedItem)) {
             furAnimItems.add(clonedItem);
-            let formattedRadioSelection = clonedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
+            let formattedRadioSelection = selectedItem.radioSelection.toLowerCase().replace(/\s+/g, '-');
             furAnimation(clonedItem, formattedRadioSelection);
         }
         selectItem(clonedItem);
@@ -1823,4 +1832,7 @@ async function saveFile() {
 function submitPopup() {
     document.getElementById('save-button').disabled = true;
     document.getElementById('save-button').style.opacity = 0.5;
+    document.querySelector('.popup-submit').style.display = 'block';
+    document.querySelector('.popup').style.display = 'block';
+    document.querySelector('.popup-instructions').style.display = 'none';
 }
