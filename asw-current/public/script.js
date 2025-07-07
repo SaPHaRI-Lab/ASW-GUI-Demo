@@ -356,6 +356,7 @@ function scaleAmount(item, num) {
             });
         }
         selectItem(item);
+        if (furAnimItems.has(item)) furAnimation(item, item.radioSelection?.toLowerCase().replace(/\s+/g, '-'));
         item.amount = newFur;
         logAction('scaled_item', {itemID: item.id, type: 'amount', amount: newFur});
     }
@@ -1371,8 +1372,6 @@ function furAnimation(item, shakePattern) {
         });
         let direction = 1;
         item.shakeInterval = setInterval(() => {
-            /*item.style.transform = `rotate(${5*direction}deg)`;
-            direction *= -1;*/
             furs.forEach(fur => {
                 if (fur.classList.contains('fur1')) {
                     fur.style.transform = `rotate(${7*direction}deg)`;
@@ -1409,43 +1408,22 @@ function furAnimation(item, shakePattern) {
                 bottomFur.push(fur);
             }
         });
-        let step = 0, pauseCt = 0;
-        const maxSteps = 6;
-        let direction = 1;
+        middleFur.forEach(fur => fur.style.transform = `rotate(10deg)`);
+        let step = 0, direction = 1;
+        const maxSteps = 20;
         item.shakeInterval = setInterval(() => {
-            if (direction == -1 && pauseCt < 3) {
-                pauseCt++;
-                return;
-            }
+            const waveAmount = (step / maxSteps) * 40;
+            const newAngle = 10 - waveAmount;
+            topFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
+            middleFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
+            bottomFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
             step += direction;
-            let topAngle = 10;
-            let middleAngle = -10;
-            let bottomAngle = 10;
-            if (step == 1) {
-                topAngle += 9;
-            } else if (step == 2) {
-                topAngle += 19;
-                middleAngle += 9;
-            } else if (step == 3) {
-                middleAngle += 25;
-                bottomAngle += 5;
-            } else if (step == 4) {
-                middleAngle += 15;
-                bottomAngle += 15;
-            } else if (step == 5) {
-                bottomAngle += 5;
-            }
-            topFur.forEach(fur => fur.style.transform = `rotate(${topAngle}deg)`);
-            middleFur.forEach(fur => fur.style.transform = `rotate(${middleAngle}deg)`);
-            bottomFur.forEach(fur => fur.style.transform = `rotate(${bottomAngle}deg)`);
             if (step >= maxSteps) {
                 direction = -1;
-                step = 0;
-                pauseCt = 0;
             } else if (step <= 0 && direction == -1) {
                 direction = 1;
             }
-        }, currSpeed/2);
+        }, currSpeed/10);
     }
 }
 function stopFur(item) {
@@ -1594,7 +1572,7 @@ function saveState() {
             settings.userInput = item.userinput;
             settings.rotation = parseFloat(item.getAttribute('data-rotation')) || item.rotation || 0;
             settings.scale = parseFloat(item.getAttribute('data-size')) || item.scale || 1;
-            settings.amount = parseFloat(item.getAttribute('data-amount')) || item.amount || 1;
+            settings.amount = parseFloat(item.getAttribute('data-amount')) || item.amount || 5;
             settings.colorX = colorX;
             settings.colorY = colorY;
             settings.rgba2 = [...rgba2];

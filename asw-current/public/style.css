@@ -188,11 +188,12 @@ body {
 
 .customization {
   width: 10%;
-  height: 100vh;
-  padding: 120px;
+  /*height: 100vh;
+  padding: 120px;*/
+  height: calc(100vh - 200px);
+  padding: 95px 120px 150px; 
   position: absolute;
   right: 0;
-  padding-top: 95px;
   overflow-y: auto;
   overflow-x: hidden;
 }
