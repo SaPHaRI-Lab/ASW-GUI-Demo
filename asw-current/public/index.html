@@ -41,6 +41,11 @@
           <div class="click-item" id="click-speaker">Speaker</div>
           <div class="click-item" id="click-other">Other</div>
         </div>
+        <div class="item-menu" style="display: none;">
+          <div class="item-menu1" id="click-duplicate">Duplicate</div>
+          <div class="item-menu1" id="click-move">Move to other side</div>
+          <div class="item-menu1" id="click-del">Delete</div>
+        </div>
       </div>
     </div>
     <div class="popup-info">
@@ -193,6 +198,9 @@
           <img src="colorselect.png" id="color-wheel" draggable="false" style="display: none;"/>
           <canvas id="colorCanvas" class="color-canvas" width="120" height="110" draggable="false"></canvas>
           <input type="range" min="0" max="10" value="5" class="color-slider" id="color-range">
+        </div>
+        <div class="rgb-input">
+          <input type="text" id="rgb-val" placeholder="rgb(128,128,128)" />
         </div>
       </div>
       <div class="speed">

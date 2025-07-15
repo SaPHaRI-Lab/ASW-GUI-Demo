@@ -153,6 +153,47 @@ function positionItem(item, e, area) {
     item.y = parseInt(item.style.top);//yVal;
 }
 
+let isMoving = false;
+let moveTarget = null;
+let moveOffsetX = 0;
+let moveOffsetY = 0;
+document.addEventListener('mousedown', function(e) {
+    const item = e.target.closest('.dropped-item');
+    if (!item) return;
+    if (e.target.closest('.rotate-circle')) return;
+    isMoving = true;
+    moveTarget = item;
+    const rect = item.getBoundingClientRect();
+    moveOffsetX = e.clientX - rect.left;
+    moveOffsetY = e.clientY - rect.top;
+    selectItem(item);
+    e.preventDefault();
+});
+document.addEventListener('mousemove', function(e) {
+    if (!isMoving || !moveTarget) return;
+    const dropArea = document.getElementById('jacketbox');
+    const rect = dropArea.getBoundingClientRect();
+    const newX = e.clientX - rect.left - moveOffsetX;
+    const newY = e.clientY - rect.top - moveOffsetY;
+    const jacketCtx = document.getElementById('jacketCanvas').getContext('2d');
+    const imgData = jacketCtx.getImageData(e.clientX-rect.left-160, e.clientY-rect.top, 1, 1);
+    if (imgData.data[3] !== 0) {
+        moveTarget.style.left = `${newX}px`;
+        moveTarget.style.top = `${newY}px`;
+        moveTarget.x = newX;
+        moveTarget.y = newY;
+    }
+});
+document.addEventListener('mouseup', function() {
+    if (!isMoving || !moveTarget) return;
+    moveTarget.setAttribute('data-cloneX', moveTarget.style.left);
+    moveTarget.setAttribute('data-cloneY', moveTarget.style.top);
+    logAction('moved_item', {itemID: moveTarget.id, x: moveTarget.x, y: moveTarget.y});
+    saveState();
+    isMoving = false;
+    moveTarget = null;
+});
+
 function selectItem(item) {
     document.querySelectorAll('.dropped-item').forEach(item => {
         item.classList.remove('selected-item');
@@ -290,9 +331,7 @@ function getCurrAngle(item) {
     } else {
         transform = 'none';
     }
-    if (transform == 'none') {
-        return 0;
-    }
+    if (transform == 'none') return 0;
     const matrix = transform.replace('matrix(', '').replace(')', '').split(', ');
     return Math.atan2(parseFloat(matrix[1]),parseFloat(matrix[0]));
 }
@@ -368,7 +407,7 @@ var itemSelections = {
     back: {}
 };
 function saveItemSelections(itemID, radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName='') {
-    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName, rgba2: [...rgba2]};
+    itemSelections[currView][itemID] = {radioSelection, sliderValue, userInput, itemColor, colorX, colorY, gradient, cyoName, rgba2: [...rgba2], rgbTxt: document.getElementById('rgb-val').value};
 }
 function loadItemSelections(itemID) {
     const selection = itemSelections[currView][itemID];
@@ -400,12 +439,21 @@ function loadItemSelections(itemID) {
                 cyoNameBox.value = '';
             }
         }
+        rgba2 = [128, 128, 128];
+        document.getElementById('rgb-val').value = 'rgb(128,128,128)';
         if (selection.itemColor) {
             const colorCanvas = document.getElementById('colorCanvas');
             const colorCtx = colorCanvas.getContext('2d');
             const colorImg = document.getElementById('color-wheel');
             colorCtx.clearRect(0,0,colorCanvas.width,colorCanvas.height);
             colorCtx.drawImage(colorImg,0,0,colorCanvas.width,colorCanvas.height);
+            const rgbMatch = selection.itemColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (rgbMatch) {
+                document.getElementById('rgb-val').value = `rgb(${rgbMatch[1]},${rgbMatch[2]},${rgbMatch[3]})`;
+                rgba2[0] = parseInt(rgbMatch[1]);
+                rgba2[1] = parseInt(rgbMatch[2]);
+                rgba2[2] = parseInt(rgbMatch[3]);
+            }
             if (selection.colorX != null && selection.colorY != null) {
                 colorX = selection.colorX;
                 colorY = selection.colorY;
@@ -457,6 +505,7 @@ function resetColor() {
     colorX = null;
     colorY = null;
     colorRange.style.background = `linear-gradient(to right, white, rgba(128, 128, 128, 1), black)`;
+    document.getElementById('rgb-val').value = 'rgb(128,128,128)';
 }
 function resetCYOPopup() {
     if (document.getElementById('cyo-name')) document.getElementById('cyo-name').value = '';
@@ -465,11 +514,7 @@ function resetCYOPopup() {
 }
 function hexToRgb(hex) {
     const hexVal = parseInt(hex.slice(1), 16);
-    return {
-        r: (hexVal>>16) & 255,
-        g: (hexVal>>8) & 255,
-        b: hexVal & 255
-    };
+    return { r: (hexVal>>16) & 255, g: (hexVal>>8) & 255, b: hexVal & 255 };
 }
 function changeJacketCol(ctx, canvas, jacketCol) {
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -601,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
             rgba2[1] = rgba[1];
             rgba2[2] = rgba[2];
             let selectedColor = updateShade(gradient);
+            document.getElementById('rgb-val').value = `rgb(${Math.round(rgba2[0])},${Math.round(rgba2[1])},${Math.round(rgba2[2])})`;
             selectedItem = document.querySelector('.dropped-item.selected-item');
             if (selectedItem) {
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
@@ -657,6 +703,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedItem.setAttribute('data-flashing-color', selectedColor);
             }
             selectedItem.color = selectedColor;
+            const rgbMatch = selectedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (rgbMatch) {
+                document.getElementById('rgb-val').value = `rgb(${rgbMatch[1]},${rgbMatch[2]},${rgbMatch[3]})`;
+            }
             let radioValue;
             const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
             if (selectedRadio) {
@@ -669,9 +719,41 @@ document.addEventListener('DOMContentLoaded', function() {
             saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient, selectedItem.cyoName);
         }
     });
+    document.getElementById('rgb-val').addEventListener('input', function(e) {
+        const rgbMatch = this.value.match(/rgb\((\d+),(\d+),(\d+)\)/);
+        if (rgbMatch) {
+            const [_, r, g, b] = rgbMatch;
+            rgba2[0] = parseInt(r);
+            rgba2[1] = parseInt(g);
+            rgba2[2] = parseInt(b);
+            let selectedColor = updateShade(gradient);
+            const selectedItem = document.querySelector('.dropped-item.selected-item');
+            if (selectedItem) {
+                selectedItem.style.backgroundColor = selectedColor;
+                selectedItem.querySelectorAll('.circle, .rectangle, .rectangle2, .trapezoid, .fur1, .fur2').forEach(part => {
+                    part.style.backgroundColor = selectedColor;
+                });
+                if (selectedItem.classList.contains('battery')) {
+                    selectedItem.querySelectorAll('.battery-bar').forEach(bar => {
+                        bar.style.backgroundColor = selectedColor;
+                    });
+                }
+                if (flashingItems.has(selectedItem)) selectedItem.setAttribute('data-flashing-color', selectedColor);
+                selectedItem.color = selectedColor;
+                let radioValue;
+                const selectedRadio = document.querySelector('input[name="item-movement"]:checked');
+                if (selectedRadio) radioValue = selectedRadio.value;
+                saveState();
+                logAction('changed_color', {itemID: selectedItem.id, color: selectedColor});
+                saveItemSelections(selectedItem.id, radioValue, document.getElementById("speed-range").value, document.getElementById("custom-input").value, selectedColor, colorX, colorY, gradient, selectedItem.cyoName);
+            }
+        }
+    });
     //create item when clicking jacket
     let clickOpen = false;
+    let clickOpenItemMenu = false;
     const clickItem = document.querySelector('.click-create');
+    const itemMenu = document.querySelector('.item-menu');
     let lastClickX = 0;
     let lastClickY = 0;
     jacketCanvas.addEventListener('contextmenu', function(e) {
@@ -691,11 +773,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         e.stopPropagation();
     });
+    document.addEventListener('contextmenu', function(e) {
+        const item = e.target.closest('.dropped-item');
+        if (item) {
+            e.preventDefault();
+            const rect = jacketCanvas.getBoundingClientRect();
+            itemMenu.style.left = `${e.clientX-rect.left+170}px`;
+            itemMenu.style.top = `${e.clientY-rect.top+15}px`;
+            itemMenu.style.display = 'block';
+            itemMenu.dataset.itemId = item.id;
+            clickOpenItemMenu = true;
+        } else {
+            itemMenu.style.display = 'none';
+            clickOpenItemMenu = false;
+        }
+    });
     document.addEventListener('click', function(e) {
         if (!clickItem.contains(e.target) && clickOpen == true) {
             clickItem.style.display = 'none';
             clickOpen = false;
+        } else if (!itemMenu.contains(e.target) && clickOpenItemMenu == true) {
+            itemMenu.style.display = 'none';
+            clickOpenItemMenu = false;
         }
+    });
+    document.querySelectorAll('.item-menu').forEach(item1 => {
+        item1.addEventListener('click', function(e) {
+            const itemId = itemMenu.dataset.itemId;
+            const item = document.getElementById(itemId);
+            if (e.target.id == 'click-duplicate') {
+                if (item) {
+                    duplicate(item);
+                    itemMenu.style.display = 'none';
+                    clickOpenItemMenu = false;
+                    saveState();
+                }
+            } else if (e.target.id == 'click-move') {
+                if (item) {
+                    const currentArray = currView == 'front' ? frontItems : backItems;
+                    const targetArray = currView == 'front' ? backItems : frontItems;      
+                    const fromSide = currView == 'front' ? 'front' : 'back';
+                    const toSide = currView == 'front' ? 'back' : 'front';  
+                    const index = currentArray.findIndex(i => i.id == itemId);
+                    if (index != -1) {
+                        if (itemSelections[fromSide][itemId]) {
+                            itemSelections[toSide][itemId] = itemSelections[fromSide][itemId];
+                            delete itemSelections[fromSide][itemId];
+                        }
+                        currentArray.splice(index, 1);
+                        targetArray.push(item);
+                    }
+                    switchView();
+                    itemMenu.style.display = 'none';
+                    clickOpenItemMenu = false;
+                    saveState();
+                    logAction('moved_item_side', {itemID: itemId, from: currView == 'front' ? 'back' : 'front', to: currView });
+                }
+            } else if (e.target.id == 'click-del') {
+                if (item) {
+                    deleteItem();
+                    itemMenu.style.display = 'none';
+                    clickOpenItemMenu = false;
+                    saveState();
+                }
+            }
+        });
     });
     document.querySelectorAll('.click-item').forEach(item => {
         const dropArea = document.getElementById('jacketbox');
@@ -1200,8 +1342,8 @@ function isTransparent(item) {
 
 function clickPositionItem(item, xClick, yClick, area) {
     const rect = area.getBoundingClientRect();
-    const xVal = xClick+140-item.offsetWidth/2;//rect.left-item.offsetWidth/2;
-    const yVal = yClick+55-item.offsetHeight/2;//rect.top-item.offsetHeight/2;
+    const xVal = xClick-item.offsetWidth/2;//rect.left-item.offsetWidth/2;
+    const yVal = yClick-item.offsetHeight/2;//rect.top-item.offsetHeight/2;
     item.style.position = 'absolute';
     item.style.left = `${xVal}px`;
     item.style.top = `${yVal}px`;
