@@ -260,13 +260,13 @@ function selectItem(item) {
     } else if (item.id.startsWith('battery')) {
         document.getElementById('speed-title').textContent = "Battery Level";
         document.getElementById('speed-title').style.marginLeft = "17%";
-        document.getElementById('custom-title').textContent = "Write my own:";
+        document.getElementById('custom-title').textContent = "Write my own action:";
         document.getElementById('movement-title').textContent = "Action";
         document.getElementById('movement-title').style.marginLeft = "";
     } else {
         document.getElementById('movement-title').textContent = "Action";
         document.getElementById('movement-title').style.marginLeft = "";
-        document.getElementById('custom-title').textContent = "Write my own:";
+        document.getElementById('custom-title').textContent = "Write my own action:";
         document.getElementById('speed-title').textContent = "Speed";
         document.getElementById('speed-title').style.marginLeft = "";
     }
@@ -621,16 +621,6 @@ document.addEventListener('DOMContentLoaded', function() {
     //drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
     drawCanvasImage(jacketImg, jacketCtx, jacketCanvas, currJacketCol);
     drawCanvasImage(jacketColImg, jacketColCtx, jacketColCanvas, null);
-    /*jacketColSelect.addEventListener('input', function() {
-        const front = document.getElementById('jacket-front');
-        const back = document.getElementById('jacket-back');
-        if (currView == 'front') {
-            drawCanvasImage(front, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
-        } else {
-            drawCanvasImage(back, jacketCtx, jacketCanvas, hexToRgb(jacketColSelect.value));
-        }
-        logAction('changed_jacket_col', `r:${hexToRgb(jacketColSelect.value).r}, g:${hexToRgb(jacketColSelect.value).g}, b:${hexToRgb(jacketColSelect.value).b}`);
-    });*/
     drawCanvasImage(colorImg, colorCtx, colorCanvas, null);
     //color selecting functionality
     colorCanvas.addEventListener('click', function(e) {
@@ -1550,20 +1540,38 @@ function furAnimation(item, shakePattern) {
                 bottomFur.push(fur);
             }
         });
-        middleFur.forEach(fur => fur.style.transform = `rotate(10deg)`);
-        let step = 0, direction = 1;
-        const maxSteps = 20;
+        const rows = [topFur, middleFur, bottomFur];
+        let currRow = 0, direction = -1, angle = 10, holding = false;
         item.shakeInterval = setInterval(() => {
-            const waveAmount = (step / maxSteps) * 40;
-            const newAngle = 10 - waveAmount;
-            topFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
-            middleFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
-            bottomFur.forEach(fur => fur.style.transform = `rotate(${newAngle}deg)`);
-            step += direction;
-            if (step >= maxSteps) {
-                direction = -1;
-            } else if (step <= 0 && direction == -1) {
-                direction = 1;
+            if (holding) return;
+            angle += 5*direction;
+            rows[currRow].forEach(fur => {
+                fur.style.transform = `rotate(${angle}deg)`;
+            });
+            if (direction == -1 && angle <= -60) {
+                angle = -60;
+                if (currRow < rows.length-1) {
+                    currRow++;
+                    angle = 10;
+                } else {
+                    holding = true;
+                    setTimeout(() => {
+                        direction = 1;
+                        currRow = 0;
+                        angle = -60;
+                        holding = false;
+                    }, 150);
+                }
+            } else if (direction == 1 && angle >= 10) {
+                angle = 10;
+                if (currRow < rows.length-1) {
+                    currRow++;
+                    angle = -60;
+                } else {
+                    direction = -1;
+                    currRow = 0;
+                    angle = 10;
+                }
             }
         }, currSpeed/10);
     }
