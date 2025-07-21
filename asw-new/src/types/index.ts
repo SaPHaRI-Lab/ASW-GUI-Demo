@@ -38,6 +38,7 @@ export interface WearableItem {
   flashingColor?: string;
   view: 'front' | 'back';
   zIndex: number;
+  rotation?: number; // Rotation angle in degrees
 }
 
 export interface ColorSelection {

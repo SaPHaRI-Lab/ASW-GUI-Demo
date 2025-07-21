@@ -9,15 +9,36 @@ interface JacketCanvasProps {
 
 export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { jacketConfig, clearSelection } = useAppStore();
-  const { createItem, items, handleItemClick, moveItem, saveUndoState } = useDragAndDrop();
+  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem } = useAppStore();
+  const { createItem, moveItem, saveUndoState } = useDragAndDrop();
   
   // State for dragging existing items
   const [dragState, setDragState] = useState({
     isDragging: false,
     draggedItem: null as any,
-    offset: { x: 0, y: 0 }
+    offset: { x: 0, y: 0 },
+    initialPositions: new Map() as Map<string, { x: number, y: number }>,
+    hasMoved: false
   });
+
+  // State for rotation
+  const [rotationState, setRotationState] = useState({
+    isRotating: false,
+    rotatingItem: null as any,
+    startAngle: 0
+  });
+
+  // State for marquee selection
+  const [marqueeState, setMarqueeState] = useState({
+    isActive: false,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0
+  });
+
+  // Flag to prevent onClick after marquee selection
+  const [justCompletedMarquee, setJustCompletedMarquee] = useState(false);
 
   // Helper function to get item bounds
   const getItemBounds = useCallback((itemType: string) => {
@@ -34,14 +55,164 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
 
   // Helper function for consistent hit detection
   const getItemAtPosition = useCallback((x: number, y: number) => {
-    return items.find(item => {
+    return storeItems.find(item => {
+      // Only check items on current view
+      if (item.view !== jacketConfig.view) return false;
+      
       const bounds = getItemBounds(item.type);
+      
+      // If item has rotation, we need to check against rotated bounds
+      if (item.rotation) {
+        // Transform the click point to item's local coordinate system
+        const centerX = item.position.x + bounds.width / 2;
+        const centerY = item.position.y + bounds.height / 2;
+        
+        // Translate to origin
+        const translatedX = x - centerX;
+        const translatedY = y - centerY;
+        
+        // Rotate by negative rotation to undo the item's rotation
+        const angle = (-item.rotation * Math.PI) / 180;
+        const rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
+        const rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+        
+        // Translate back and check bounds
+        const localX = rotatedX + centerX;
+        const localY = rotatedY + centerY;
+        
+        return localX >= item.position.x && 
+               localX <= item.position.x + bounds.width &&
+               localY >= item.position.y && 
+               localY <= item.position.y + bounds.height;
+      }
+      
+      // For non-rotated items, use simple bounds check
       return x >= item.position.x && 
              x <= item.position.x + bounds.width &&
              y >= item.position.y && 
              y <= item.position.y + bounds.height;
     });
-  }, [items, getItemBounds]);  // Handle drag and drop events
+  }, [storeItems, getItemBounds, jacketConfig.view]);
+
+  // Helper function to check if clicking on rotation handle
+  const getRotationHandleAtPosition = useCallback((x: number, y: number) => {
+    const selectedItem = storeItems.find(item => item.id === selectedItemId);
+    if (!selectedItem) return null;
+
+    const bounds = getItemBounds(selectedItem.type);
+    
+    // The rotation handle position in the item's local coordinate system
+    // (matching the drawing code exactly)
+    const localHandleX = bounds.width / 2;
+    const localHandleY = -15;
+    
+    // Transform the handle position the same way the canvas does
+    let transformedX = localHandleX;
+    let transformedY = localHandleY;
+    
+    // If item is rotated, apply rotation transformation
+    if (selectedItem.rotation) {
+      // First, translate to center for rotation
+      const centerOffsetX = bounds.width / 2;
+      const centerOffsetY = bounds.height / 2;
+      
+      // Translate handle position relative to center
+      const relativeX = localHandleX - centerOffsetX;
+      const relativeY = localHandleY - centerOffsetY;
+      
+      // Apply rotation
+      const angle = (selectedItem.rotation * Math.PI) / 180;
+      const rotatedX = relativeX * Math.cos(angle) - relativeY * Math.sin(angle);
+      const rotatedY = relativeX * Math.sin(angle) + relativeY * Math.cos(angle);
+      
+      // Translate back
+      transformedX = rotatedX + centerOffsetX;
+      transformedY = rotatedY + centerOffsetY;
+    }
+    
+    // Convert to absolute canvas coordinates
+    const absoluteHandleX = selectedItem.position.x + transformedX;
+    const absoluteHandleY = selectedItem.position.y + transformedY;
+    
+    // Check if click is within handle radius (5px + some tolerance)
+    const distance = Math.sqrt((x - absoluteHandleX) ** 2 + (y - absoluteHandleY) ** 2);
+    return distance <= 8 ? selectedItem : null;
+  }, [storeItems, selectedItemId, getItemBounds]);
+
+  // Helper function to calculate angle between two points
+  const calculateAngle = useCallback((centerX: number, centerY: number, x: number, y: number) => {
+    return Math.atan2(y - centerY, x - centerX) * 180 / Math.PI;
+  }, []);
+
+  // Get the updateItem function from the store
+  const { updateItem } = useAppStore();
+
+  // Helper function to get all selected items
+  const getSelectedItems = useCallback(() => {
+    return storeItems.filter(item => item.isSelected && item.view === jacketConfig.view);
+  }, [storeItems, jacketConfig.view]);
+
+  // Helper function to handle multi-selection logic
+  const handleItemSelection = useCallback((clickedItem: any, isCtrlPressed: boolean) => {
+    if (!clickedItem) {
+      // Clicked on empty space - clear selection unless Ctrl is pressed
+      if (!isCtrlPressed) {
+        clearSelection();
+      }
+      return;
+    }
+
+    if (isCtrlPressed) {
+      // Ctrl+Click: Toggle item in selection
+      const selectedItems = getSelectedItems();
+      const isCurrentlySelected = clickedItem.isSelected;
+      
+      if (isCurrentlySelected) {
+        // Remove from selection
+        const newSelection = selectedItems.filter(item => item.id !== clickedItem.id).map(item => item.id);
+        selectMultipleItems(newSelection);
+      } else {
+        // Add to selection
+        const newSelection = [...selectedItems.map(item => item.id), clickedItem.id];
+        selectMultipleItems(newSelection);
+      }
+    } else {
+      // Regular click: Select only this item
+      selectItem(clickedItem.id);
+    }
+  }, [getSelectedItems, clearSelection, selectMultipleItems, selectItem]);
+
+  // Helper function to get items within marquee rectangle
+  const getItemsInRectangle = useCallback((x1: number, y1: number, x2: number, y2: number) => {
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+    
+    // Only proceed if marquee has some meaningful size (at least 5x5 pixels)
+    if (maxX - minX < 5 || maxY - minY < 5) {
+      return [];
+    }
+    
+    // Use storeItems to ensure we're working with the store's data
+    const selectedItems = storeItems.filter(item => {
+      // Only check items on current view
+      if (item.view !== jacketConfig.view) return false;
+      
+      const bounds = getItemBounds(item.type);
+      const itemLeft = item.position.x;
+      const itemRight = item.position.x + bounds.width;
+      const itemTop = item.position.y;
+      const itemBottom = item.position.y + bounds.height;
+      
+      // Check if marquee rectangle intersects with item rectangle
+      const intersects = !(itemRight < minX || itemLeft > maxX || itemBottom < minY || itemTop > maxY);
+      
+      return intersects;
+    });
+    
+    return selectedItems;
+  }, [storeItems, getItemBounds, jacketConfig.view]);  // Handle drag and drop events
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
@@ -97,10 +268,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       }
       
       // Draw all items on the jacket (sorted by zIndex for proper layering)
-      const sortedItems = [...items].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      // Filter items by current view first
+      const sortedItems = [...storeItems]
+        .filter(item => item.view === jacketConfig.view)
+        .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
       sortedItems.forEach(item => {
         ctx.save();
         ctx.translate(item.position.x, item.position.y);
+        
+        // Apply rotation if item has rotation
+        if (item.rotation) {
+          const bounds = getItemBounds(item.type);
+          ctx.translate(bounds.width / 2, bounds.height / 2);
+          ctx.rotate((item.rotation * Math.PI) / 180);
+          ctx.translate(-bounds.width / 2, -bounds.height / 2);
+        }
         
         // Apply visual effects based on movement type
         if (item.movement && item.movement !== 'static') {
@@ -272,19 +454,122 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
         // Draw selection indicator if selected
         if (item.isSelected) {
           const bounds = getItemBounds(item.type);
-          ctx.strokeStyle = '#0077ff';
-          ctx.lineWidth = 3;
+          const isPrimarySelection = item.id === selectedItemId;
+          
+          // Use different colors for primary vs secondary selections
+          ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
+          ctx.lineWidth = isPrimarySelection ? 3 : 2;
           ctx.strokeRect(-5, -5, bounds.width + 10, bounds.height + 10);
+          
+          // Draw rotation handle only for the primary selected item
+          if (isPrimarySelection) {
+            const handleX = bounds.width / 2;
+            const handleY = -15;
+            ctx.fillStyle = '#0077ff';
+            ctx.beginPath();
+            ctx.arc(handleX, handleY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw line from selection box to rotation handle
+            ctx.strokeStyle = '#0077ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(handleX, handleY + 5);
+            ctx.lineTo(handleX, -5);
+            ctx.stroke();
+          }
         }
         
         ctx.restore();
       });
+      
+      // Draw marquee selection rectangle
+      if (marqueeState.isActive) {
+        const minX = Math.min(marqueeState.startX, marqueeState.endX);
+        const minY = Math.min(marqueeState.startY, marqueeState.endY);
+        const width = Math.abs(marqueeState.endX - marqueeState.startX);
+        const height = Math.abs(marqueeState.endY - marqueeState.startY);
+        
+        ctx.strokeStyle = '#0077ff';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(minX, minY, width, height);
+        
+        ctx.fillStyle = 'rgba(0, 119, 255, 0.1)';
+        ctx.fillRect(minX, minY, width, height);
+        
+        ctx.setLineDash([]); // Reset line dash
+      }
     }
-  }, [jacketImage, jacketConfig.color, items]);
+  }, [jacketImage, jacketConfig.color, storeItems, marqueeState]);
 
   useEffect(() => {
     drawJacket();
   }, [drawJacket]);
+
+  // Keyboard shortcuts for copy/paste colors and elements
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const selectedItems = getSelectedItems();
+      const primarySelectedItem = storeItems.find(item => item.id === selectedItemId);
+      
+      if (e.ctrlKey || e.metaKey) { // Ctrl on Windows/Linux, Cmd on Mac
+        if (e.key === 'c' && selectedItems.length > 0) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Shift+Ctrl+C: Copy color from primary selected item
+            if (primarySelectedItem?.color) {
+              copyColor(primarySelectedItem.color);
+              console.log('Color copied:', primarySelectedItem.color);
+            }
+          } else {
+            // Ctrl+C: Copy element(s)
+            if (selectedItems.length === 1) {
+              copyItem();
+              console.log('Element copied:', selectedItems[0].id);
+            } else {
+              // For multiple items, copy the primary selected item for now
+              // TODO: Implement multi-item copy functionality
+              copyItem();
+              console.log('Multiple elements - copied primary:', primarySelectedItem?.id);
+            }
+          }
+        } else if (e.key === 'v') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Shift+Ctrl+V: Paste color to all selected items
+            if (selectedItems.length > 0) {
+              pasteColor();
+              console.log('Color pasted to selected items');
+            }
+          } else {
+            // Ctrl+V: Paste element
+            pasteItem();
+            console.log('Element pasted');
+          }
+        }
+      }
+      
+      // Delete/Backspace works WITHOUT requiring Ctrl/Cmd
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        if (selectedItems.length > 0) {
+          console.log('DELETE KEY: Deleting', selectedItems.length, 'items:', selectedItems.map(item => item.id));
+          selectedItems.forEach(item => {
+            // Use the store's removeItem function for each selected item
+            const removeItem = useAppStore.getState().removeItem;
+            removeItem(item.id);
+          });
+          console.log('DELETE COMPLETE: Deleted', selectedItems.length, 'items');
+        } else {
+          console.log('DELETE KEY: No items selected');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems]);
 
   // Animation loop for movement effects
   useEffect(() => {
@@ -292,7 +577,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     let lastFrameTime = 0;
     const frameDuration = 1000 / 30; // 30 FPS instead of 60 FPS
     
-    const hasAnimatedItems = items.some(item => 
+    const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
         'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll',
         'Trickle up', 'Trickle down', 'Random fl'
@@ -311,7 +596,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       animationId = requestAnimationFrame(animate);
       return () => cancelAnimationFrame(animationId);
     }
-  }, [items, drawJacket]);
+  }, [storeItems, drawJacket]);
 
   const handleRightClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
@@ -334,6 +619,12 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
   }, [createItem]);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    // Prevent click handling if we just completed a marquee selection
+    if (justCompletedMarquee) {
+      setJustCompletedMarquee(false);
+      return;
+    }
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     
@@ -343,14 +634,16 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       const y = event.clientY - rect.top;
       
       const clickedItem = getItemAtPosition(x, y);
+      const isCtrlPressed = event.ctrlKey || event.metaKey;
       
       if (clickedItem) {
-        handleItemClick(clickedItem.id);
+        // Use our multi-selection aware handler instead of handleItemClick
+        handleItemSelection(clickedItem, isCtrlPressed);
       } else {
         clearSelection();
       }
     }
-  }, [getItemAtPosition, clearSelection, handleItemClick]);
+  }, [getItemAtPosition, clearSelection, justCompletedMarquee, handleItemSelection]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -359,16 +652,59 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+    const isCtrlPressed = event.ctrlKey || event.metaKey;
+    
+    // Check if clicking on rotation handle first
+    const rotationItem = getRotationHandleAtPosition(x, y);
+    if (rotationItem) {
+      saveUndoState();
+      const bounds = getItemBounds(rotationItem.type);
+      const centerX = rotationItem.position.x + bounds.width / 2;
+      const centerY = rotationItem.position.y + bounds.height / 2;
+      const startAngle = calculateAngle(centerX, centerY, x, y);
+      
+      setRotationState({
+        isRotating: true,
+        rotatingItem: rotationItem,
+        startAngle: startAngle - (rotationItem.rotation || 0)
+      });
+      return;
+    }
     
     const clickedItem = getItemAtPosition(x, y);
     
     if (clickedItem) {
-      // Save undo state before starting drag operation
+      // If clicking on an already selected item, don't change selection yet
+      // (we'll handle selection on mouseUp if no drag occurred)
+      const isClickedItemSelected = clickedItem.isSelected || clickedItem.id === selectedItemId;
+      
+      if (!isClickedItemSelected || isCtrlPressed) {
+        // Only change selection if:
+        // 1. Clicking on an unselected item, OR
+        // 2. Using Ctrl (for multi-selection toggle)
+        handleItemSelection(clickedItem, isCtrlPressed);
+      }
+      
+      // Always allow dragging of any clicked item
       saveUndoState();
       
       const offsetX = x - clickedItem.position.x;
       const offsetY = y - clickedItem.position.y;
       
+      // Store initial positions for all selected items (for multi-drag)
+      const selectedItems = getSelectedItems();
+      const isDraggedItemSelected = clickedItem.isSelected || clickedItem.id === selectedItemId;
+      const initialPositions = new Map();
+      
+      if (isDraggedItemSelected && selectedItems.length > 1) {
+        // Multi-item drag: store all selected item positions
+        selectedItems.forEach(item => {
+          initialPositions.set(item.id, { x: item.position.x, y: item.position.y });
+        });
+      } else {
+        // Single item drag
+        initialPositions.set(clickedItem.id, { x: clickedItem.position.x, y: clickedItem.position.y });
+      }
       
       setDragState({
         isDragging: true,
@@ -376,10 +712,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
         offset: {
           x: offsetX,
           y: offsetY
-        }
+        },
+        initialPositions,
+        hasMoved: false
+      });
+    } else if (!isCtrlPressed) {
+      // Start marquee selection when clicking on empty space (without Ctrl)
+      setMarqueeState({
+        isActive: true,
+        startX: x,
+        startY: y,
+        endX: x,
+        endY: y
       });
     }
-  }, [getItemAtPosition, saveUndoState]);
+  }, [getItemAtPosition, getRotationHandleAtPosition, calculateAngle, getItemBounds, saveUndoState, handleItemSelection, selectedItemId]);
 
   const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -389,33 +736,139 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    if (dragState.isDragging && dragState.draggedItem) {
-      // Update item position
-      const newX = x - dragState.offset.x;
-      const newY = y - dragState.offset.y;
+    if (rotationState.isRotating && rotationState.rotatingItem) {
+      // Handle rotation
+      const bounds = getItemBounds(rotationState.rotatingItem.type);
+      const centerX = rotationState.rotatingItem.position.x + bounds.width / 2;
+      const centerY = rotationState.rotatingItem.position.y + bounds.height / 2;
+      const currentAngle = calculateAngle(centerX, centerY, x, y);
+      const newRotation = currentAngle - rotationState.startAngle;
       
+      updateItem(rotationState.rotatingItem.id, { rotation: newRotation });
+    } else if (dragState.isDragging && dragState.draggedItem) {
+      // Handle dragging - use initial positions to maintain relative positions
+      const mouseX = x - dragState.offset.x;
+      const mouseY = y - dragState.offset.y;
       
-      moveItem(dragState.draggedItem.id, { x: newX, y: newY });
+      // Calculate the movement delta from the dragged item's initial position
+      const draggedItemInitialPos = dragState.initialPositions.get(dragState.draggedItem.id);
+      if (!draggedItemInitialPos) return;
+      
+      const deltaX = mouseX - draggedItemInitialPos.x;
+      const deltaY = mouseY - draggedItemInitialPos.y;
+      
+      // Mark as moved if there's any significant movement
+      if (!dragState.hasMoved && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
+        setDragState(prev => ({ ...prev, hasMoved: true }));
+      }
+      
+      // Apply the same delta to all items that were initially stored
+      dragState.initialPositions.forEach((initialPos, itemId) => {
+        const newX = initialPos.x + deltaX;
+        const newY = initialPos.y + deltaY;
+        moveItem(itemId, { x: newX, y: newY });
+      });
+    } else if (marqueeState.isActive) {
+      // Update marquee selection rectangle
+      setMarqueeState(prev => ({
+        ...prev,
+        endX: x,
+        endY: y
+      }));
     } else {
-      // Change cursor when hovering over items
+      // Change cursor when hovering over items or rotation handles
       const hoverItem = getItemAtPosition(x, y);
+      const hoverRotationHandle = getRotationHandleAtPosition(x, y);
+      
       if (canvas) {
-        canvas.style.cursor = hoverItem ? 'pointer' : 'default';
+        if (hoverRotationHandle) {
+          canvas.style.cursor = 'grab';
+        } else if (hoverItem) {
+          canvas.style.cursor = 'pointer';
+        } else {
+          canvas.style.cursor = 'default';
+        }
       }
     }
-  }, [dragState, moveItem, getItemAtPosition]);
+  }, [dragState, rotationState, moveItem, getItemAtPosition, getRotationHandleAtPosition, 
+      calculateAngle, getItemBounds, updateItem, getSelectedItems, marqueeState]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    // Complete marquee selection if active
+    if (marqueeState.isActive) {
+      const itemsInMarquee = getItemsInRectangle(
+        marqueeState.startX, 
+        marqueeState.startY, 
+        marqueeState.endX, 
+        marqueeState.endY
+      );
+      
+      if (itemsInMarquee.length > 0) {
+        selectMultipleItems(itemsInMarquee.map(item => item.id));
+      }
+      
+      // Set flag to prevent onClick from clearing the selection
+      setJustCompletedMarquee(true);
+      
+      setMarqueeState({
+        isActive: false,
+        startX: 0,
+        startY: 0,
+        endX: 0,
+        endY: 0
+      });
+    }
+    
+    // Handle single-click selection for already selected items
+    // (when no drag occurred and it's not a multi-item drag)
+    if (dragState.isDragging && dragState.draggedItem) {
+      // For debugging purposes, keep the debug output but remove the selection change logic
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // Check if this was actually a click (no significant movement)
+        const startX = dragState.draggedItem.position.x + dragState.offset.x;
+        const startY = dragState.draggedItem.position.y + dragState.offset.y;
+        const distance = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
+        
+        const selectedItems = getSelectedItems();
+        const isMultiDrag = selectedItems.length > 1 && dragState.initialPositions.size > 1;
+        
+        console.log('MOUSE UP DEBUG:', {
+          distance: distance.toFixed(2),
+          hasMoved: dragState.hasMoved,
+          selectedItemsCount: selectedItems.length,
+          initialPositionsSize: dragState.initialPositions.size,
+          isMultiDrag,
+          draggedItemId: dragState.draggedItem.id,
+          action: 'PRESERVING_CURRENT_SELECTION'
+        });
+        
+        // Don't change selection on mouseUp - let the mouseDown/handleClick handle it
+        // This prevents multi-selection from being cleared after dragging
+      }
+    }
+    
     setDragState({
       isDragging: false,
       draggedItem: null,
-      offset: { x: 0, y: 0 }
+      offset: { x: 0, y: 0 },
+      initialPositions: new Map(),
+      hasMoved: false
+    });
+    setRotationState({
+      isRotating: false,
+      rotatingItem: null,
+      startAngle: 0
     });
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.style.cursor = 'default';
     }
-  }, []);
+  }, [marqueeState, getItemsInRectangle, selectMultipleItems, dragState, selectedItemId, selectItem, getSelectedItems]);
 
   return (
     <>

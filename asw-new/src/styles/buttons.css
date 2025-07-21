@@ -119,10 +119,11 @@
 /* Save Button */
 .save {
   margin-top: 30px;
+  display: flex;
+  justify-content: center;
 }
 
 #save-button {
-  position: absolute;
   background-color: var(--primary-blue);
   border: none;
   padding: 14px;
@@ -130,7 +131,6 @@
   color: var(--text-white);
   width: 40%;
   margin-top: 35px;
-  margin-left: 15px;
 }
 
 #save-button:hover {

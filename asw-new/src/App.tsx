@@ -6,6 +6,7 @@ import { JacketCanvas } from './components/JacketCanvas';
 import { ItemControlPanel } from './components/ItemControlPanel';
 import { JacketColorPicker } from './components/JacketColorPicker';
 import { WelcomePopup } from './components/WelcomePopup';
+import { ConfirmationPopup } from './components/ConfirmationPopup';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import './main.css';
 import 'rc-slider/assets/index.css';
@@ -24,10 +25,13 @@ function App() {
     deleteSelectedItem,
     sessionInfo,
     startSession,
-    endSession
+    endSession,
+    items,
+    actionLogs
   } = useAppStore();
   const { updateItemConfiguration } = useDragAndDrop();
   const [jacketImage, setJacketImage] = useState<HTMLImageElement | null>(null);
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
   // Handle drag start for items
   const handleDragStart = (e: React.DragEvent, itemType: string) => {
@@ -51,10 +55,25 @@ function App() {
 
   // Handle delete
   const handleDelete = () => {
-    if (selectedItemId) {
+    // Get all selected items
+    const selectedItems = items.filter(item => item.isSelected);
+    
+    if (selectedItems.length > 0) {
+      console.log('DELETE BUTTON: Deleting', selectedItems.length, 'items:', selectedItems.map(item => item.id));
+      selectedItems.forEach(item => {
+        // Use the store's removeItem function for each selected item
+        const removeItem = useAppStore.getState().removeItem;
+        removeItem(item.id);
+      });
+      console.log('DELETE BUTTON COMPLETE: Deleted', selectedItems.length, 'items');
+    } else if (selectedItemId) {
+      // Fallback to single item deletion
       deleteSelectedItem();
     }
   };
+
+  // Check if any items are selected (for button states)
+  const hasSelectedItems = items.some(item => item.isSelected) || !!selectedItemId;
 
   // Load static images on component mount
   useEffect(() => {
@@ -96,6 +115,30 @@ function App() {
   // Handle info button click to show instructions again
   const handleInfoClick = () => {
     endSession();
+  };
+
+  // Handle submit design with confirmation
+  const handleSubmitDesign = () => {
+    setShowSubmitConfirmation(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    // Here you would typically send the design data to a server
+    console.log('Design submitted!', {
+      participantId: sessionInfo.participantId,
+      designCode: sessionInfo.designCode,
+      items: items,
+      jacketConfig: jacketConfig,
+      actionLogs: actionLogs,
+    });
+    
+    // Close confirmation and show success message
+    setShowSubmitConfirmation(false);
+    alert('Design submitted successfully!');
+  };
+
+  const handleCancelSubmit = () => {
+    setShowSubmitConfirmation(false);
   };
 
   return (
@@ -241,16 +284,16 @@ function App() {
             <button 
               id="duplicate" 
               onClick={handleDuplicate}
-              disabled={!selectedItemId}
-              style={{opacity: selectedItemId ? 1 : 0.5}}
+              disabled={!hasSelectedItems}
+              style={{opacity: hasSelectedItems ? 1 : 0.5}}
             >
               Duplicate
             </button>
             <button 
               id="delete" 
               onClick={handleDelete}
-              disabled={!selectedItemId}
-              style={{opacity: selectedItemId ? 1 : 0.5}}
+              disabled={!hasSelectedItems}
+              style={{opacity: hasSelectedItems ? 1 : 0.5}}
             >
               Delete
             </button>
@@ -314,10 +357,21 @@ function App() {
           )}
           
           <div className="save">
-            <button type="button" id="save-button">Submit Design</button>
+            <button type="button" id="save-button" onClick={handleSubmitDesign}>Submit Design</button>
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Popup */}
+      <ConfirmationPopup
+        isVisible={showSubmitConfirmation}
+        title="Submit Design"
+        message={`Are you sure you want to submit your design? This action cannot be undone.\n\nParticipant ID: ${sessionInfo.participantId}\nDesign Code: ${sessionInfo.designCode}`}
+        confirmText="Submit Design"
+        cancelText="Continue Editing"
+        onConfirm={handleConfirmSubmit}
+        onCancel={handleCancelSubmit}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { ApplicationState, WearableItem, ColorSelection, JacketConfig, ActionLog, Position, SessionInfo } from '../types';
+import type { ApplicationState, WearableItem, ColorSelection, JacketConfig, ActionLog, Position } from '../types';
 
 interface AppStore extends ApplicationState {
   // Actions
@@ -10,6 +10,7 @@ interface AppStore extends ApplicationState {
   updateItemPosition: (id: string, position: Position) => void;
   saveUndoState: () => void;
   selectItem: (id: string | null) => void;
+  selectMultipleItems: (ids: string[]) => void;
   duplicateItem: (id: string) => void;
   deleteSelectedItem: () => void;
   moveItemToFront: (id: string) => void;
@@ -18,6 +19,16 @@ interface AppStore extends ApplicationState {
   updateJacketConfig: (config: Partial<JacketConfig>) => void;
   toggleItemFlashing: (id: string) => void;
   clearSelection: () => void;
+  
+  // Color copy/paste functionality
+  copiedColor: string | null;
+  copyColor: (color: string) => void;
+  pasteColor: () => void;
+  
+  // Element copy/paste functionality
+  copiedItem: WearableItem | null;
+  copyItem: () => void;
+  pasteItem: () => void;
   
   // Session management
   startSession: (participantId: string, designCode: string) => void;
@@ -66,6 +77,8 @@ export const useAppStore = create<AppStore>()(
     actionLogs: [],
     undoStack: [],
     redoStack: [],
+    copiedColor: null,
+    copiedItem: null,
 
     // Session management
     startSession: (participantId: string, designCode: string) => {
@@ -179,6 +192,14 @@ export const useAppStore = create<AppStore>()(
       items: state.items.map(item => ({
         ...item,
         isSelected: item.id === id,
+      })),
+    })),
+
+    selectMultipleItems: (ids) => set((state) => ({
+      selectedItemId: ids.length === 1 ? ids[0] : null,
+      items: state.items.map(item => ({
+        ...item,
+        isSelected: ids.includes(item.id),
       })),
     })),
 
@@ -356,6 +377,53 @@ export const useAppStore = create<AppStore>()(
           undoStack: [...state.undoStack, currentStateStr],
           redoStack: state.redoStack.slice(0, -1),
         });
+      }
+    },
+    
+    // Color copy/paste functionality
+    copyColor: (color) => set(() => ({
+      copiedColor: color,
+    })),
+
+    // Element copy/paste functionality
+    copyItem: () => {
+      const { selectedItemId, items } = get();
+      if (selectedItemId) {
+        const selectedItem = items.find(item => item.id === selectedItemId);
+        if (selectedItem) {
+          set({ copiedItem: { ...selectedItem } });
+        }
+      }
+    },
+
+    pasteItem: () => {
+      const { copiedItem } = get();
+      if (copiedItem) {
+        const newItem: WearableItem = {
+          ...copiedItem,
+          id: `item-${Date.now()}`, // Generate string ID
+          position: {
+            x: copiedItem.position.x + 20, // Offset the pasted item slightly
+            y: copiedItem.position.y + 20
+          }
+        };
+        set(state => ({
+          items: [...state.items, newItem],
+          selectedItemId: newItem.id
+        }));
+      }
+    },
+
+    pasteColor: () => {
+      const { copiedColor, items } = get();
+      if (copiedColor) {
+        // Apply color to all selected items
+        const selectedItems = items.filter(item => item.isSelected);
+        if (selectedItems.length > 0) {
+          selectedItems.forEach(item => {
+            get().updateItem(item.id, { color: copiedColor });
+          });
+        }
       }
     },
   }))

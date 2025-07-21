@@ -39,6 +39,7 @@ export function useDragAndDrop() {
       isFlashing: false,
       view: jacketConfig.view,
       zIndex: maxZIndex + 1,
+      rotation: 0, // Default rotation
     };
 
     addItem(newItem);
