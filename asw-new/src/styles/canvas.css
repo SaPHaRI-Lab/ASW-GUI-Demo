@@ -1,0 +1,22 @@
+/* Canvas and Jacket Display */
+
+#jacketCanvas {
+  position: absolute;
+  pointer-events: auto;
+}
+
+#back-view, #front-view {
+  position: absolute;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background-color: var(--light-blue);
+  border: none;
+  padding: 12px;
+  font-size: 15px;
+}
+
+#back-view:hover, #front-view:hover {
+  background-color: var(--light-blue-hover) !important;
+}

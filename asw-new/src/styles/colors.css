@@ -1,0 +1,413 @@
+/* Color Picker and Controls */
+
+.color {
+  padding-left: 15px;
+}
+
+#color-title {
+  font-weight: lighter;
+  color: var(--text-white);
+  font-size: 17px;
+  margin-left: 35px;
+  margin-bottom: -3px;
+  padding: 20px;
+}
+
+.color-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-canvas {
+  border: 1px solid #666;
+}
+
+.color-slider {
+  width: 120px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  background: linear-gradient(to right, var(--text-white), rgba(128, 128, 128, 1), black);
+  outline: none;
+}
+
+.color-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background: var(--primary-blue);
+}
+
+.rgb-input {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#rgb-val {
+  background-color: transparent;
+  color: #eeeeee;
+  outline: none;
+  outline-style: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: solid #eeeeee 1px;
+  padding: 3px 10px;
+  width: 150px;
+}
+
+.rgb-input label {
+  font-weight: 500;
+  color: #333;
+}
+
+.rgb-input input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.gradient-control label {
+  font-weight: 500;
+  color: #333;
+}
+
+.gradient-control input[type="range"] {
+  width: 100%;
+}
+
+.gradient-control span {
+  text-align: center;
+  font-weight: bold;
+  color: #007acc;
+}
+
+/* Color picker styles */
+
+.modern-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.color-picker-container {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.color-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 140px;
+}
+
+.hex-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.hex-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.hex-value {
+  font-family: 'Courier New', monospace;
+  color: #007acc;
+  font-weight: bold;
+}
+
+.brightness-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.brightness-control label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+.color-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.color-preview::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(0,0,0,0.1) 25%, 
+    transparent 25%, 
+    transparent 75%, 
+    rgba(0,0,0,0.1) 75%, 
+    rgba(0,0,0,0.1)), 
+  linear-gradient(45deg, 
+    rgba(0,0,0,0.1) 25%, 
+    transparent 25%, 
+    transparent 75%, 
+    rgba(0,0,0,0.1) 75%, 
+    rgba(0,0,0,0.1));
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  pointer-events: none;
+}
+
+.modern-jacket-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.jacket-color-label {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.color-section-title {
+  font-weight: lighter;
+  color: var(--text-white);
+  font-size: 16px;
+}
+
+.jacket-color-picker-container {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.jacket-color-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100px;
+}
+
+.jacket-tint-control {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.tint-slider {
+  width: 100px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: linear-gradient(to right, #666, #fff);
+  outline: none;
+  border-radius: 2px;
+}
+
+.tint-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--primary-blue);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tint-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--primary-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Circular color wheel styling */
+.color-picker-container > div,
+.jacket-color-picker-container > div {
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: 2px solid #ffffff !important;
+  overflow: hidden !important;
+}
+
+/* Color wheel pointer styling */
+.color-picker-container [role="button"],
+.jacket-color-picker-container [role="button"] {
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  transform: translate(-8px, -8px) !important;
+}
+
+/* React Colorful customization (keeping for backward compatibility) */
+.react-colorful {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.react-colorful__saturation {
+  border-radius: 8px 8px 0 0 !important;
+  border-bottom: none !important;
+}
+
+.react-colorful__hue {
+  height: 24px !important;
+  border-radius: 0 0 8px 8px !important;
+}
+
+.react-colorful__pointer {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.react-colorful__hue-pointer {
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Legacy color picker styles (keeping for backward compatibility) */
+.jacketcolor {
+  margin-top: 5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+/* Color wheels container - side by side */
+.color-wheels-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.color-wheel-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.selection-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 15px 0;
+}
+
+.selection-bar {
+  width: 60px;
+  height: 3px;
+  background-color: var(--light-blue);
+  border-radius: 2px;
+}
+
+.selection-text {
+  font-size: 12px;
+  color: var(--text-white);
+  text-align: center;
+}
+
+#jacketcollabel {
+  color: white;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.jacket-col-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.jacket-col-canvas {
+  margin: 0;
+}
+
+.jacket-color-picker {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.jacket-color-picker h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.view-toggle {
+  margin-bottom: 1rem;
+}
+
+.view-toggle button {
+  width: 100%;
+  padding: 0.5rem;
+  background: #007acc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.view-toggle button:hover {
+  background: #005a9f;
+}
+
+.jacket-color-wheel-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.jacket-color-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.current-color-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+}

@@ -1,0 +1,176 @@
+/* Buttons and Interactive Controls */
+
+/* Reusable Button Component */
+.btn-component {
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-component:hover {
+  opacity: 0.9;
+}
+
+.btn-component.btn-primary {
+  background-color: var(--primary-blue);
+  color: white;
+}
+
+.btn-component.btn-primary:hover {
+  background-color: var(--primary-blue-hover);
+}
+
+.btn-component.btn-light-blue {
+  background-color: var(--light-blue);
+  color: white;
+}
+
+.btn-component.btn-light-blue:hover {
+  background-color: var(--light-blue-hover);
+}
+
+.btn-component.btn-danger {
+  background-color: var(--error-red);
+  color: white;
+}
+
+.btn-component.btn-danger:hover {
+  background-color: var(--error-red-hover);
+}
+
+/* Action Buttons Grid */
+.undoredodel {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto;
+  gap: 10px 7px;
+  width: max-content;
+  justify-content: center;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+#undo, #redo {
+  width: 60px;
+  height: 30px;
+  background-color: var(--light-blue);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px; 
+}
+
+#undo-arrow, #redo-arrow {
+  width: 35px;
+  height: 30px;
+}
+
+#undo {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#redo {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#undo:hover, #redo:hover {
+  background-color: var(--light-blue-hover) !important; 
+}
+
+.undoredo {
+  grid-column: span 2;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+
+#duplicate {
+  background-color: var(--light-blue);
+  border: none;
+  padding: 8px;
+  font-size: 14px;
+  color: black;
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#duplicate:hover {
+  background-color: var(--light-blue-hover) !important; 
+}
+
+#delete {
+  background-color: var(--error-red);
+  border: none;
+  padding: 8px;
+  font-size: 14px;
+  color: black;
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#delete:hover {
+  background-color: var(--error-red-hover) !important;
+}
+
+/* Save Button */
+.save {
+  margin-top: 30px;
+}
+
+#save-button {
+  position: absolute;
+  background-color: var(--primary-blue);
+  border: none;
+  padding: 14px;
+  font-size: 15px;
+  color: var(--text-white);
+  width: 40%;
+  margin-top: 35px;
+  margin-left: 15px;
+}
+
+#save-button:hover {
+  background-color: var(--primary-blue-hover) !important; 
+}
+
+/* Scaling Controls */
+.scaling {
+  margin-top: 20px;
+}
+
+.size-scaling, .amount-scaling {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+#size-title, #amount-title {
+  color: white;
+  font-size: 15px;
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+.scaling-btns {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.size-dec, .size-inc, .amount-dec, .amount-inc {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background-color: var(--light-blue);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.size-dec:hover, .size-inc:hover, .amount-dec:hover, .amount-inc:hover {
+  background-color: var(--light-blue-hover);
+}

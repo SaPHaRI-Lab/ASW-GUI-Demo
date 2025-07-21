@@ -1,0 +1,14 @@
+<!-- This is a placeholder for the jacket image -->
+<svg width="400" height="600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="600" fill="#e3e3e3"/>
+  <!-- Jacket shape -->
+  <path d="M100 100 L300 100 L320 150 L320 500 L280 550 L120 550 L80 500 L80 150 Z" 
+        fill="#cccccc" stroke="#999999" stroke-width="2"/>
+  <!-- Sleeves -->
+  <ellipse cx="50" cy="200" rx="30" ry="80" fill="#cccccc" stroke="#999999" stroke-width="2"/>
+  <ellipse cx="350" cy="200" rx="30" ry="80" fill="#cccccc" stroke="#999999" stroke-width="2"/>
+  <!-- Text -->
+  <text x="200" y="320" text-anchor="middle" font-family="Arial" font-size="16" fill="#666">
+    Jacket Front
+  </text>
+</svg>

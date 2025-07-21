@@ -1,0 +1,67 @@
+/* Base styles and reset */
+/* Note: Core resets are in index.css to avoid duplication */
+
+/* 
+ * UTILITY CLASSES - Use these instead of inline styles:
+ * .cursor-pointer, .cursor-grab, .cursor-grabbing
+ * .border-radius-sm (4px), .border-radius (5px), .border-radius-full (50%)
+ * .input-underline (common form input styling)
+ * 
+ * CSS VARIABLES - Available in :root (index.css):
+ * --primary-bg, --primary-blue, --primary-blue-hover
+ * --light-blue, --light-blue-hover
+ * --error-red, --error-red-hover  
+ * --text-light, --text-white, --border-gray, --scroll-gray
+ */
+
+body {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Global button cursor fix */
+button {
+  cursor: pointer;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+  padding: 0;
+}
+
+/* Utility classes */
+.cursor-pointer { cursor: pointer; }
+.cursor-grab { cursor: grab; }
+.cursor-grabbing { cursor: grabbing; }
+
+/* Border radius utilities */
+.border-radius-sm { border-radius: 4px; }
+.border-radius { border-radius: 5px; }
+.border-radius-full { border-radius: 50%; }
+
+/* Common form input styles */
+.input-underline {
+  background-color: transparent;
+  color: #eeeeee;
+  outline: none;
+  outline-style: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: solid #eeeeee 1px;
+  padding: 3px 10px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { 
+  -webkit-appearance: none; 
+  width: 7px; 
+}
+
+::-webkit-scrollbar-thumb { 
+  background-color: var(--scroll-gray);
+}
+
+/* App container */
+/* Note: .app styles moved to App.css to avoid duplication */

@@ -1,0 +1,78 @@
+/* Form Controls and Inputs */
+
+/* Sliders */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 125%;
+  height: 5px;
+  background: #D9D9D9;
+  outline: none;
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-blue);
+}
+
+#speed-title {
+  font-weight: lighter;
+  color: var(--text-white);
+  font-size: 17px;
+  margin-top: 25px;
+  margin-left: 48px;
+  margin-bottom: 3px;
+  padding: 20px;
+  white-space: nowrap;
+}
+
+/* Custom Text Input */
+.custom-user-input {
+  margin-top: 20px;
+}
+
+#custom-title {
+  font-weight: lighter;
+  color: var(--text-white);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+#custom-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-white);
+  border: 1px solid var(--border-gray);
+  padding: 8px;
+  resize: vertical;
+}
+
+/* Movement/Action controls */
+.movement {
+  color: var(--text-white);
+  padding-left: 15px;
+}
+
+.movement label {
+  color: var(--text-white);
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+.movement input[type="radio"] {
+  margin-right: 5px;
+}
+
+#movement-title {
+  font-weight: lighter;
+  color: var(--text-white);
+  font-size: 17px;
+  margin-top: 25px;
+  margin-left: 48px;
+  margin-bottom: 3px;
+  padding: 20px;
+  white-space: nowrap;
+}

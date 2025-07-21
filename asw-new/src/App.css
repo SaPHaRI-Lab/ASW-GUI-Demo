@@ -1,0 +1,12 @@
+/* App-specific styles */
+/* Note: Main styles are organized in src/main.css and src/styles/ directory */
+
+.app {
+  width: 100%;
+  height: 100vh;
+  background-color: var(--primary-bg);
+  margin: 0;
+  padding: 0;
+}
+
+/* App component specific overrides can go here */

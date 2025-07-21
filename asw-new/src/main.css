@@ -1,0 +1,34 @@
+/* ASW GUI Application Styles - Modular Organization */
+
+/* Base styles and reset */
+@import './styles/base.css';
+
+/* Layout and grid system */
+@import './styles/layout.css';
+
+/* Header and navigation */
+@import './styles/header.css';
+
+/* Draggable items and sidebar */
+@import './styles/items.css';
+
+/* Canvas and jacket display */
+@import './styles/canvas.css';
+
+/* Color picker and controls */
+@import './styles/colors.css';
+
+/* Form controls and inputs */
+@import './styles/forms.css';
+
+/* Buttons and interactive controls */
+@import './styles/buttons.css';
+
+/* Item control panel component */
+@import './styles/controls.css';
+
+/* Footer and miscellaneous components */
+@import './styles/misc.css';
+
+/* Welcome popup styles */
+@import './styles/welcome-popup.css';
