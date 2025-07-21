@@ -6,6 +6,7 @@ import { JacketCanvas } from './components/JacketCanvas';
 import { ItemControlPanel } from './components/ItemControlPanel';
 import { JacketColorPicker } from './components/JacketColorPicker';
 import { WelcomePopup } from './components/WelcomePopup';
+import { useDragAndDrop } from './hooks/useDragAndDrop';
 import './main.css';
 import 'rc-slider/assets/index.css';
 
@@ -25,6 +26,7 @@ function App() {
     startSession,
     endSession
   } = useAppStore();
+  const { updateItemConfiguration } = useDragAndDrop();
   const [jacketImage, setJacketImage] = useState<HTMLImageElement | null>(null);
 
   // Handle drag start for items
@@ -76,11 +78,14 @@ function App() {
     jacket.src = jacketSrc;
   }, [jacketConfig.view]);
 
-  // Handle speed change (placeholder for now)
+  // Handle speed change with animation integration
   const handleSpeedChange = (value: number | number[]) => {
     const speed = Array.isArray(value) ? value[0] : value;
-    console.log('Speed changed to:', speed);
-    // TODO: Connect to actual speed functionality
+    
+    if (selectedItemId) {
+      // Update the selected item's speed, which affects animation timing
+      updateItemConfiguration(selectedItemId, { speed: speed * 20 }); // Scale to 0-100 range
+    }
   };
 
   // Handle session start

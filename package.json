@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@uiw/color-convert": "^2.7.1",
+    "@uiw/react-color-wheel": "^2.7.1"
+  }
+}

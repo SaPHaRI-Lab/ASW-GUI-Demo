@@ -108,28 +108,57 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
           
           switch (item.movement) {
             case 'Shake':
-              // Add slight random offset for shake effect
-              const shakeX = (Math.random() - 0.5) * 2;
-              const shakeY = (Math.random() - 0.5) * 2;
+              // Enhanced shake with speed control
+              const shakeIntensity = item.speed ? (item.speed / 100) * 3 : 2;
+              const shakeX = (Math.random() - 0.5) * shakeIntensity;
+              const shakeY = (Math.random() - 0.5) * shakeIntensity;
               ctx.translate(shakeX, shakeY);
               break;
             case 'Flash ind':
             case 'Flash str':
-              // Add glow effect for flashing
-              ctx.shadowColor = '#FFD700';
-              ctx.shadowBlur = 10;
+              // Enhanced flashing with speed-controlled timing (slower rate)
+              if (item.isFlashing) {
+                const flashSpeed = item.speed ? item.speed * 0.002 : 0.002; // Much slower
+                const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+                if (flashCycle) {
+                  ctx.shadowColor = item.color || '#FFD700';
+                  ctx.shadowBlur = 15;
+                }
+              } else {
+                // Steady glow for "Light on" states
+                ctx.shadowColor = item.color || '#00FF00';
+                ctx.shadowBlur = 5;
+              }
               break;
             case 'Light on ind':
             case 'Light on str':
               // Add steady glow
-              ctx.shadowColor = '#00FF00';
+              ctx.shadowColor = item.color || '#00FF00';
               ctx.shadowBlur = 5;
               break;
+            case 'Trickle up':
+            case 'Trickle down':
+            case 'Random fl':
+              // Light strip patterns are handled in the drawing section
+              // Just add a subtle glow effect
+              if (item.isFlashing && item.type === 'light-strip') {
+                ctx.shadowColor = item.color || '#FFD700';
+                ctx.shadowBlur = 8;
+              }
+              break;
             case 'pulsing':
-              // Add pulsing glow
-              const pulse = Math.sin(Date.now() * 0.005) * 0.5 + 0.5;
-              ctx.shadowColor = `rgba(255, 215, 0, ${pulse})`;
-              ctx.shadowBlur = 8;
+              // Enhanced pulsing with speed control
+              const pulseSpeed = item.speed ? item.speed * 0.001 : 0.005;
+              const pulse = Math.sin(Date.now() * pulseSpeed) * 0.5 + 0.5;
+              ctx.shadowColor = item.color || '#FFD700';
+              ctx.shadowBlur = 8 + (pulse * 5);
+              ctx.globalAlpha = 0.7 + (pulse * 0.3);
+              break;
+            case 'Roll':
+              // Rotation effect for fur patches
+              const rollSpeed = item.speed ? item.speed * 0.002 : 0.002;
+              const rotation = Date.now() * rollSpeed;
+              ctx.rotate(rotation);
               break;
           }
         }
@@ -153,8 +182,43 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
           case 'light-strip':
             ctx.fillStyle = '#444';
             ctx.fillRect(0, 0, 20, 210);
-            ctx.fillStyle = item.color || '#FFD700';
+            
+            // Enhanced light strip with trickle animation support
             for (let i = 0; i < 6; i++) {
+              let lightColor = '#333'; // Default off color
+              
+              if (item.movement === 'Trickle up' && item.isFlashing) {
+                const speed = item.speed ? item.speed * 0.01 : 0.01;
+                const time = Date.now() * speed;
+                const currentLight = Math.floor(time / 300) % 6; // Each light lasts 300ms
+                const lightIndex = 5 - i; // Reverse for trickle up
+                if (lightIndex === currentLight) {
+                  lightColor = item.color || '#FFD700';
+                }
+              } else if (item.movement === 'Trickle down' && item.isFlashing) {
+                const speed = item.speed ? item.speed * 0.01 : 0.01;
+                const time = Date.now() * speed;
+                const currentLight = Math.floor(time / 300) % 6;
+                if (i === currentLight) {
+                  lightColor = item.color || '#FFD700';
+                }
+              } else if (item.movement === 'Random fl' && item.isFlashing) {
+                const speed = item.speed ? item.speed * 0.005 : 0.005;
+                const randomSeed = Math.sin(Date.now() * speed + i * 1.5);
+                if (randomSeed > 0.3) {
+                  lightColor = item.color || '#FFD700';
+                }
+              } else if (item.movement === 'Flash str' && item.isFlashing) {
+                const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
+                const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+                if (flashCycle) {
+                  lightColor = item.color || '#FFD700';
+                }
+              } else if (item.movement === 'Light on str' || !item.movement || item.movement === 'static') {
+                lightColor = item.color || '#FFD700';
+              }
+              
+              ctx.fillStyle = lightColor;
               ctx.beginPath();
               ctx.arc(10, 10 + i * 35, 7, 0, Math.PI * 2);
               ctx.fill();
@@ -229,7 +293,11 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const frameDuration = 1000 / 30; // 30 FPS instead of 60 FPS
     
     const hasAnimatedItems = items.some(item => 
-      item.movement && ['Shake', 'Flash ind', 'Flash str', 'pulsing'].includes(item.movement)
+      item.movement && [
+        'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll',
+        'Trickle up', 'Trickle down', 'Random fl'
+      ].includes(item.movement) ||
+      item.isFlashing
     );
     
     if (hasAnimatedItems) {

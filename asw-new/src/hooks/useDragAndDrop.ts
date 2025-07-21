@@ -69,12 +69,52 @@ export function useDragAndDrop() {
       color?: string;
     }
   ) => {
+    const { toggleItemFlashing } = useAppStore.getState();
+    
+    // Save undo state before making changes
+    saveUndoState();
+    
+    // Update item configuration
     updateItem(itemId, updates);
+    
+    // Handle animation triggers when movement changes
+    if (updates.movement) {
+      const currentItem = items.find(item => item.id === itemId);
+      const wasFlashing = currentItem?.isFlashing;
+      
+      switch (updates.movement) {
+        case 'Flash ind':
+        case 'Flash str':
+        case 'Trickle up':
+        case 'Trickle down':
+        case 'Random fl':
+          // Start flashing animation for all flash-based movements
+          if (!wasFlashing) {
+            toggleItemFlashing(itemId);
+          }
+          break;
+        case 'Light on ind':
+        case 'Light on str':
+          // Stop flashing, keep steady glow
+          if (wasFlashing) {
+            toggleItemFlashing(itemId);
+          }
+          break;
+        case 'static':
+        default:
+          // Stop all animations for static movement
+          if (wasFlashing) {
+            toggleItemFlashing(itemId);
+          }
+          break;
+      }
+    }
+    
     logAction('item_configured', {
       itemID: itemId,
       updates,
     });
-  }, [updateItem, logAction]);
+  }, [updateItem, logAction, saveUndoState, items]);
 
   const handleItemClick = useCallback((itemId: string) => {
     selectItem(itemId);

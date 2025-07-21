@@ -23,6 +23,7 @@ export const ItemControlPanel: React.FC = React.memo(() => {
 
   const handleMovementChange = useCallback((movement: string) => {
     if (selectedItem) {
+      // This will now trigger animations through the enhanced updateItemConfiguration
       updateItemConfiguration(selectedItem.id, { movement: movement as WearableItem['movement'] });
     }
   }, [selectedItem, updateItemConfiguration]);
