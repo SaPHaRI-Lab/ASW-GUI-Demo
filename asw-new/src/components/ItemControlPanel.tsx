@@ -30,7 +30,10 @@ export const ItemControlPanel: React.FC = React.memo(() => {
 
   const handleCustomNameChange = useCallback((customName: string) => {
     if (selectedItem) {
-      updateItemConfiguration(selectedItem.id, { customName });
+      updateItemConfiguration(selectedItem.id, { 
+        customName,
+        cyoName: customName.substring(0, 4)
+      });
     }
   }, [selectedItem, updateItemConfiguration]);
 
@@ -100,16 +103,9 @@ export const ItemControlPanel: React.FC = React.memo(() => {
         <Button 
           variant="light-blue"
           size="small"
-          onClick={handleMoveToFront}
+          onClick={() => selectedItem.view === 'front' ? handleMoveToBack() : handleMoveToFront()}
         >
-          Move to Front
-        </Button>
-        <Button 
-          variant="light-blue"
-          size="small"
-          onClick={handleMoveToBack}
-        >
-          Move to Back
+          {selectedItem.view === 'front' ? 'Move to Back' : 'Move to Front'}
         </Button>
       </div>
       

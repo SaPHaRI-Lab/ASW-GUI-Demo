@@ -10,6 +10,7 @@ interface AppStore extends ApplicationState {
   updateItemPosition: (id: string, position: Position) => void;
   saveUndoState: () => void;
   selectItem: (id: string | null) => void;
+  deselectItem: (id: string) => void;
   selectMultipleItems: (ids: string[]) => void;
   duplicateItem: (id: string) => void;
   deleteSelectedItem: () => void;
@@ -187,13 +188,50 @@ export const useAppStore = create<AppStore>()(
       };
     }),
 
-    selectItem: (id) => set((state) => ({
-      selectedItemId: id,
-      items: state.items.map(item => ({
-        ...item,
-        isSelected: item.id === id,
-      })),
-    })),
+    selectItem: (id: string | null) => {
+      // Reset color selection when selecting a new item
+      const currentItem = id ? get().items.find(item => item.id === id) : null;
+      set(state => ({
+        selectedItemId: id,
+        items: state.items.map(item => ({
+          ...item,
+          isSelected: item.id === id,
+        })),
+        colorSelection: {
+          rgba: currentItem?.baseColor ? {
+            r: parseInt(currentItem.baseColor.match(/\d+/g)?.[0] || '227'),
+            g: parseInt(currentItem.baseColor.match(/\d+/g)?.[1] || '227'),
+            b: parseInt(currentItem.baseColor.match(/\d+/g)?.[2] || '227'),
+            a: 1
+          } : { r: 227, g: 227, b: 227, a: 1 },
+          position: { x: 0, y: 0 },
+          gradient: currentItem?.gradient ?? 5
+        }
+      }));
+      if (id) {
+        get().logAction('item_selected', { itemID: id });
+      }
+    },
+
+    deselectItem: (id) => set((state) => {
+      // Save current state for undo
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      
+      return {
+        selectedItemId: null,
+        items: state.items.map(item => ({
+          ...item,
+          isSelected: false,
+        })),
+        undoStack: [...state.undoStack, currentStateStr],
+        redoStack: [],
+      };
+    }),
 
     selectMultipleItems: (ids) => set((state) => ({
       selectedItemId: ids.length === 1 ? ids[0] : null,
@@ -252,23 +290,17 @@ export const useAppStore = create<AppStore>()(
       };
     }),
 
-    moveItemToFront: (id) => set((state) => {
-      const maxZIndex = Math.max(...state.items.map(item => item.zIndex || 0));
-      return {
-        items: state.items.map(item =>
-          item.id === id ? { ...item, zIndex: maxZIndex + 1 } : item
-        ),
-      };
-    }),
+    moveItemToFront: (id) => set((state) => ({
+      items: state.items.map(item =>
+        item.id === id ? { ...item, view: 'front' } : item
+      ),
+    })),
 
-    moveItemToBack: (id) => set((state) => {
-      const minZIndex = Math.min(...state.items.map(item => item.zIndex || 0));
-      return {
-        items: state.items.map(item =>
-          item.id === id ? { ...item, zIndex: minZIndex - 1 } : item
-        ),
-      };
-    }),
+    moveItemToBack: (id) => set((state) => ({
+      items: state.items.map(item =>
+        item.id === id ? { ...item, view: 'back' } : item
+      ),
+    })),
 
     updateColorSelection: (colorSelection) => set((state) => ({
       colorSelection: { ...state.colorSelection, ...colorSelection },

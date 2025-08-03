@@ -21,7 +21,8 @@ export function useDragAndDrop() {
   const createItem = useCallback((
     type: WearableItem['type'],
     position: Position,
-    customName?: string
+    customName?: string,
+    customInput?: string
   ) => {
     
     // Get the current highest zIndex for new items
@@ -31,10 +32,14 @@ export function useDragAndDrop() {
       id: generateId(),
       type,
       position,
-      color: 'rgb(227, 227, 227)', // Default color
+      color: type === 'speaker' ? '#1d1d1d' : 'rgb(227, 227, 227)',
+      gradient: 5,
       movement: 'static',
-      speed: 50,
-      customName,
+      speed: 3,
+      amount: type === 'light-strip' ? 6 : type === 'fur-patch' ? 15 : undefined,
+      customName: type === 'other' ? customName : undefined,
+      cyoName: type === 'other' ? customName?.substring(0, 4) : undefined,
+      customInput: type === 'other' ? customInput : '',
       isSelected: false,
       isFlashing: false,
       view: jacketConfig.view,
@@ -42,12 +47,22 @@ export function useDragAndDrop() {
       rotation: 0, // Default rotation
     };
 
+    // Reset color selection state
+    const { updateColorSelection } = useAppStore.getState();
+    updateColorSelection({
+      rgba: { r: 227, g: 227, b: 227, a: 1 },
+      position: { x: 0, y: 0 },
+      gradient: 5
+    });
+
     addItem(newItem);
     selectItem(newItem.id);
     logAction('item_created', {
       itemID: newItem.id,
       type,
       position,
+      customName,
+      customInput
     });
 
     return newItem;
@@ -61,14 +76,19 @@ export function useDragAndDrop() {
     });
   }, [updateItemPosition, logAction]);
 
+  // Update the ItemConfiguration type to include customInput
+  interface ItemConfiguration {
+    movement?: WearableItem['movement'];
+    speed?: number;
+    customName?: string;
+    customInput?: string;
+    color?: string;
+    cyoName?: string;
+  }
+
   const updateItemConfiguration = useCallback((
     itemId: string,
-    updates: {
-      movement?: WearableItem['movement'];
-      speed?: number;
-      customName?: string;
-      color?: string;
-    }
+    updates: ItemConfiguration
   ) => {
     const { toggleItemFlashing } = useAppStore.getState();
     

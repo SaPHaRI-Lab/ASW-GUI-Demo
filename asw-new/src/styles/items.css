@@ -23,6 +23,10 @@
 .item-container {
   margin-top: 10%;
   margin-bottom: 20%;
+  min-height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Draggable Items */
@@ -30,13 +34,117 @@
   cursor: grab;
 }
 
-.fur-patch {
+.fur-patch, .dropped-item .fur-patch {
   position: relative;
   width: 45px;
-  height: 30px;
+  height: 35px;
 }
 
-.fur1, .fur2 {
+.fur1, .fur2, .dropped-item .fur1, .dropped-item .fur2 {
+  position: absolute;
+  background-color: #8B4513;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  -webkit-clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.fur-patch .fur1,
+.fur-patch .fur2 {
+  width: 8px !important;
+  height: 12px !important;
+  transform-origin: center bottom;
+}
+.fur-patch .fur1:nth-child(1) {
+  width: 12px !important;
+  height: 18px !important;
+  top: 0 !important;
+  left: 16px !important;
+}
+.fur-patch .fur2:nth-child(2) {
+  width: 11px !important;
+  height: 17px !important;
+  top: 1px !important;
+  left: 22px !important;
+}
+.fur-patch .fur1:nth-child(3) {
+  width: 11px !important;
+  height: 17px !important;
+  top: 1px !important;
+  left: 12px !important;
+}
+.fur-patch .fur1:nth-child(4) {
+  width: 10px !important;
+  height: 15px !important;
+  top: 8px !important;
+  left: 8px !important;
+}
+.fur-patch .fur2:nth-child(5) {
+  width: 10px !important;
+  height: 15px !important;
+  top: 8px !important;
+  left: 14px !important;
+}
+.fur-patch .fur1:nth-child(6) {
+  width: 10px !important;
+  height: 15px !important;
+  top: 8px !important;
+  left: 26px !important;
+}
+.fur-patch .fur2:nth-child(7) {
+  width: 10px !important;
+  height: 15px !important;
+  top: 8px !important;
+  left: 30px !important;
+}
+.fur-patch .fur1:nth-child(8) {
+  width: 9px !important;
+  height: 13px !important;
+  top: 15px !important;
+  left: 18px !important;
+}
+.fur-patch .fur2:nth-child(9) {
+  width: 9px !important;
+  height: 13px !important;
+  top: 15px !important;
+  left: 20px !important;
+}
+.fur-patch .fur1:nth-child(10) {
+  width: 8px !important;
+  height: 14px !important;
+  top: 12px !important;
+  left: 4px !important;
+}
+.fur-patch .fur2:nth-child(11) {
+  width: 8px !important;
+  height: 14px !important;
+  top: 12px !important;
+  left: 34px !important;
+}
+.fur-patch .fur1:nth-child(12) {
+  width: 10px !important;
+  height: 16px !important;
+  top: 3px !important;
+  left: 16px !important;
+}
+.fur-patch .fur2:nth-child(13) {
+  width: 10px !important;
+  height: 16px !important;
+  top: 3px !important;
+  left: 24px !important;
+}
+.fur-patch .fur1:nth-child(14) {
+  width: 8px !important;
+  height: 12px !important;
+  top: 18px !important;
+  left: 10px !important;
+}
+.fur-patch .fur2:nth-child(15) {
+  width: 8px !important;
+  height: 12px !important;
+  top: 18px !important;
+  left: 28px !important;
+}
+.fur-patch .fur1, .fur-patch .fur2,
+.dropped-item .fur-patch .fur1, .dropped-item .fur-patch .fur2 {
   position: absolute;
   width: 8px;
   height: 10px;
@@ -57,11 +165,14 @@
   height: 210px;
 }
 
-.rectangle {
-  width: 20px;
+.light-strip::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 0;
+  width: 2px;
   height: 210px;
   background-color: #444;
-  border-radius: 4px;
 }
 
 .circle {
@@ -80,28 +191,31 @@
 }
 
 .battery1 {
+  position: absolute;
+  left: 0;
+  top: 2px;
   width: 50px;
   height: 20px;
-  border: 2px solid #333;
+  background-color: #333;
   border-radius: 3px;
   display: flex;
-  overflow: hidden;
+  gap: 2px;
+  padding: 2px;
 }
 
 .battery2 {
   position: absolute;
-  right: -3px;
+  right: 6px;
   top: 8px;
   width: 4px;
-  height: 9px;
+  height: 8px;
   background-color: #333;
   border-radius: 0 2px 2px 0;
 }
 
 .battery-bar {
-  flex: 1;
-  height: 100%;
-  margin: 1px;
+  width: 7px;
+  height: 16px;
   background-color: #4CAF50;
 }
 
@@ -115,26 +229,57 @@
 
 .speaker {
   position: relative;
-  width: 40px;
-  height: 30px;
+  width: 35px;
+  height: 20px;
+  cursor: grab;
+}
+
+.speaker-body {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  background-color: #1d1d1d;
+}
+
+.speaker-cone {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 15px;
+  height: 20px;
+  overflow: visible;
+}
+
+.speaker-cone-shape {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1d1d1d;
+  clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%);
+  -webkit-clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%);
 }
 
 .rectangle2 {
-  width: 30px;
-  height: 20px;
-  background-color: #333;
-  border-radius: 4px;
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background-color: #bbb;
+  left: 3px;
+  cursor: grab;
 }
 
 .trapezoid {
-  position: absolute;
-  top: 5px;
-  right: 0;
-  width: 0;
+  width: 15px;
   height: 0;
-  border-left: 15px solid #666;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 15px solid #bbb;
+  transform: rotate(270deg);
+  cursor: grab;
 }
 
 .other {
@@ -146,7 +291,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 16px;
+  font-family: Arial;
   color: white;
 }
 
@@ -154,7 +300,10 @@
   content: "?";
 }
 
-/* Dropped items on canvas */
+.other[data-name]::after {
+  content: attr(data-name);
+}
+
 .dropped-item {
   z-index: 3;
   position: absolute;

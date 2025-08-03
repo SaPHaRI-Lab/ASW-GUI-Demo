@@ -51,9 +51,21 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
   // Handle tint/brightness change
   const handleTintChange = useCallback((value: number | number[]) => {
     const gradient = Array.isArray(value) ? value[0] : value;
-    updateJacketConfig({ gradient });
+    
+    // Update the jacket config with the new gradient value
+    updateJacketConfig({ 
+      gradient,
+      // Also include current color to ensure a re-render
+      color: {
+        r: jacketConfig.color.r,
+        g: jacketConfig.color.g,
+        b: jacketConfig.color.b
+      }
+    });
+    
+    // Log the action
     logAction('changed_jacket_tint', { tint: gradient });
-  }, [updateJacketConfig, logAction]);
+  }, [updateJacketConfig, logAction, jacketConfig.color]);
 
   return (
     <div className="modern-jacket-color-picker">

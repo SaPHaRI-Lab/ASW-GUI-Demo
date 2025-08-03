@@ -136,3 +136,13 @@ export function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+export function adjustColor(color: string, amount: number): string {
+  const rgb = color.match(/\d+/g)?.map(Number);
+  if (!rgb || rgb.length < 3) return color;
+  const adjusted = rgb.map(value => {
+    const newValue = value + amount;
+    return Math.min(255, Math.max(0, newValue));
+  });
+  return `rgb(${adjusted[0]}, ${adjusted[1]}, ${adjusted[2]})`;
+}

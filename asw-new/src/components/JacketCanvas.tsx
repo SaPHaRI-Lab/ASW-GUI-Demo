@@ -1,13 +1,30 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useAppStore } from '../store/appStore';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
-import type { WearableItem } from '../types';
+import type { WearableItem, Position } from '../types';
+import { adjustColor, updateShade } from '../utils/colorUtils';
+import { RightClickMenu } from './RightClickMenu';
+
+// Helper function to check if an element is an input element
+const isInputElement = (element: HTMLElement | null): boolean => {
+  if (!element) return false;
+  const tagName = element.tagName.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || element.isContentEditable;
+};
 
 interface JacketCanvasProps {
   jacketImage: HTMLImageElement | null;
+  setPendingItemType: (type: string | null) => void;
+  setShowCreateItemPopup: (show: boolean) => void;
+  setPendingDropPosition: (pos: Position | null) => void;
 }
 
-export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
+export const JacketCanvas: React.FC<JacketCanvasProps> = ({ 
+  jacketImage, 
+  setPendingItemType,
+  setShowCreateItemPopup,
+  setPendingDropPosition 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem } = useAppStore();
   const { createItem, moveItem, saveUndoState } = useDragAndDrop();
@@ -40,10 +57,31 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
   // Flag to prevent onClick after marquee selection
   const [justCompletedMarquee, setJustCompletedMarquee] = useState(false);
 
+  // State for right-click menu
+  const [rightClickMenu, setRightClickMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Add this near the top of the component with other state
+  const [animationFrame, setAnimationFrame] = useState(0);
+
+  // Add this useEffect for continuous updates
+  useEffect(() => {
+    let frameId: number;
+    const animate = () => {
+      setAnimationFrame(prev => prev + 1);
+      frameId = requestAnimationFrame(animate);
+    };
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
   // Helper function to get item bounds
-  const getItemBounds = useCallback((itemType: string) => {
+  const getItemBounds = useCallback((itemType: string, item?: WearableItem) => {
     switch (itemType) {
-      case 'fur-patch': return { width: 45, height: 30 };
+      case 'fur-patch': {
+        const baseWidth = 40;
+        const extraWidth = item?.amount ? Math.floor((item.amount - 15) / 2) * 12 : 0;
+        return { width: baseWidth + extraWidth, height: 35 };
+      }
       case 'light-ind': return { width: 20, height: 20 };
       case 'light-strip': return { width: 20, height: 210 };
       case 'battery': return { width: 60, height: 25 };
@@ -59,7 +97,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       // Only check items on current view
       if (item.view !== jacketConfig.view) return false;
       
-      const bounds = getItemBounds(item.type);
+      const bounds = getItemBounds(item.type, item);
       
       // If item has rotation, we need to check against rotated bounds
       if (item.rotation) {
@@ -99,7 +137,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const selectedItem = storeItems.find(item => item.id === selectedItemId);
     if (!selectedItem) return null;
 
-    const bounds = getItemBounds(selectedItem.type);
+    const bounds = getItemBounds(selectedItem.type, selectedItem);
     
     // The rotation handle position in the item's local coordinate system
     // (matching the drawing code exactly)
@@ -199,7 +237,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       // Only check items on current view
       if (item.view !== jacketConfig.view) return false;
       
-      const bounds = getItemBounds(item.type);
+      const bounds = getItemBounds(item.type, item);
       const itemLeft = item.position.x;
       const itemRight = item.position.x + bounds.width;
       const itemTop = item.position.y;
@@ -220,22 +258,29 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const itemType = e.dataTransfer.getData('application/item-type');
-    
     if (!itemType) return;
-
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-
-    // Get item dimensions to properly center it at cursor position
-    const bounds = getItemBounds(itemType);
-    const x = e.clientX - rect.left - (bounds.width / 2); // Center the item
+    const bounds = getItemBounds(itemType as WearableItem['type'], { type: itemType as WearableItem['type'] } as WearableItem);
+    const x = e.clientX - rect.left - (bounds.width / 2);
     const y = e.clientY - rect.top - (bounds.height / 2);
-
-    if (x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) {
-      createItem(itemType as WearableItem['type'], { x, y });
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      const imageData = ctx.getImageData(x + bounds.width / 2, y + bounds.height / 2, 1, 1);
+      if (imageData.data[3] !== 0 && x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) {
+        if (itemType === 'other') {
+          setPendingItemType('other');
+          setShowCreateItemPopup(true);
+          setPendingDropPosition({ x, y });
+        } else {
+          createItem(itemType as WearableItem['type'], { x, y });
+        }
+      }
     }
-  }, [createItem, getItemBounds]);
+  }, [createItem, getItemBounds, setPendingItemType, setShowCreateItemPopup, setPendingDropPosition]);
 
   // Draw jacket with current color configuration
   const drawJacket = useCallback(() => {
@@ -251,20 +296,29 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Replace light gray areas with jacket color
-          if (r > 200 && g > 200 && b > 200) {
-            data[i] = jacketConfig.color.r;
-            data[i + 1] = jacketConfig.color.g;
-            data[i + 2] = jacketConfig.color.b;
-          }
-        }
+        // Get the adjusted color based on gradient
+        const baseColor = { r: jacketConfig.color.r, g: jacketConfig.color.g, b: jacketConfig.color.b, a: 1 };
+        const adjustedColor = updateShade(baseColor, jacketConfig.gradient || 5);
+        const colorMatch = adjustedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
         
-        ctx.putImageData(imageData, 0, 0);
+        if (colorMatch) {
+          const [_, r, g, b] = colorMatch.map(Number);
+          
+          for (let i = 0; i < data.length; i += 4) {
+            const pixelR = data[i];
+            const pixelG = data[i + 1];
+            const pixelB = data[i + 2];
+            
+            // Replace light gray areas with jacket color
+            if (pixelR > 200 && pixelG > 200 && pixelB > 200) {
+              data[i] = r;
+              data[i + 1] = g;
+              data[i + 2] = b;
+            }
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+        }
       }
       
       // Draw all items on the jacket (sorted by zIndex for proper layering)
@@ -275,20 +329,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       sortedItems.forEach(item => {
         ctx.save();
         ctx.translate(item.position.x, item.position.y);
-        
-        // Apply rotation if item has rotation
+        const scale = item.size || 1;
+        const bounds = getItemBounds(item.type, item);
+        if (scale !== 1) {
+          ctx.translate(bounds.width / 2, bounds.height / 2);
+          ctx.scale(scale, scale);
+          ctx.translate(-bounds.width / 2, -bounds.height / 2);
+        }
         if (item.rotation) {
-          const bounds = getItemBounds(item.type);
           ctx.translate(bounds.width / 2, bounds.height / 2);
           ctx.rotate((item.rotation * Math.PI) / 180);
           ctx.translate(-bounds.width / 2, -bounds.height / 2);
         }
-        
-        // Apply visual effects based on movement type
         if (item.movement && item.movement !== 'static') {
           ctx.save();
-          
-          switch (item.movement) {
+          /*switch (item.movement) {
             case 'Shake':
               // Enhanced shake with speed control
               const shakeIntensity = item.speed ? (item.speed / 100) * 3 : 2;
@@ -340,49 +395,124 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
               // Rotation effect for fur patches
               const rollSpeed = item.speed ? item.speed * 0.002 : 0.002;
               const rotation = Date.now() * rollSpeed;
-              ctx.rotate(rotation);
               break;
           }
         }
         
         // Draw different item types
         switch (item.type) {
-          case 'fur-patch':
-            ctx.fillStyle = '#8B4513';
+          case 'fur-patch': {
+            const now = Date.now();
+            ctx.save();
             for (let i = 0; i < 15; i++) {
-              const x = (i % 5) * 9;
-              const y = Math.floor(i / 5) * 10;
-              ctx.fillRect(x, y, 8, 10);
+              const col = i % 5;
+              const row = Math.floor(i / 5);
+              let x = col * 9;
+              let y = row * 10;
+              let angle = 0;
+              if (item.movement === 'Shake') {
+                const direction = (col % 2 === 0 ? 1 : -1);
+                const speed = item.speed || 3;
+                angle = Math.sin(now / (120 - speed * 15) + i) * 7 * direction;
+              } else if (item.movement === 'Stick up') {
+                angle = -40;
+              } else if (item.movement === 'Both') {
+                const direction = (col % 2 === 0 ? 1 : -1);
+                const speed = item.speed || 3;
+                angle = -40 + Math.sin(now / (120 - speed * 15) + i) * 7 * direction;
+              } else if (item.movement === 'Roll') {
+                const speed = item.speed || 3;
+                const cycleTime = 1000 - (speed * 100);
+                const rowPhase = (now % cycleTime) / cycleTime * 3;
+                const currentRow = Math.floor(rowPhase);
+                if (currentRow === row) {
+                  const progress = (rowPhase - currentRow);
+                  if (progress < 0.5) {
+                    angle = -60 * (progress * 2);
+                  } else {
+                    angle = -60 * (2 - progress * 2);
+                  }
+                } else {
+                  angle = 10;
+                }
+              }
+              ctx.save();
+              ctx.translate(x + 4, y + 10);
+              ctx.rotate((angle * Math.PI) / 180);
+              const furColor = item.color || (col % 2 === 0 ? '#d3d3d3' : '#e5e5e5');
+              ctx.fillStyle = furColor;
+              ctx.fillRect(-4, -10, 8, 20);
+              ctx.restore();
             }
+            ctx.restore();
             break;
-          case 'light-ind':
-            ctx.fillStyle = item.color || '#FFD700';
+          }
+          case 'light-ind': {
+            if (item.movement === 'Flash ind' && item.isFlashing) {
+              const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
+              const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+              ctx.fillStyle = flashCycle ? (item.color || '#FFD700') : '#333';
+            } else {
+              ctx.fillStyle = item.color || '#FFD700';
+            }
             ctx.beginPath();
             ctx.arc(10, 10, 10, 0, Math.PI * 2);
             ctx.fill();
             break;
-          case 'light-strip':
-            ctx.fillStyle = '#444';
-            ctx.fillRect(0, 0, 20, 210);
-            
-            // Enhanced light strip with trickle animation support
-            for (let i = 0; i < 6; i++) {
+          }*/
+          // Apply movement animations
+          if (item.movement === 'Shake') {
+            const speed = item.speed || 3;
+            const direction = (item.position.x < canvasRef.current!.width / 2 ? 1 : -1);
+            const now = Date.now();
+            const angle = Math.sin(now / (120 - speed * 15)) * 7 * direction;
+            ctx.translate(bounds.width / 2, bounds.height / 2);
+            ctx.rotate((angle * Math.PI) / 180);
+            ctx.translate(-bounds.width / 2, -bounds.height / 2);
+          } else if (item.movement === 'Stick up') {
+            ctx.translate(bounds.width / 2, bounds.height / 2);
+            ctx.rotate(-40 * Math.PI / 180);
+            ctx.translate(-bounds.width / 2, -bounds.height / 2);
+          } else if (item.movement === 'Both') {
+            const speed = item.speed || 3;
+            const now = Date.now();
+            const baseAngle = -40;
+            const shake = Math.sin(now / (120 - speed * 15)) * 10;
+            ctx.translate(bounds.width / 2, bounds.height / 2);
+            ctx.rotate(((baseAngle + shake) * Math.PI) / 180);
+            ctx.translate(-bounds.width / 2, -bounds.height / 2);
+          }
+          ctx.restore();
+        }
+
+        switch (item.type) {
+          case 'light-strip': {
+            const numLights = item.amount || 6;
+            const spacing = 210 / (numLights - 1);
+            const totalHeight = (numLights - 1) * spacing + 20;
+            const startY = 10;
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(10, startY);
+            ctx.lineTo(10, startY + (numLights - 1) * spacing);
+            ctx.stroke();
+            for (let i = 0; i < numLights; i++) {
               let lightColor = '#333'; // Default off color
-              
-              if (item.movement === 'Trickle up' && item.isFlashing) {
-                const speed = item.speed ? item.speed * 0.01 : 0.01;
-                const time = Date.now() * speed;
-                const currentLight = Math.floor(time / 300) % 6; // Each light lasts 300ms
-                const lightIndex = 5 - i; // Reverse for trickle up
-                if (lightIndex === currentLight) {
-                  lightColor = item.color || '#FFD700';
-                }
-              } else if (item.movement === 'Trickle down' && item.isFlashing) {
-                const speed = item.speed ? item.speed * 0.01 : 0.01;
-                const time = Date.now() * speed;
-                const currentLight = Math.floor(time / 300) % 6;
-                if (i === currentLight) {
-                  lightColor = item.color || '#FFD700';
+              if ((item.movement === 'Trickle up' || item.movement === 'Trickle down') && item.isFlashing) {
+                const minInterval = 180, maxInterval = 400;
+                const interval = maxInterval - ((item.speed - 1) * (maxInterval - minInterval) / 4);
+                const now = Date.now();
+                const currentLight = Math.floor(now / interval) % numLights;
+                if (item.movement === 'Trickle up') {
+                  const lightIndex = numLights - 1 - i;
+                  if (lightIndex === currentLight) {
+                    lightColor = item.color || '#FFD700';
+                  }
+                } else if (item.movement === 'Trickle down') {
+                  if (i === currentLight) {
+                    lightColor = item.color || '#FFD700';
+                  }
                 }
               } else if (item.movement === 'Random fl' && item.isFlashing) {
                 const speed = item.speed ? item.speed * 0.005 : 0.005;
@@ -399,38 +529,185 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
               } else if (item.movement === 'Light on str' || !item.movement || item.movement === 'static') {
                 lightColor = item.color || '#FFD700';
               }
-              
               ctx.fillStyle = lightColor;
               ctx.beginPath();
-              ctx.arc(10, 10 + i * 35, 7, 0, Math.PI * 2);
+              ctx.arc(10, startY + i * spacing, 7, 0, Math.PI * 2);
               ctx.fill();
             }
             break;
+          }
+          case 'fur-patch': {
+            const now = Date.now();
+            ctx.save();
+            interface FurTriangle {
+              w: number;
+              h: number;
+              x: number;
+              y: number;
+              r: number;
+            }
+            const columnPattern: FurTriangle[] = [
+              { w: 11, h: 17, x: 0, y: 1, r: -12 },
+              { w: 10, h: 15, x: 0, y: 8, r: -15 },
+              { w: 9, h: 13, x: 0, y: 15, r: -3 }
+            ];
+            const baseTriangles: FurTriangle[] = [
+              { w: 12, h: 18, x: 16, y: 0, r: -5 },
+              { w: 11, h: 17, x: 22, y: 1, r: 8 },
+              { w: 11, h: 17, x: 12, y: 1, r: -12 },
+              { w: 10, h: 15, x: 8, y: 8, r: -20 },
+              { w: 10, h: 15, x: 14, y: 8, r: -15 },
+              { w: 10, h: 15, x: 26, y: 8, r: 15 },
+              { w: 10, h: 15, x: 30, y: 8, r: 22 },
+              { w: 9, h: 13, x: 18, y: 15, r: -3 },
+              { w: 9, h: 13, x: 20, y: 15, r: 10 },
+              { w: 8, h: 14, x: 4, y: 12, r: -25 },
+              { w: 8, h: 14, x: 34, y: 12, r: 25 },
+              { w: 10, h: 16, x: 16, y: 3, r: -8 },
+              { w: 10, h: 16, x: 24, y: 3, r: 5 },
+              { w: 8, h: 12, x: 10, y: 18, r: -18 },
+              { w: 8, h: 12, x: 28, y: 18, r: 18 }
+            ];
+            const amount = item.amount || 15;
+            const extraColumns = Math.floor((amount - 15) / 2);
+            const triangles: FurTriangle[] = [...baseTriangles];
+            for (let i = 1; i <= extraColumns; i++) {
+              columnPattern.forEach(base => {
+                triangles.push({
+                  ...base,
+                  x: base.x + 30 + (i * 6),
+                  r: base.r + (i * 3),
+                  w: base.w * 0.95
+                });
+              });
+              columnPattern.forEach(base => {
+                triangles.push({
+                  ...base,
+                  x: base.x + 8 - (i * 6),
+                  r: base.r - (i * 3),
+                  w: base.w * 0.95
+                });
+              });
+            }
+            triangles.forEach((t) => {
+              let angle = t.r;
+              if (item.movement === 'Shake') {
+                const speed = item.speed || 3;
+                const direction = (t.x < 22 ? 1 : -1);
+                angle += Math.sin(now / (120 - speed * 15)) * 7 * direction;
+              } else if (item.movement === 'Roll') {
+                const speed = item.speed || 3;
+                const animationSpeed = 600 - speed * 50;
+                let rowIndex = -1;
+                if (t.y <= 3) {
+                  rowIndex = 0; // Top row
+                } else if (t.y > 3 && t.y <= 12) {
+                  rowIndex = 1; // Middle row
+                } else {
+                  rowIndex = 2; // Bottom row
+                }
+                const totalPhase = Math.floor((now / animationSpeed) % 6);
+                const isDownPhase = totalPhase < 3;
+                const currentRowPhase = totalPhase % 3;
+                if (currentRowPhase === rowIndex) {
+                  const progress = ((now / animationSpeed) % 1);
+                  if (isDownPhase) {
+                    angle += -60 * progress;
+                  } else {
+                    angle += -60 + (60 * progress);
+                  }
+                }
+              } else if (item.movement === 'Stick up') {
+                angle -= 40;
+              } else if (item.movement === 'Both') {
+                const speed = item.speed || 3;
+                const baseAngle = -40;
+                const shake = Math.sin(now / (120 - speed * 15)) * 10;
+                angle += baseAngle + shake;
+              }
+              ctx.save();
+              ctx.translate(t.x + t.w/2, t.y + t.h/2);
+              ctx.rotate((angle * Math.PI) / 180);
+              ctx.translate(-t.w/2, -t.h/2);
+              ctx.fillStyle = item.color || '#8B4513';
+              ctx.beginPath();
+              const radius = 4;
+              const topX = t.w/2;
+              const topY = radius;
+              const leftX = radius;
+              const leftY = t.h - radius;
+              const rightX = t.w - radius;
+              const rightY = t.h - radius;
+              ctx.moveTo(topX, 0);
+              ctx.lineTo(t.w, t.h - radius);
+              ctx.quadraticCurveTo(t.w, t.h, rightX, t.h);
+              ctx.lineTo(leftX, t.h);
+              ctx.quadraticCurveTo(0, t.h, 0, leftY);
+              ctx.lineTo(topX, 0);
+              ctx.closePath();
+              ctx.fill();
+              ctx.restore();
+            });
+            ctx.restore();
+            break;
+          }
+          case 'light-ind': {
+            if (item.movement === 'Flash ind' && item.isFlashing) {
+              const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
+              const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+              ctx.fillStyle = flashCycle ? (item.color || '#FFD700') : '#333';
+            } else {
+              ctx.fillStyle = item.color || '#FFD700';
+            }
+            ctx.beginPath();
+            ctx.arc(10, 10, 10, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+          }
           case 'battery':
             ctx.fillStyle = '#333';
             ctx.fillRect(0, 0, 50, 20);
-            ctx.fillStyle = '#4CAF50';
+            const numBars = item.speed || 3;
             for (let i = 0; i < 5; i++) {
-              ctx.fillRect(2 + i * 9, 2, 7, 16);
+              if (i < numBars) {
+                ctx.fillStyle = item.color || '#4CAF50';
+                ctx.fillRect(2 + i * 9, 2, 7, 16);
+              }
             }
+            ctx.fillStyle = '#333';
+            ctx.fillRect(50, 6, 4, 8);
             break;
           case 'display':
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = item.color || '#000';
             ctx.fillRect(0, 0, 60, 40);
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 2;
             ctx.strokeRect(0, 0, 60, 40);
             break;
           case 'speaker':
-            ctx.fillStyle = '#333';
-            ctx.fillRect(0, 0, 30, 20);
-            ctx.fillStyle = '#666';
+            ctx.fillStyle = item.color || '#1d1d1d';
+            ctx.fillRect(0, 5, 10, 10);
             ctx.beginPath();
-            ctx.moveTo(30, 5);
-            ctx.lineTo(45, 0);
-            ctx.lineTo(45, 20);
-            ctx.lineTo(30, 15);
+            ctx.moveTo(8, 5);
+            ctx.lineTo(23, 0);
+            ctx.lineTo(23, 20);
+            ctx.lineTo(8, 15);
+            ctx.closePath();
             ctx.fill();
+            break;
+          case 'other':
+            ctx.fillStyle = item.color || '#888';
+            ctx.fillRect(0, 0, 40, 30);
+            ctx.strokeStyle = '#666';
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(0, 0, 40, 30);
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const displayText = item.cyoName || '?';
+            ctx.fillText(displayText, 20, 15);
             break;
           default:
             ctx.fillStyle = '#888';
@@ -453,7 +730,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
         
         // Draw selection indicator if selected
         if (item.isSelected) {
-          const bounds = getItemBounds(item.type);
+          const bounds = getItemBounds(item.type, item);
           const isPrimarySelection = item.id === selectedItemId;
           
           // Use different colors for primary vs secondary selections
@@ -501,11 +778,11 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
         ctx.setLineDash([]); // Reset line dash
       }
     }
-  }, [jacketImage, jacketConfig.color, storeItems, marqueeState]);
+  }, [jacketImage, jacketConfig.color, jacketConfig.gradient, jacketConfig.view, storeItems, marqueeState]);
 
   useEffect(() => {
     drawJacket();
-  }, [drawJacket]);
+  }, [drawJacket, jacketConfig.gradient]);
 
   // Keyboard shortcuts for copy/paste colors and elements
   useEffect(() => {
@@ -551,7 +828,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       }
       
       // Delete/Backspace works WITHOUT requiring Ctrl/Cmd
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputElement(e.target as HTMLElement)) {
         e.preventDefault();
         if (selectedItems.length > 0) {
           console.log('DELETE KEY: Deleting', selectedItems.length, 'items:', selectedItems.map(item => item.id));
@@ -565,11 +842,49 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
           console.log('DELETE KEY: No items selected');
         }
       }
+
+      // Handle arrow keys for item movement
+      if (selectedItemId) {
+        const selectedItem = storeItems.find(item => item.id === selectedItemId);
+        if (selectedItem) {
+          const moveStep = e.shiftKey ? 10 : 1; // Hold shift for larger movements
+          switch (e.key) {
+            case 'ArrowLeft':
+              e.preventDefault();
+              moveItem(selectedItem.id, { 
+                x: selectedItem.position.x - moveStep, 
+                y: selectedItem.position.y 
+              });
+              break;
+            case 'ArrowRight':
+              e.preventDefault();
+              moveItem(selectedItem.id, { 
+                x: selectedItem.position.x + moveStep, 
+                y: selectedItem.position.y 
+              });
+              break;
+            case 'ArrowUp':
+              e.preventDefault();
+              moveItem(selectedItem.id, { 
+                x: selectedItem.position.x, 
+                y: selectedItem.position.y - moveStep 
+              });
+              break;
+            case 'ArrowDown':
+              e.preventDefault();
+              moveItem(selectedItem.id, { 
+                x: selectedItem.position.x, 
+                y: selectedItem.position.y + moveStep 
+              });
+              break;
+          }
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems]);
+  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems, moveItem]);
 
   // Animation loop for movement effects
   useEffect(() => {
@@ -580,7 +895,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
         'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll',
-        'Trickle up', 'Trickle down', 'Random fl'
+        'Trickle up', 'Trickle down', 'Random fl', 'Both'
       ].includes(item.movement) ||
       item.isFlashing
     );
@@ -612,11 +927,26 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
       // Check if click is within jacket bounds by checking pixel alpha
       const imageData = ctx.getImageData(x, y, 1, 1);
       if (imageData.data[3] !== 0) {
-        // Show context menu for item creation - for now just create a default item
-        createItem('other', { x, y });
+        setRightClickMenu({ x: event.clientX - rect.left, y: event.clientY - rect.top });
       }
     }
-  }, [createItem]);
+  }, []);
+
+  const handleMenuItemSelect = useCallback((itemType: string) => {
+    if (rightClickMenu) {
+      const x = rightClickMenu.x;
+      const y = rightClickMenu.y;
+      
+      if (itemType === 'other') {
+        setPendingItemType('other');
+        setShowCreateItemPopup(true);
+        setPendingDropPosition({ x, y });
+      } else {
+        createItem(itemType as WearableItem['type'], { x, y });
+      }
+    }
+    setRightClickMenu(null);
+  }, [rightClickMenu, createItem, setPendingItemType, setShowCreateItemPopup, setPendingDropPosition]);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     // Prevent click handling if we just completed a marquee selection
@@ -658,7 +988,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     const rotationItem = getRotationHandleAtPosition(x, y);
     if (rotationItem) {
       saveUndoState();
-      const bounds = getItemBounds(rotationItem.type);
+      const bounds = getItemBounds(rotationItem.type, rotationItem);
       const centerX = rotationItem.position.x + bounds.width / 2;
       const centerY = rotationItem.position.y + bounds.height / 2;
       const startAngle = calculateAngle(centerX, centerY, x, y);
@@ -738,7 +1068,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
 
     if (rotationState.isRotating && rotationState.rotatingItem) {
       // Handle rotation
-      const bounds = getItemBounds(rotationState.rotatingItem.type);
+      const bounds = getItemBounds(rotationState.rotatingItem.type, rotationState.rotatingItem);
       const centerX = rotationState.rotatingItem.position.x + bounds.width / 2;
       const centerY = rotationState.rotatingItem.position.y + bounds.height / 2;
       const currentAngle = calculateAngle(centerX, centerY, x, y);
@@ -870,23 +1200,31 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({ jacketImage }) => {
     }
   }, [marqueeState, getItemsInRectangle, selectMultipleItems, dragState, selectedItemId, selectItem, getSelectedItems]);
 
+  const { isDragging, isRotating } = dragState;
+
   return (
     <>
       <canvas
         ref={canvasRef}
-        id="jacketCanvas"
-        className="jacket-canvas"
-        width={550}
+        width={480}
         height={550}
-        onClick={handleClick}
         onContextMenu={handleRightClick}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onClick={handleClick}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         onMouseLeave={handleMouseUp}
+        style={{ cursor: dragState.isDragging ? 'grabbing' : 'default' }}
       />
+      {rightClickMenu && (
+        <RightClickMenu
+          position={rightClickMenu}
+          onItemSelect={handleMenuItemSelect}
+          onClose={() => setRightClickMenu(null)}
+        />
+      )}
     </>
   );
 };

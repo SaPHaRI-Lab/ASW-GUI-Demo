@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useAppStore } from '../store/appStore';
-import { updateShade } from '../utils/colorUtils';
+import { updateShade, rgbaToString, parseRgbString } from '../utils/colorUtils';
 import type { RGBA, Position } from '../types';
 
 /**
@@ -28,6 +28,7 @@ export function useColorSelection() {
         a: rgba[3] / 255,
       };
 
+      const baseColor = rgbaToString(newRgba);
       updateColorSelection({
         rgba: newRgba,
         position,
@@ -36,10 +37,16 @@ export function useColorSelection() {
       // Update selected item color
       if (selectedItemId) {
         const selectedColor = updateShade(newRgba, colorSelection.gradient);
-        updateItem(selectedItemId, { color: selectedColor });
+        updateItem(selectedItemId, { 
+          color: selectedColor,
+          baseColor,
+          gradient: colorSelection.gradient
+        });
         logAction('changed_color', {
           itemID: selectedItemId,
           color: selectedColor,
+          baseColor,
+          gradient: colorSelection.gradient
         });
       }
     }
@@ -49,14 +56,22 @@ export function useColorSelection() {
     updateColorSelection({ gradient });
 
     if (selectedItemId) {
-      const selectedColor = updateShade(colorSelection.rgba, gradient);
-      updateItem(selectedItemId, { color: selectedColor });
+      const currentItem = useAppStore.getState().items.find(item => item.id === selectedItemId);
+      if (!currentItem?.baseColor) return;
+      const baseRgba = parseRgbString(currentItem.baseColor);
+      if (!baseRgba) return;
+      const selectedColor = updateShade({ ...baseRgba, a: 1 }, gradient);
+      updateItem(selectedItemId, { 
+        color: selectedColor,
+        gradient
+      });
       logAction('changed_color', {
         itemID: selectedItemId,
         color: selectedColor,
+        gradient
       });
     }
-  }, [colorSelection.rgba, selectedItemId, updateColorSelection, updateItem, logAction]);
+  }, [selectedItemId, updateColorSelection, updateItem, logAction]);
 
   const handleRgbInputChange = useCallback((rgbString: string) => {
     const rgbMatch = rgbString.match(/rgb\((\d+),(\d+),(\d+)\)/);
@@ -83,14 +98,21 @@ export function useColorSelection() {
   }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, logAction]);
 
   const handleColorChange = useCallback((rgba: RGBA) => {
+    const baseColor = rgbaToString(rgba);
     updateColorSelection({ rgba });
 
     if (selectedItemId) {
       const selectedColor = updateShade(rgba, colorSelection.gradient);
-      updateItem(selectedItemId, { color: selectedColor });
+      updateItem(selectedItemId, { 
+        color: selectedColor,
+        baseColor,
+        gradient: colorSelection.gradient
+      });
       logAction('changed_color', {
         itemID: selectedItemId,
         color: selectedColor,
+        baseColor,
+        gradient: colorSelection.gradient
       });
     }
   }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, logAction]);

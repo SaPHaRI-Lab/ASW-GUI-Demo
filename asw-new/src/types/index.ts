@@ -29,16 +29,21 @@ export interface WearableItem {
   type: ItemType;
   position: Position;
   color: string;
+  baseColor?: string;
+  gradient?: number;
   movement: MovementType;
   speed: number;
   customName?: string;
   cyoName?: string;
+  customInput?: string;
   isSelected: boolean;
   isFlashing: boolean;
   flashingColor?: string;
   view: 'front' | 'back';
   zIndex: number;
   rotation?: number; // Rotation angle in degrees
+  size?: number;
+  amount?: number;
 }
 
 export interface ColorSelection {
