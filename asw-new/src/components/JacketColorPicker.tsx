@@ -4,6 +4,7 @@ import Slider from 'rc-slider';
 import { hsvaToHex, hexToHsva } from '@uiw/color-convert';
 import { useAppStore } from '../store/appStore';
 import { rgbaToHex, hexToRgba } from '../utils/colorUtils';
+import { Button } from './Button';
 import 'rc-slider/assets/index.css';
 
 interface JacketColorPickerProps {
@@ -11,7 +12,7 @@ interface JacketColorPickerProps {
 }
 
 export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
-  const { jacketConfig, updateJacketConfig, logAction } = useAppStore();
+  const { jacketConfig, updateJacketConfig, logAction, copyColor, pasteColor, copiedColor } = useAppStore();
 
   // Convert current jacket color to hex and then to HSVA for the wheel
   const currentHex = rgbaToHex({ 
@@ -67,6 +68,22 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
     logAction('changed_jacket_tint', { tint: gradient });
   }, [updateJacketConfig, logAction, jacketConfig.color]);
 
+  const handleCopyJacketColor = useCallback(() => {
+    const jacketColorHex = rgbaToHex({ 
+      r: jacketConfig.color.r, 
+      g: jacketConfig.color.g, 
+      b: jacketConfig.color.b, 
+      a: 1 
+    });
+    copyColor(jacketColorHex);
+    logAction('copied_jacket_color', { color: jacketColorHex });
+  }, [copyColor, logAction, jacketConfig.color]);
+
+  const handlePasteToJacket = useCallback(() => {
+    pasteColor();
+    logAction('pasted_color_to_jacket', {});
+  }, [pasteColor, logAction]);
+
   return (
     <div className="modern-jacket-color-picker">
       <div className="jacket-color-label">
@@ -96,6 +113,50 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
           }}
         />
       </div>
+
+      <div className="jacket-color-copy-paste" style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <Button
+          variant="light-blue"
+          size="small"
+          onClick={handleCopyJacketColor}
+        >
+          Copy
+        </Button>
+        <Button
+          variant="light-blue"
+          size="small"
+          onClick={handlePasteToJacket}
+        >
+          Paste
+        </Button>
+      </div>
+
+      {copiedColor && (
+        <div 
+          className="copied-color-preview" 
+          style={{ 
+            marginTop: '5px', 
+            textAlign: 'center', 
+            fontSize: '12px', 
+            color: '#666',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px'
+          }}
+        >
+          <div 
+            style={{ 
+              width: '12px', 
+              height: '12px', 
+              backgroundColor: copiedColor, 
+              borderRadius: '2px',
+              border: '1px solid #ccc'
+            }}
+          ></div>
+          Copied
+        </div>
+      )}
     </div>
   );
 };

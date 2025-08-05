@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useAppStore } from '../store/appStore';
 import { useDragAndDrop } from '../hooks/useDragAndDrop';
 import type { WearableItem, Position } from '../types';
-import { adjustColor, updateShade } from '../utils/colorUtils';
+import { adjustColor, updateShade, rgbToHex } from '../utils/colorUtils';
 import { RightClickMenu } from './RightClickMenu';
 
 // Helper function to check if an element is an input element
@@ -83,7 +83,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         return { width: baseWidth + extraWidth, height: 35 };
       }
       case 'light-ind': return { width: 20, height: 20 };
-      case 'light-strip': return { width: 20, height: 210 };
+      case 'light-strip': return { width: 20, height: 230 };
       case 'battery': return { width: 60, height: 25 };
       case 'display': return { width: 60, height: 40 };
       case 'speaker': return { width: 40, height: 30 };
@@ -343,123 +343,6 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         }
         if (item.movement && item.movement !== 'static') {
           ctx.save();
-          /*switch (item.movement) {
-            case 'Shake':
-              // Enhanced shake with speed control
-              const shakeIntensity = item.speed ? (item.speed / 100) * 3 : 2;
-              const shakeX = (Math.random() - 0.5) * shakeIntensity;
-              const shakeY = (Math.random() - 0.5) * shakeIntensity;
-              ctx.translate(shakeX, shakeY);
-              break;
-            case 'Flash ind':
-            case 'Flash str':
-              // Enhanced flashing with speed-controlled timing (slower rate)
-              if (item.isFlashing) {
-                const flashSpeed = item.speed ? item.speed * 0.002 : 0.002; // Much slower
-                const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
-                if (flashCycle) {
-                  ctx.shadowColor = item.color || '#FFD700';
-                  ctx.shadowBlur = 15;
-                }
-              } else {
-                // Steady glow for "Light on" states
-                ctx.shadowColor = item.color || '#00FF00';
-                ctx.shadowBlur = 5;
-              }
-              break;
-            case 'Light on ind':
-            case 'Light on str':
-              // Add steady glow
-              ctx.shadowColor = item.color || '#00FF00';
-              ctx.shadowBlur = 5;
-              break;
-            case 'Trickle up':
-            case 'Trickle down':
-            case 'Random fl':
-              // Light strip patterns are handled in the drawing section
-              // Just add a subtle glow effect
-              if (item.isFlashing && item.type === 'light-strip') {
-                ctx.shadowColor = item.color || '#FFD700';
-                ctx.shadowBlur = 8;
-              }
-              break;
-            case 'pulsing':
-              // Enhanced pulsing with speed control
-              const pulseSpeed = item.speed ? item.speed * 0.001 : 0.005;
-              const pulse = Math.sin(Date.now() * pulseSpeed) * 0.5 + 0.5;
-              ctx.shadowColor = item.color || '#FFD700';
-              ctx.shadowBlur = 8 + (pulse * 5);
-              ctx.globalAlpha = 0.7 + (pulse * 0.3);
-              break;
-            case 'Roll':
-              // Rotation effect for fur patches
-              const rollSpeed = item.speed ? item.speed * 0.002 : 0.002;
-              const rotation = Date.now() * rollSpeed;
-              break;
-          }
-        }
-        
-        // Draw different item types
-        switch (item.type) {
-          case 'fur-patch': {
-            const now = Date.now();
-            ctx.save();
-            for (let i = 0; i < 15; i++) {
-              const col = i % 5;
-              const row = Math.floor(i / 5);
-              let x = col * 9;
-              let y = row * 10;
-              let angle = 0;
-              if (item.movement === 'Shake') {
-                const direction = (col % 2 === 0 ? 1 : -1);
-                const speed = item.speed || 3;
-                angle = Math.sin(now / (120 - speed * 15) + i) * 7 * direction;
-              } else if (item.movement === 'Stick up') {
-                angle = -40;
-              } else if (item.movement === 'Both') {
-                const direction = (col % 2 === 0 ? 1 : -1);
-                const speed = item.speed || 3;
-                angle = -40 + Math.sin(now / (120 - speed * 15) + i) * 7 * direction;
-              } else if (item.movement === 'Roll') {
-                const speed = item.speed || 3;
-                const cycleTime = 1000 - (speed * 100);
-                const rowPhase = (now % cycleTime) / cycleTime * 3;
-                const currentRow = Math.floor(rowPhase);
-                if (currentRow === row) {
-                  const progress = (rowPhase - currentRow);
-                  if (progress < 0.5) {
-                    angle = -60 * (progress * 2);
-                  } else {
-                    angle = -60 * (2 - progress * 2);
-                  }
-                } else {
-                  angle = 10;
-                }
-              }
-              ctx.save();
-              ctx.translate(x + 4, y + 10);
-              ctx.rotate((angle * Math.PI) / 180);
-              const furColor = item.color || (col % 2 === 0 ? '#d3d3d3' : '#e5e5e5');
-              ctx.fillStyle = furColor;
-              ctx.fillRect(-4, -10, 8, 20);
-              ctx.restore();
-            }
-            ctx.restore();
-            break;
-          }
-          case 'light-ind': {
-            if (item.movement === 'Flash ind' && item.isFlashing) {
-              const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
-              const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
-              ctx.fillStyle = flashCycle ? (item.color || '#FFD700') : '#333';
-            } else {
-              ctx.fillStyle = item.color || '#FFD700';
-            }
-            ctx.beginPath();
-            ctx.arc(10, 10, 10, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-          }*/
           // Apply movement animations
           if (item.movement === 'Shake') {
             const speed = item.speed || 3;
@@ -502,8 +385,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
               if ((item.movement === 'Trickle up' || item.movement === 'Trickle down') && item.isFlashing) {
                 const minInterval = 180, maxInterval = 400;
                 const interval = maxInterval - ((item.speed - 1) * (maxInterval - minInterval) / 4);
-                const now = Date.now();
-                const currentLight = Math.floor(now / interval) % numLights;
+                const itemTime = item.animationStartTime || Date.now();
+                const currentLight = Math.floor((Date.now()-itemTime) / interval) % numLights;
                 if (item.movement === 'Trickle up') {
                   const lightIndex = numLights - 1 - i;
                   if (lightIndex === currentLight) {
@@ -516,13 +399,15 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 }
               } else if (item.movement === 'Random fl' && item.isFlashing) {
                 const speed = item.speed ? item.speed * 0.005 : 0.005;
-                const randomSeed = Math.sin(Date.now() * speed + i * 1.5);
+                const itemTime = item.animationStartTime || Date.now();
+                const randomSeed = Math.sin((Date.now()-itemTime) * speed + i * 1.5);
                 if (randomSeed > 0.3) {
                   lightColor = item.color || '#FFD700';
                 }
               } else if (item.movement === 'Flash str' && item.isFlashing) {
                 const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
-                const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+                const itemTime = item.animationStartTime || Date.now();
+                const flashCycle = Math.sin((Date.now()-itemTime) * flashSpeed) > 0;
                 if (flashCycle) {
                   lightColor = item.color || '#FFD700';
                 }
@@ -606,15 +491,23 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 } else {
                   rowIndex = 2; // Bottom row
                 }
-                const totalPhase = Math.floor((now / animationSpeed) % 6);
-                const isDownPhase = totalPhase < 3;
-                const currentRowPhase = totalPhase % 3;
-                if (currentRowPhase === rowIndex) {
-                  const progress = ((now / animationSpeed) % 1);
-                  if (isDownPhase) {
-                    angle += -60 * progress;
+                const totalCycleTime = animationSpeed * 6;
+                const cycleProgress = (now%totalCycleTime) / totalCycleTime;
+                if (cycleProgress < 0.5) {
+                  const downPhase = cycleProgress * 2;
+                  const rowStartTime = rowIndex * (1/3);
+                  if (downPhase >= rowStartTime) {
+                    const rowProgress = Math.min((downPhase-rowStartTime) * 3, 1);
+                    angle += -60 * rowProgress;
+                  }
+                } else {
+                  const upPhase = (cycleProgress-0.5) * 2;
+                  const rowStartTime = rowIndex * (1/3);
+                  if (upPhase >= rowStartTime) {
+                    const rowProgress = Math.min((upPhase-rowStartTime) * 3, 1);
+                    angle += -60 + (60 * rowProgress);
                   } else {
-                    angle += -60 + (60 * progress);
+                    angle += -60;
                   }
                 }
               } else if (item.movement === 'Stick up') {
@@ -654,7 +547,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           case 'light-ind': {
             if (item.movement === 'Flash ind' && item.isFlashing) {
               const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
-              const flashCycle = Math.sin(Date.now() * flashSpeed) > 0;
+              const itemTime = item.animationStartTime || Date.now();
+              const flashCycle = Math.sin((Date.now()-itemTime) * flashSpeed) > 0;
               ctx.fillStyle = flashCycle ? (item.color || '#FFD700') : '#333';
             } else {
               ctx.fillStyle = item.color || '#FFD700';
@@ -733,6 +627,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           const bounds = getItemBounds(item.type, item);
           const isPrimarySelection = item.id === selectedItemId;
           
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.translate(item.position.x, item.position.y);
+          const scale = item.size || 1;
+          if (scale !== 1) {
+            ctx.translate(bounds.width/2, bounds.height/2);
+            ctx.scale(scale, scale);
+            ctx.translate(-bounds.width/2, -bounds.height/2);
+          }
+          if (item.rotation) {
+            ctx.translate(bounds.width/2, bounds.height/2);
+            ctx.rotate((item.rotation * Math.PI) / 180);
+            ctx.translate(-bounds.width/2, -bounds.height/2);
+          }
+          
           // Use different colors for primary vs secondary selections
           ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
           ctx.lineWidth = isPrimarySelection ? 3 : 2;
@@ -755,6 +664,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.lineTo(handleX, -5);
             ctx.stroke();
           }
+          ctx.restore();
         }
         
         ctx.restore();
@@ -793,37 +703,19 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       if (e.ctrlKey || e.metaKey) { // Ctrl on Windows/Linux, Cmd on Mac
         if (e.key === 'c' && selectedItems.length > 0) {
           e.preventDefault();
-          if (e.shiftKey) {
-            // Shift+Ctrl+C: Copy color from primary selected item
-            if (primarySelectedItem?.color) {
-              copyColor(primarySelectedItem.color);
-              console.log('Color copied:', primarySelectedItem.color);
-            }
+          if (selectedItems.length === 1) {
+            copyItem();
+            console.log('Element copied:', selectedItems[0].id);
           } else {
-            // Ctrl+C: Copy element(s)
-            if (selectedItems.length === 1) {
-              copyItem();
-              console.log('Element copied:', selectedItems[0].id);
-            } else {
-              // For multiple items, copy the primary selected item for now
-              // TODO: Implement multi-item copy functionality
-              copyItem();
-              console.log('Multiple elements - copied primary:', primarySelectedItem?.id);
-            }
+            // For multiple items, copy the primary selected item for now
+            // TODO: Implement multi-item copy functionality
+            copyItem();
+            console.log('Multiple elements - copied primary:', primarySelectedItem?.id);
           }
         } else if (e.key === 'v') {
           e.preventDefault();
-          if (e.shiftKey) {
-            // Shift+Ctrl+V: Paste color to all selected items
-            if (selectedItems.length > 0) {
-              pasteColor();
-              console.log('Color pasted to selected items');
-            }
-          } else {
-            // Ctrl+V: Paste element
-            pasteItem();
-            console.log('Element pasted');
-          }
+          pasteItem();
+          console.log('Element pasted');
         }
       }
       
@@ -1199,8 +1091,6 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       canvas.style.cursor = 'default';
     }
   }, [marqueeState, getItemsInRectangle, selectMultipleItems, dragState, selectedItemId, selectItem, getSelectedItems]);
-
-  const { isDragging, isRotating } = dragState;
 
   return (
     <>

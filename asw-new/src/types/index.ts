@@ -44,6 +44,7 @@ export interface WearableItem {
   rotation?: number; // Rotation angle in degrees
   size?: number;
   amount?: number;
+  animationStartTime?: number;
 }
 
 export interface ColorSelection {

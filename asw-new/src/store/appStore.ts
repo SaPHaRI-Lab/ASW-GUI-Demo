@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { ApplicationState, WearableItem, ColorSelection, JacketConfig, ActionLog, Position } from '../types';
+import { hexToRgba } from '../utils/colorUtils';
 
 interface AppStore extends ApplicationState {
   // Actions
@@ -290,17 +291,36 @@ export const useAppStore = create<AppStore>()(
       };
     }),
 
-    moveItemToFront: (id) => set((state) => ({
-      items: state.items.map(item =>
-        item.id === id ? { ...item, view: 'front' } : item
-      ),
-    })),
-
-    moveItemToBack: (id) => set((state) => ({
-      items: state.items.map(item =>
-        item.id === id ? { ...item, view: 'back' } : item
-      ),
-    })),
+    moveItemToFront: (id) => set((state) => {
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      return {
+        items: state.items.map(item =>
+          item.id === id ? { ...item, view: 'front' } : item
+        ),
+        undoStack: [...state.undoStack, currentStateStr],
+        redoStack: [],
+      };
+    }),
+    moveItemToBack: (id) => set((state) => {
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      return {
+        items: state.items.map(item =>
+          item.id === id ? { ...item, view: 'back' } : item
+        ),
+        undoStack: [...state.undoStack, currentStateStr],
+        redoStack: [],
+      };
+    }),
 
     updateColorSelection: (colorSelection) => set((state) => ({
       colorSelection: { ...state.colorSelection, ...colorSelection },
@@ -454,6 +474,15 @@ export const useAppStore = create<AppStore>()(
         if (selectedItems.length > 0) {
           selectedItems.forEach(item => {
             get().updateItem(item.id, { color: copiedColor });
+          });
+        } else {
+          const rgba = hexToRgba(copiedColor);
+          get().updateJacketConfig({
+            color: {
+              r: rgba.r,
+              g: rgba.g,
+              b: rgba.b
+            }
           });
         }
       }

@@ -3,7 +3,7 @@ import Wheel from '@uiw/react-color-wheel';
 import { hsvaToHex, hexToHsva } from '@uiw/color-convert';
 import { useColorSelection } from '../hooks/useColorSelection';
 import { useAppStore } from '../store/appStore';
-import { rgbaToHex, hexToRgba } from '../utils/colorUtils';
+import { rgbaToHex, hexToRgba, rgbToHex } from '../utils/colorUtils';
 import { Button } from './Button';
 
 interface ColorPickerProps {
@@ -36,7 +36,19 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
   const handleCopyColor = useCallback(() => {
     const selectedItem = items.find(item => item.id === selectedItemId);
     if (selectedItem?.color) {
-      copyColor(selectedItem.color);
+      let hexColor = selectedItem.color;
+      if (!hexColor.startsWith('#')) {
+        if (hexColor.startsWith('rgb')) {
+          const match = hexColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+          if (match) {
+            const [, r, g, b] = match.map(Number);
+            hexColor = rgbToHex({ r, g, b });
+          }
+        } else {
+          hexColor = hexColor.startsWith('#') ? hexColor : `#${hexColor}`;
+        }
+      }
+      copyColor(hexColor);
     }
   }, [copyColor, items, selectedItemId]);
 

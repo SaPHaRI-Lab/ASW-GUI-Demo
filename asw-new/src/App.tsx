@@ -37,7 +37,9 @@ function App() {
     startSession,
     endSession,
     items,
-    actionLogs
+    actionLogs,
+    moveItemToFront,
+    moveItemToBack
   } = useAppStore();
   const { updateItemConfiguration, createItem } = useDragAndDrop();
   const { colorSelection, handleBrightnessChange } = useColorSelection();
@@ -62,7 +64,12 @@ function App() {
 
   // Handle duplicate
   const handleDuplicate = () => {
-    if (selectedItemId) {
+    const selectedItems = items.filter(item => item.isSelected);
+    if (selectedItems.length > 1) {
+      selectedItems.forEach(item => {
+        duplicateItem(item.id);
+      });
+    } else if (selectedItemId) {
       duplicateItem(selectedItemId);
     }
   };
@@ -182,13 +189,19 @@ function App() {
           submitButton.style.opacity = '0.5';
           submitButton.setAttribute('disabled', 'true');
         }
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
       } else {
         throw new Error(result.error || 'Unknown error');
       }
     } catch (err) {
       console.error('Error submitting design:', err);
       const error = err as Error;
-      alert(`Failed to submit design: ${error.message || 'Unknown error'}`);
+      setTimeout(() => {
+        window.location.reload();
+      }, 200);
+      //alert(`Failed to submit design: ${error.message || 'Unknown error'}`);
     } finally {
       setShowSubmitConfirmation(false);
     }
@@ -538,6 +551,34 @@ function App() {
                     <span className="selection-text">Item Selected</span>
                   </div>
                   
+                  {/* Layer controls */}
+                  <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const selectedItem = items.find(item => item.id === selectedItemId);
+                        if (selectedItem) {
+                          if (selectedItem.view === 'front') {
+                            moveItemToBack(selectedItem.id);
+                          } else {
+                            moveItemToFront(selectedItem.id);
+                          }
+                        }
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        backgroundColor: '#4A9FBF',
+                        border: 'none',
+                        padding: '8px 16px',
+                        fontSize: '14px',
+                        color: 'white',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      {items.find(item => item.id === selectedItemId)?.view === 'front' ? 'Move to Back' : 'Move to Front'}
+                    </button>
+                  </div>
+                  
                   <div className="color-wheel-section">
                     <div className="color">
                       <h2 id="color-title">Color</h2>
@@ -545,8 +586,7 @@ function App() {
                         <ColorPicker />
                       </div>
                       {showGradientSlider && (
-                        <div className="gradient-control" style={{marginTop: '10px'}}>
-                          <label htmlFor="gradient-slider">Gradient</label>
+                        <div className="gradient-control" style={{marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                           <Slider
                             min={0}
                             max={10}
@@ -562,7 +602,8 @@ function App() {
                   </div>
                 </>
               )}
-
+              <ScaleControls itemId={selectedItemId} />
+              
               {items.find(item => item.id === selectedItemId)?.type !== 'display' && (
                 <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
                   <h2 id="speed-title">
@@ -589,16 +630,13 @@ function App() {
                   />
                 </div>
               )}
-              <ScaleControls itemId={selectedItemId} />
               <h2 id="movement-title">
                 {items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'Sound' : 'Action'}
               </h2>
               <ItemControlPanel />
               <div className="custom-user-input">
                 <h2 id="custom-title">
-                  {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
-                    ? 'What should it play?' 
-                    : 'Write my own action:'}
+                  {items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'What should it play?' : 'Write my own action:'}
                 </h2>
                 <textarea 
                   id="custom-input" 
@@ -607,10 +645,50 @@ function App() {
                   cols={22}
                   value={items.find(item => item.id === selectedItemId)?.customInput || ''}
                   onChange={handleCustomInputChange}
+                  placeholder={
+                    items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'Write the sound it should play' : 'Write the desired action for this item'
+                  }
                 ></textarea>
               </div>
             </>
           )}
+          
+          {/* Synchronize Animations */}
+          {(() => {
+            const selectedItems = items.filter(item => item.isSelected);
+            const selectedLightStrips = selectedItems.filter(item => 
+              item.type === 'light-strip' || item.type === 'light-ind'
+            );
+            if (selectedLightStrips.length > 1) {
+              return (
+                <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = Date.now();
+                      selectedLightStrips.forEach(item => {
+                        updateItemConfiguration(item.id, { 
+                          animationStartTime: now 
+                        });
+                      });
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: '#4A9FBF',
+                      border: 'none',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      color: 'white',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    Synchronize Animations
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
           
           <div className="save">
             {selectedItemId ? (
@@ -626,9 +704,10 @@ function App() {
                   padding: '14px',
                   fontSize: '15px',
                   color: 'white',
-                  width: '40%',
-                  marginTop: '35px',
-                  marginLeft: '15px',
+                  width: '60%',
+                  marginTop: '10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
                   fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
                 }}
               >
@@ -647,9 +726,10 @@ function App() {
                   padding: '14px',
                   fontSize: '15px',
                   color: 'white',
-                  width: '40%',
-                  marginTop: '35px',
-                  marginLeft: '15px',
+                  width: '60%',
+                  marginTop: '10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
                   fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
                 }}
               >

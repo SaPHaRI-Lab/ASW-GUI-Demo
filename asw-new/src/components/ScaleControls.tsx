@@ -34,9 +34,9 @@ export const ScaleControls: React.FC<ScaleControlsProps> = ({ itemId }) => {
   if (!selectedItem) return null;
 
   return (
-    <div className="scale-controls" style={{ marginTop: '15px', display: 'flex', gap: '20px', justifyContent: 'center' }}>
-      <div className="control-section">
-        <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal' }}>Size</h2>
+    <div className="scale-controls" style={{ marginLeft: '12px', marginTop: '25px', display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="control-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal', textAlign: 'center' }}>Size</h2>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
           <Button
             variant="light-blue"
@@ -56,8 +56,8 @@ export const ScaleControls: React.FC<ScaleControlsProps> = ({ itemId }) => {
       </div>
 
       {(selectedItem.type === 'fur-patch' || selectedItem.type === 'light-strip') && (
-        <div className="control-section">
-          <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal' }}>Amount</h2>
+        <div className="control-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal', textAlign: 'center' }}>Amount</h2>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             <Button
               variant="light-blue"

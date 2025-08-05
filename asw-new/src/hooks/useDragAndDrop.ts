@@ -84,6 +84,7 @@ export function useDragAndDrop() {
     customInput?: string;
     color?: string;
     cyoName?: string;
+    animationStartTime?: number;
   }
 
   const updateItemConfiguration = useCallback((
@@ -94,6 +95,15 @@ export function useDragAndDrop() {
     
     // Save undo state before making changes
     saveUndoState();
+    
+    // Set animation start time when movement changes for light items
+    if (updates.movement) {
+      const currentItem = items.find(item => item.id === itemId);
+      const isLightItem = currentItem?.type === 'light-strip' || currentItem?.type === 'light-ind';
+      if (isLightItem) {
+        updates.animationStartTime = Date.now();
+      }
+    }
     
     // Update item configuration
     updateItem(itemId, updates);

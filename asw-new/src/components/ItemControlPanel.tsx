@@ -98,17 +98,6 @@ export const ItemControlPanel: React.FC = React.memo(() => {
 
   return (
     <div className="movement">
-      {/* Layer controls */}
-      <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
-        <Button 
-          variant="light-blue"
-          size="small"
-          onClick={() => selectedItem.view === 'front' ? handleMoveToBack() : handleMoveToFront()}
-        >
-          {selectedItem.view === 'front' ? 'Move to Back' : 'Move to Front'}
-        </Button>
-      </div>
-      
       {/* Movement options */}
       <div>
         {renderMovementOptions()}
