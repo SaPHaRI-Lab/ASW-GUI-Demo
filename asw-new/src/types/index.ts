@@ -44,6 +44,7 @@ export interface WearableItem {
   rotation?: number; // Rotation angle in degrees
   size?: number;
   amount?: number;
+  verticalRows?: number; // Vertical rows for fur patch
   animationStartTime?: number;
 }
 

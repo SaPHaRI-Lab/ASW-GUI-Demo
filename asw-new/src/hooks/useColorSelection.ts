@@ -15,6 +15,23 @@ export function useColorSelection() {
     logAction,
   } = useAppStore();
 
+  // Helper function to update item color and log the change
+  const updateAndLogColor = useCallback((selectedColor: string, baseColor?: string, gradient?: number) => {
+    if (selectedItemId) {
+      updateItem(selectedItemId, { 
+        color: selectedColor,
+        ...(baseColor && { baseColor }),
+        ...(gradient !== undefined && { gradient })
+      });
+      logAction('changed_color', {
+        itemID: selectedItemId,
+        color: selectedColor,
+        ...(baseColor && { baseColor }),
+        ...(gradient !== undefined && { gradient })
+      });
+    }
+  }, [selectedItemId, updateItem, logAction]);
+
   const handleColorWheelClick = useCallback((
     imageData: ImageData,
     position: Position
@@ -42,15 +59,10 @@ export function useColorSelection() {
           baseColor,
           gradient: colorSelection.gradient
         });
-        logAction('changed_color', {
-          itemID: selectedItemId,
-          color: selectedColor,
-          baseColor,
-          gradient: colorSelection.gradient
-        });
+        updateAndLogColor(selectedColor, baseColor, colorSelection.gradient);
       }
     }
-  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, logAction]);
+  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
 
   const handleGradientChange = useCallback((gradient: number) => {
     updateColorSelection({ gradient });
@@ -108,14 +120,9 @@ export function useColorSelection() {
         baseColor,
         gradient: colorSelection.gradient
       });
-      logAction('changed_color', {
-        itemID: selectedItemId,
-        color: selectedColor,
-        baseColor,
-        gradient: colorSelection.gradient
-      });
+      updateAndLogColor(selectedColor, baseColor, colorSelection.gradient);
     }
-  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, logAction]);
+  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
 
   const handleBrightnessChange = useCallback((gradient: number) => {
     updateColorSelection({ gradient });
@@ -123,12 +130,9 @@ export function useColorSelection() {
     if (selectedItemId) {
       const selectedColor = updateShade(colorSelection.rgba, gradient);
       updateItem(selectedItemId, { color: selectedColor });
-      logAction('changed_color', {
-        itemID: selectedItemId,
-        color: selectedColor,
-      });
+      updateAndLogColor(selectedColor, undefined, gradient);
     }
-  }, [colorSelection.rgba, selectedItemId, updateColorSelection, updateItem, logAction]);
+  }, [colorSelection.rgba, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
 
   return {
     colorSelection,

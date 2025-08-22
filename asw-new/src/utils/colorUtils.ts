@@ -74,8 +74,8 @@ export function updateShade(baseRgba: RGBA, gradient: number): string {
 /**
  * Generate unique ID for items
  */
-export function generateId(): string {
-  return `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export function generateId(itemType: string): string {
+  return `${itemType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**

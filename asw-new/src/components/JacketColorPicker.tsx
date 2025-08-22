@@ -44,8 +44,8 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
       color: newColor,
     });
 
-    logAction('changed_jacket_col', {
-      color: `r:${newColor.r}, g:${newColor.g}, b:${newColor.b}`,
+    logAction('changed_jacket_color', {
+      color: newColor
     });
   }, [updateJacketConfig, logAction]);
 
@@ -64,8 +64,11 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
       }
     });
     
-    // Log the action
-    logAction('changed_jacket_tint', { tint: gradient });
+    // Log the action with gradient
+    logAction('changed_jacket_color', { 
+      color: jacketConfig.color,
+      gradient
+    });
   }, [updateJacketConfig, logAction, jacketConfig.color]);
 
   const handleCopyJacketColor = useCallback(() => {

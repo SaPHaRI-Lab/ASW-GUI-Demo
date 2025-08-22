@@ -29,7 +29,7 @@ export function useDragAndDrop() {
     const maxZIndex = Math.max(...items.map(item => item.zIndex || 0), 0);
     
     const newItem: WearableItem = {
-      id: generateId(),
+      id: generateId(type),
       type,
       position,
       color: type === 'speaker' ? '#1d1d1d' : 'rgb(227, 227, 227)',
@@ -37,6 +37,7 @@ export function useDragAndDrop() {
       movement: 'static',
       speed: 3,
       amount: type === 'light-strip' ? 6 : type === 'fur-patch' ? 15 : undefined,
+      verticalRows: type === 'fur-patch' ? 3 : undefined,
       customName: type === 'other' ? customName : undefined,
       cyoName: type === 'other' ? customName?.substring(0, 4) : undefined,
       customInput: type === 'other' ? customInput : '',
@@ -56,7 +57,7 @@ export function useDragAndDrop() {
     });
 
     addItem(newItem);
-    selectItem(newItem.id);
+    selectItem(newItem.id, true);
     logAction('item_created', {
       itemID: newItem.id,
       type,
@@ -68,12 +69,14 @@ export function useDragAndDrop() {
     return newItem;
   }, [addItem, selectItem, logAction, jacketConfig, items]);
 
-  const moveItem = useCallback((itemId: string, position: Position) => {
+  const moveItem = useCallback((itemId: string, position: Position, skipLogging?: boolean) => {
     updateItemPosition(itemId, position);
-    logAction('item_moved', {
-      itemID: itemId,
-      position,
-    });
+    if (!skipLogging) {
+      logAction('item_moved', {
+        itemID: itemId,
+        position,
+      });
+    }
   }, [updateItemPosition, logAction]);
 
   // Update the ItemConfiguration type to include customInput

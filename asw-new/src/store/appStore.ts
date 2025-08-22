@@ -10,7 +10,7 @@ interface AppStore extends ApplicationState {
   updateItem: (id: string, updates: Partial<WearableItem>) => void;
   updateItemPosition: (id: string, position: Position) => void;
   saveUndoState: () => void;
-  selectItem: (id: string | null) => void;
+  selectItem: (id: string | null, skipLogging?: boolean) => void;
   deselectItem: (id: string) => void;
   selectMultipleItems: (ids: string[]) => void;
   duplicateItem: (id: string) => void;
@@ -189,7 +189,7 @@ export const useAppStore = create<AppStore>()(
       };
     }),
 
-    selectItem: (id: string | null) => {
+    selectItem: (id: string | null, skipLogging?: boolean) => {
       // Reset color selection when selecting a new item
       const currentItem = id ? get().items.find(item => item.id === id) : null;
       set(state => ({
@@ -209,7 +209,7 @@ export const useAppStore = create<AppStore>()(
           gradient: currentItem?.gradient ?? 5
         }
       }));
-      if (id) {
+      if (id && !skipLogging) {
         get().logAction('item_selected', { itemID: id });
       }
     },
@@ -254,9 +254,10 @@ export const useAppStore = create<AppStore>()(
         jacketConfig: state.jacketConfig,
       });
 
+      const newId = `${itemToDuplicate.type}_CLONED_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const duplicatedItem: WearableItem = {
         ...itemToDuplicate,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: newId,
         position: {
           x: itemToDuplicate.position.x + 20,
           y: itemToDuplicate.position.y + 20,

@@ -39,7 +39,8 @@ function App() {
     items,
     actionLogs,
     moveItemToFront,
-    moveItemToBack
+    moveItemToBack,
+    logAction
   } = useAppStore();
   const { updateItemConfiguration, createItem } = useDragAndDrop();
   const { colorSelection, handleBrightnessChange } = useColorSelection();
@@ -60,6 +61,7 @@ function App() {
   const toggleView = () => {
     const newView = jacketConfig.view === 'front' ? 'back' : 'front';
     updateJacketConfig({ view: newView });
+    logAction('switched_jacket_view', { view: newView });
   };
 
   // Handle duplicate
@@ -69,8 +71,13 @@ function App() {
       selectedItems.forEach(item => {
         duplicateItem(item.id);
       });
+      logAction('duplicated_items', { 
+        count: selectedItems.length, 
+        itemIds: selectedItems.map(item => item.id) 
+      });
     } else if (selectedItemId) {
       duplicateItem(selectedItemId);
+      logAction('duplicated_item', { itemId: selectedItemId });
     }
   };
 
@@ -86,11 +93,26 @@ function App() {
         const removeItem = useAppStore.getState().removeItem;
         removeItem(item.id);
       });
+      logAction('deleted_items', { 
+        count: selectedItems.length, 
+        itemIds: selectedItems.map(item => item.id) 
+      });
       console.log('DELETE BUTTON COMPLETE: Deleted', selectedItems.length, 'items');
     } else if (selectedItemId) {
       // Fallback to single item deletion
       deleteSelectedItem();
+      logAction('deleted_item', { itemId: selectedItemId });
     }
+  };
+
+  const handleUndo = () => {
+    undo();
+    logAction('undo', {});
+  };
+
+  const handleRedo = () => {
+    redo();
+    logAction('redo', {});
   };
 
   // Check if any items are selected (for button states)
@@ -266,7 +288,7 @@ function App() {
 
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo): string {
-    let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Scale,X Position,Y Position\n';
+    let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,Vertical Amount,X Position,Y Position\n';
     const addRow = (item: WearableItem) => {
       csv += [
         item.view,
@@ -274,9 +296,11 @@ function App() {
         item.movement || '',
         item.speed || '', // Use per-item speed
         (item as any).customInput || '',
-        item.color || '',
+        `"${item.color || ''}"`,
         item.rotation || 0,
-        1, // scale (not implemented, default 1)
+        item.size || 1,
+        item.amount || '',
+        item.type === 'fur-patch' ? (item.verticalRows || 3) : '',
         item.position.x,
         item.position.y
       ].join(',') + '\n';
@@ -284,7 +308,8 @@ function App() {
     items.forEach(addRow);
     // Add jacket color and total time if available
     if (jacketConfig.color) {
-      csv += `JACKET COLOR: rgb(${jacketConfig.color.r},${jacketConfig.color.g},${jacketConfig.color.b})`;
+      const jacketColorString = `rgb(${jacketConfig.color.r} ${jacketConfig.color.g} ${jacketConfig.color.b})`;
+      csv += `JACKET COLOR: ${jacketColorString}`;
     }
     if (sessionInfo.startTime) {
       const totalTime = Math.round((Date.now() - sessionInfo.startTime) / 1000);
@@ -497,7 +522,7 @@ function App() {
             <div className="undoredo">
               <button 
                 id="undo" 
-                onClick={undo}
+                onClick={handleUndo}
                 disabled={!canUndo()}
                 style={{opacity: canUndo() ? 1 : 0.5}}
               >
@@ -505,7 +530,7 @@ function App() {
               </button>
               <button 
                 id="redo" 
-                onClick={redo}
+                onClick={handleRedo}
                 disabled={!canRedo()}
                 style={{opacity: canRedo() ? 1 : 0.5}}
               >
@@ -560,8 +585,10 @@ function App() {
                         if (selectedItem) {
                           if (selectedItem.view === 'front') {
                             moveItemToBack(selectedItem.id);
+                            logAction('moved_item_to_back', { itemId: selectedItem.id });
                           } else {
                             moveItemToFront(selectedItem.id);
+                            logAction('moved_item_to_front', { itemId: selectedItem.id });
                           }
                         }
                       }}

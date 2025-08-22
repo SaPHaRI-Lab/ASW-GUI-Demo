@@ -26,7 +26,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   setPendingDropPosition 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem } = useAppStore();
+  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem, logAction } = useAppStore();
   const { createItem, moveItem, saveUndoState } = useDragAndDrop();
   
   // State for dragging existing items
@@ -42,7 +42,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   const [rotationState, setRotationState] = useState({
     isRotating: false,
     rotatingItem: null as any,
-    startAngle: 0
+    startAngle: 0,
+    startRotation: 0,
+    hasMoved: false
   });
 
   // State for marquee selection
@@ -79,8 +81,15 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     switch (itemType) {
       case 'fur-patch': {
         const baseWidth = 40;
-        const extraWidth = item?.amount ? Math.floor((item.amount - 15) / 2) * 12 : 0;
-        return { width: baseWidth + extraWidth, height: 35 };
+        const extraColumns = item?.amount ? Math.floor((item.amount - 15) / 2) : 0;
+        const extraWidth = extraColumns * 12;
+        const totalWidth = baseWidth + extraWidth;
+        const baseHeight = 35;
+        const verticalRows = item?.verticalRows ?? 3;
+        const extraRows = verticalRows - 3;
+        const extraHeight = extraRows * 12;
+        const totalHeight = baseHeight + extraHeight;
+        return { width: totalWidth, height: totalHeight };
       }
       case 'light-ind': return { width: 20, height: 20 };
       case 'light-strip': return { width: 20, height: 230 };
@@ -437,21 +446,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
               { w: 9, h: 13, x: 0, y: 15, r: -3 }
             ];
             const baseTriangles: FurTriangle[] = [
-              { w: 12, h: 18, x: 16, y: 0, r: -5 },
-              { w: 11, h: 17, x: 22, y: 1, r: 8 },
-              { w: 11, h: 17, x: 12, y: 1, r: -12 },
-              { w: 10, h: 15, x: 8, y: 8, r: -20 },
-              { w: 10, h: 15, x: 14, y: 8, r: -15 },
-              { w: 10, h: 15, x: 26, y: 8, r: 15 },
-              { w: 10, h: 15, x: 30, y: 8, r: 22 },
-              { w: 9, h: 13, x: 18, y: 15, r: -3 },
-              { w: 9, h: 13, x: 20, y: 15, r: 10 },
-              { w: 8, h: 14, x: 4, y: 12, r: -25 },
-              { w: 8, h: 14, x: 34, y: 12, r: 25 },
-              { w: 10, h: 16, x: 16, y: 3, r: -8 },
-              { w: 10, h: 16, x: 24, y: 3, r: 5 },
-              { w: 8, h: 12, x: 10, y: 18, r: -18 },
-              { w: 8, h: 12, x: 28, y: 18, r: 18 }
+              { w: 12, h: 18, x: 14, y: 0, r: -5 },
+              { w: 11, h: 17, x: 20, y: 1, r: 8 },
+              { w: 11, h: 17, x: 10, y: 1, r: -12 },
+              { w: 10, h: 15, x: 6, y: 8, r: -20 },
+              { w: 10, h: 15, x: 12, y: 8, r: -15 },
+              { w: 10, h: 15, x: 24, y: 8, r: 15 },
+              { w: 10, h: 15, x: 28, y: 8, r: 22 },
+              { w: 9, h: 13, x: 16, y: 15, r: -3 },
+              { w: 9, h: 13, x: 18, y: 15, r: 10 },
+              { w: 8, h: 14, x: 2, y: 12, r: -25 },
+              { w: 8, h: 14, x: 32, y: 12, r: 25 },
+              { w: 10, h: 16, x: 14, y: 3, r: -8 },
+              { w: 10, h: 16, x: 22, y: 3, r: 5 },
+              { w: 8, h: 12, x: 8, y: 18, r: -18 },
+              { w: 8, h: 12, x: 26, y: 18, r: 18 }
             ];
             const amount = item.amount || 15;
             const extraColumns = Math.floor((amount - 15) / 2);
@@ -474,6 +483,25 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 });
               });
             }
+
+            // Vertical inc
+            const verticalRows = item.verticalRows ?? 3;
+            const extraRows = verticalRows - 3;
+            if (extraRows > 0) {
+              const baseTrianglesCopy = [...triangles];
+              for (let i = 1; i <= extraRows; i++) {
+                const yOffset = 12 * i;
+                baseTrianglesCopy.forEach(base => {
+                  triangles.push({
+                    ...base,
+                    y: base.y + yOffset,
+                    w: base.w * 0.95,
+                    h: base.h * 0.95
+                  });
+                });
+              }
+            }
+
             triangles.forEach((t) => {
               let angle = t.r;
               if (item.movement === 'Shake') {
@@ -626,43 +654,70 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         if (item.isSelected) {
           const bounds = getItemBounds(item.type, item);
           const isPrimarySelection = item.id === selectedItemId;
-          
           ctx.save();
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.translate(item.position.x, item.position.y);
-          const scale = item.size || 1;
-          if (scale !== 1) {
-            ctx.translate(bounds.width/2, bounds.height/2);
-            ctx.scale(scale, scale);
-            ctx.translate(-bounds.width/2, -bounds.height/2);
-          }
-          if (item.rotation) {
-            ctx.translate(bounds.width/2, bounds.height/2);
-            ctx.rotate((item.rotation * Math.PI) / 180);
-            ctx.translate(-bounds.width/2, -bounds.height/2);
-          }
-          
-          // Use different colors for primary vs secondary selections
-          ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
-          ctx.lineWidth = isPrimarySelection ? 3 : 2;
-          ctx.strokeRect(-5, -5, bounds.width + 10, bounds.height + 10);
-          
-          // Draw rotation handle only for the primary selected item
-          if (isPrimarySelection) {
-            const handleX = bounds.width / 2;
-            const handleY = -15;
-            ctx.fillStyle = '#0077ff';
-            ctx.beginPath();
-            ctx.arc(handleX, handleY, 5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw line from selection box to rotation handle
-            ctx.strokeStyle = '#0077ff';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(handleX, handleY + 5);
-            ctx.lineTo(handleX, -5);
-            ctx.stroke();
+          if (item.type === 'fur-patch') {
+            const originalWidth = 40;
+            const centerX = item.position.x + originalWidth / 2;
+            const centerY = item.position.y + bounds.height / 2;
+            ctx.translate(centerX, centerY);
+            const scale = item.size || 1;
+            if (scale !== 1) ctx.scale(scale, scale);
+            if (item.rotation) ctx.rotate((item.rotation * Math.PI) / 180);
+            const halfWidth = bounds.width / 2;
+            const halfHeight = bounds.height / 2;
+            ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
+            ctx.lineWidth = isPrimarySelection ? 3 : 2;
+            ctx.strokeRect(-halfWidth - 5, -halfHeight - 5, bounds.width + 10, bounds.height + 10);
+            // Draw rotation handle only for the primary selected item
+            if (isPrimarySelection) {
+              const handleX = 0;
+              const handleY = -halfHeight - 15;
+              ctx.fillStyle = '#0077ff';
+              ctx.beginPath();
+              ctx.arc(handleX, handleY, 5, 0, Math.PI * 2);
+              ctx.fill();
+              // Draw line from selection box to rotation handle
+              ctx.strokeStyle = '#0077ff';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(handleX, handleY + 5);
+              ctx.lineTo(handleX, -halfHeight - 5);
+              ctx.stroke();
+            }
+          } else {
+            ctx.translate(item.position.x, item.position.y);
+            const scale = item.size || 1;
+            if (scale !== 1) {
+              ctx.translate(bounds.width/2, bounds.height/2);
+              ctx.scale(scale, scale);
+              ctx.translate(-bounds.width/2, -bounds.height/2);
+            }
+            if (item.rotation) {
+              ctx.translate(bounds.width/2, bounds.height/2);
+              ctx.rotate((item.rotation * Math.PI) / 180);
+              ctx.translate(-bounds.width/2, -bounds.height/2);
+            }
+            // Use different colors for primary vs secondary selections
+            ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
+            ctx.lineWidth = isPrimarySelection ? 3 : 2;
+            ctx.strokeRect(-5, -5, bounds.width + 10, bounds.height + 10);
+            // Draw rotation handle only for the primary selected item
+            if (isPrimarySelection) {
+              const handleX = bounds.width / 2;
+              const handleY = -15;
+              ctx.fillStyle = '#0077ff';
+              ctx.beginPath();
+              ctx.arc(handleX, handleY, 5, 0, Math.PI * 2);
+              ctx.fill();
+              // Draw line from selection box to rotation handle
+              ctx.strokeStyle = '#0077ff';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(handleX, handleY + 5);
+              ctx.lineTo(handleX, -5);
+              ctx.stroke();
+            }
           }
           ctx.restore();
         }
@@ -740,6 +795,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         const selectedItem = storeItems.find(item => item.id === selectedItemId);
         if (selectedItem) {
           const moveStep = e.shiftKey ? 10 : 1; // Hold shift for larger movements
+          let moved = false;
           switch (e.key) {
             case 'ArrowLeft':
               e.preventDefault();
@@ -747,6 +803,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 x: selectedItem.position.x - moveStep, 
                 y: selectedItem.position.y 
               });
+              moved = true;
               break;
             case 'ArrowRight':
               e.preventDefault();
@@ -754,6 +811,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 x: selectedItem.position.x + moveStep, 
                 y: selectedItem.position.y 
               });
+              moved = true;
               break;
             case 'ArrowUp':
               e.preventDefault();
@@ -761,6 +819,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 x: selectedItem.position.x, 
                 y: selectedItem.position.y - moveStep 
               });
+              moved = true;
               break;
             case 'ArrowDown':
               e.preventDefault();
@@ -768,7 +827,19 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 x: selectedItem.position.x, 
                 y: selectedItem.position.y + moveStep 
               });
+              moved = true;
               break;
+          }
+          if (moved) {
+            logAction('moved_item_by_keyboard', { 
+              itemId: selectedItem.id, 
+              direction: e.key, 
+              step: moveStep,
+              newPosition: { 
+                x: selectedItem.position.x, 
+                y: selectedItem.position.y 
+              }
+            });
           }
         }
       }
@@ -847,6 +918,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       return;
     }
 
+    if (rotationState.isRotating) return;
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     
@@ -861,11 +934,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       if (clickedItem) {
         // Use our multi-selection aware handler instead of handleItemClick
         handleItemSelection(clickedItem, isCtrlPressed);
-      } else {
-        clearSelection();
       }
     }
-  }, [getItemAtPosition, clearSelection, justCompletedMarquee, handleItemSelection]);
+  }, [getItemAtPosition, handleItemSelection, justCompletedMarquee, rotationState.isRotating]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -888,7 +959,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       setRotationState({
         isRotating: true,
         rotatingItem: rotationItem,
-        startAngle: startAngle - (rotationItem.rotation || 0)
+        startAngle,
+        startRotation: rotationItem.rotation || 0,
+        hasMoved: false
       });
       return;
     }
@@ -964,8 +1037,14 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       const centerX = rotationState.rotatingItem.position.x + bounds.width / 2;
       const centerY = rotationState.rotatingItem.position.y + bounds.height / 2;
       const currentAngle = calculateAngle(centerX, centerY, x, y);
-      const newRotation = currentAngle - rotationState.startAngle;
-      
+      const rotationChange = currentAngle - rotationState.startAngle;
+      const newRotation = rotationState.startRotation + rotationChange;
+      if (!rotationState.hasMoved && Math.abs(rotationChange) > 1) {
+        setRotationState(prev => ({
+          ...prev,
+          hasMoved: true
+        }));
+      }
       updateItem(rotationState.rotatingItem.id, { rotation: newRotation });
     } else if (dragState.isDragging && dragState.draggedItem) {
       // Handle dragging - use initial positions to maintain relative positions
@@ -988,7 +1067,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       dragState.initialPositions.forEach((initialPos, itemId) => {
         const newX = initialPos.x + deltaX;
         const newY = initialPos.y + deltaY;
-        moveItem(itemId, { x: newX, y: newY });
+        moveItem(itemId, { x: newX, y: newY }, true);
       });
     } else if (marqueeState.isActive) {
       // Update marquee selection rectangle
@@ -1041,6 +1120,23 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       });
     }
     
+    // Log final rotation
+    if (rotationState.isRotating && rotationState.rotatingItem) {
+      if (rotationState.hasMoved) {
+        const item = storeItems.find(i => i.id === rotationState.rotatingItem.id);
+        if (item) {
+          logAction('rotated_item', {
+            itemId: item.id,
+            newRotation: item.rotation || 0,
+            centerPosition: { 
+              x: item.position.x + getItemBounds(item.type).width / 2,
+              y: item.position.y + getItemBounds(item.type).height / 2
+            }
+          });
+        }
+      }
+    }
+
     // Handle single-click selection for already selected items
     // (when no drag occurred and it's not a multi-item drag)
     if (dragState.isDragging && dragState.draggedItem) {
@@ -1058,6 +1154,29 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         
         const selectedItems = getSelectedItems();
         const isMultiDrag = selectedItems.length > 1 && dragState.initialPositions.size > 1;
+        
+        // Log dragging movement if significant movement occurred
+        if (dragState.hasMoved && distance > 5) {
+          const draggedItems = Array.from(dragState.initialPositions.keys());
+          const itemPositions = draggedItems.map(itemId => {
+            const item = storeItems.find(i => i.id === itemId);
+            const initialPos = dragState.initialPositions.get(itemId);
+            return {
+              itemId,
+              startPosition: initialPos,
+              endPosition: item?.position
+            };
+          });
+
+          logAction('moved_items_by_dragging', {
+            itemIds: draggedItems,
+            isMultiDrag,
+            distance: Math.round(distance),
+            startPosition: { x: startX, y: startY },
+            endPosition: { x, y },
+            allItemPositions: itemPositions
+          });
+        }
         
         console.log('MOUSE UP DEBUG:', {
           distance: distance.toFixed(2),
@@ -1081,16 +1200,18 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       initialPositions: new Map(),
       hasMoved: false
     });
-    setRotationState({
+    setRotationState(prev => ({
       isRotating: false,
       rotatingItem: null,
-      startAngle: 0
-    });
+      startAngle: 0,
+      startRotation: 0,
+      hasMoved: false
+    }));
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.style.cursor = 'default';
     }
-  }, [marqueeState, getItemsInRectangle, selectMultipleItems, dragState, selectedItemId, selectItem, getSelectedItems]);
+  }, [marqueeState, getItemsInRectangle, selectMultipleItems, dragState, storeItems, handleItemSelection, rotationState, logAction, getItemBounds]);
 
   return (
     <>
