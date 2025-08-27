@@ -16,7 +16,12 @@ app.use(cors({
 }));
 
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
+app.get('/ASWGUIdash', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
 
 const db = new sqlite3.Database("participant_designs.db", (err) => {
   if (err) {
