@@ -15,10 +15,10 @@ export interface Position {
   y: number;
 }
 
-export type ItemType = 'fur-patch' | 'light-ind' | 'light-strip' | 'battery' | 'display' | 'speaker' | 'other';
+export type ItemType = 'fur-patch' | 'light-ind' | 'light-strip' | 'inflatable' | 'battery' | 'display' | 'speaker' | 'scent' | 'other';
 
 export type MovementType = 
-  | 'Shake' | 'Roll' | 'Stick up' | 'Both' // fur-patch
+  | 'Shake' | 'Roll' | 'Roll btt' | 'Stick up' | 'Both' // fur-patch
   | 'Light on ind' | 'Flash ind' // light-ind
   | 'Light on str' | 'Flash str' | 'Trickle up' | 'Trickle down' | 'Random fl' // light-strip
   | 'Continuous' | 'Discontinuous' // speaker
@@ -75,6 +75,7 @@ export interface ApplicationState {
   jacketConfig: JacketConfig;
   sessionInfo: SessionInfo;
   flashingItems: Set<string>;
+  itemCounters: Record<string, number>;
 }
 
 export interface ActionLog {

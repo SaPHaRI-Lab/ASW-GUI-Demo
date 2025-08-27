@@ -96,6 +96,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       case 'battery': return { width: 60, height: 25 };
       case 'display': return { width: 60, height: 40 };
       case 'speaker': return { width: 40, height: 30 };
+      case 'scent': return { width: 35, height: 35 };
+      case 'inflatable': return { width: 55, height: 35 };
       default: return { width: 40, height: 30 };
     }
   }, []);
@@ -508,7 +510,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 const speed = item.speed || 3;
                 const direction = (t.x < 22 ? 1 : -1);
                 angle += Math.sin(now / (120 - speed * 15)) * 7 * direction;
-              } else if (item.movement === 'Roll') {
+              } else if (item.movement === 'Roll' || item.movement === 'Roll btt') {
                 const speed = item.speed || 3;
                 const animationSpeed = 600 - speed * 50;
                 let rowIndex = -1;
@@ -518,6 +520,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                   rowIndex = 1; // Middle row
                 } else {
                   rowIndex = 2; // Bottom row
+                }
+                if (item.movement === 'Roll btt') {
+                  rowIndex = 2 - rowIndex;
                 }
                 const totalCycleTime = animationSpeed * 6;
                 const cycleProgress = (now%totalCycleTime) / totalCycleTime;
@@ -608,15 +613,42 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             break;
           case 'speaker':
             ctx.fillStyle = item.color || '#1d1d1d';
-            ctx.fillRect(0, 5, 10, 10);
+            ctx.translate(8, 5);
+            ctx.fillRect(0, 0, 10, 10);
             ctx.beginPath();
-            ctx.moveTo(8, 5);
-            ctx.lineTo(23, 0);
-            ctx.lineTo(23, 20);
-            ctx.lineTo(8, 15);
+            ctx.moveTo(8, 0);
+            ctx.lineTo(23, -5);
+            ctx.lineTo(23, 15);
+            ctx.lineTo(8, 10);
             ctx.closePath();
             ctx.fill();
             break;
+          case 'scent':
+            ctx.beginPath();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.arc(17.5, 17.5, 15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(17.5, 17.5, 8, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+          case 'inflatable': {
+            ctx.fillStyle = item.color || '#333';
+            let scaleX = 27.5;
+            let scaleY = 17.5;
+            if (item.movement === 'Pulse') {
+              const speed = item.speed || 3;
+              const now = Date.now();
+              const pulseScale = 1 + Math.sin(now / (600 - speed * 80)) * 0.2;
+              scaleX *= pulseScale;
+              scaleY *= pulseScale;
+            }
+            ctx.beginPath();
+            ctx.ellipse(27.5, 17.5, scaleX, scaleY, 0, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+          }
           case 'other':
             ctx.fillStyle = item.color || '#888';
             ctx.fillRect(0, 0, 40, 30);
@@ -857,8 +889,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     
     const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
-        'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll',
-        'Trickle up', 'Trickle down', 'Random fl', 'Both'
+        'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll', 'Roll btt',
+        'Trickle up', 'Trickle down', 'Random fl', 'Both', 'Pulse'
       ].includes(item.movement) ||
       item.isFlashing
     );

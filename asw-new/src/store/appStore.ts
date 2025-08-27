@@ -4,6 +4,8 @@ import type { ApplicationState, WearableItem, ColorSelection, JacketConfig, Acti
 import { hexToRgba } from '../utils/colorUtils';
 
 interface AppStore extends ApplicationState {
+  itemCounters: Record<string, number>;
+  
   // Actions
   addItem: (item: WearableItem) => void;
   removeItem: (id: string) => void;
@@ -58,6 +60,7 @@ export const useAppStore = create<AppStore>()(
     // Initial state
     items: [],
     selectedItemId: null,
+    itemCounters: {},
     colorSelection: {
       rgba: { r: 227, g: 227, b: 227, a: 1 },
       position: { x: 0, y: 0 },

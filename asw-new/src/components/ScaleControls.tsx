@@ -53,25 +53,27 @@ export const ScaleControls: React.FC<ScaleControlsProps> = ({ itemId }) => {
 
   return (
     <div className="scale-controls" style={{ marginLeft: '12px', marginTop: '25px', display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div className="control-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal', textAlign: 'center' }}>Size</h2>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <Button
-            variant="light-blue"
-            size="small"
-            onClick={() => handleSizeChange(-0.1)}
-          >
-            -
-          </Button>
-          <Button
-            variant="light-blue"
-            size="small"
-            onClick={() => handleSizeChange(0.1)}
-          >
-            +
-          </Button>
+      {selectedItem.type !== 'speaker' && selectedItem.type !== 'scent' && (
+        <div className="control-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '14px', margin: '0 0 5px 0', fontWeight: 'normal', textAlign: 'center' }}>Size</h2>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <Button
+              variant="light-blue"
+              size="small"
+              onClick={() => handleSizeChange(-0.1)}
+            >
+              -
+            </Button>
+            <Button
+              variant="light-blue"
+              size="small"
+              onClick={() => handleSizeChange(0.1)}
+            >
+              +
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {(selectedItem.type === 'fur-patch' || selectedItem.type === 'light-strip') && (
         <div className="control-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

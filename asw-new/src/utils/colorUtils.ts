@@ -1,4 +1,5 @@
 import type { RGB, RGBA } from '../types';
+import { useAppStore } from '../store/appStore';
 
 /**
  * Convert hex color to RGB object
@@ -75,7 +76,15 @@ export function updateShade(baseRgba: RGBA, gradient: number): string {
  * Generate unique ID for items
  */
 export function generateId(itemType: string): string {
-  return `${itemType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const store = useAppStore.getState();
+  const currentCount = (store.itemCounters[itemType] || 0) + 1;
+  useAppStore.setState({
+    itemCounters: {
+      ...store.itemCounters,
+      [itemType]: currentCount
+    }
+  });
+  return `${itemType}_${Date.now()}_${currentCount}`;
 }
 
 /**

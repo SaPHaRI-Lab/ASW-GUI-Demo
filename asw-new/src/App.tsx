@@ -369,7 +369,8 @@ function App() {
     if (!selectedItemId) return false;
     const selectedItem = items.find(item => item.id === selectedItemId);
     if (!selectedItem) return false;
-    if (selectedItem.type === 'speaker' || selectedItem.id?.startsWith('speaker')) return false;
+    if (selectedItem.type === 'speaker' || selectedItem.id?.startsWith('speaker') ||
+    selectedItem.type === 'scent' || selectedItem.id?.startsWith('scent')) return false;
     if (
       selectedItem.type === 'fur-patch' || selectedItem.id?.startsWith('fur-patch') ||
       selectedItem.type === 'battery' || selectedItem.id?.startsWith('battery')
@@ -456,6 +457,12 @@ function App() {
               </div>
             </div>
           </div>
+
+          <div className="option">Inflatable
+            <div className="item-container" id="inflatable-cont">
+              <div className="inflatable" draggable="true" onDragStart={(e) => handleDragStart(e, 'inflatable')}/>
+            </div>
+          </div>
           
           <div className="option">
             <div className="option-txt">Social Battery Display</div>
@@ -484,6 +491,12 @@ function App() {
                   <div className="speaker-cone-shape"></div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="option">Scent
+            <div className="item-container" id="scent-cont">
+              <div className="scent" draggable="true" onDragStart={(e) => handleDragStart(e, 'scent')}/>
             </div>
           </div>
         </div>
@@ -568,45 +581,45 @@ function App() {
           )}
 
           {selectedItemId && (
-            <>
-              {showColorWheel && (
-                <>
-                  <div className="selection-indicator">
-                    <div className="selection-bar"></div>
-                    <span className="selection-text">Item Selected</span>
-                  </div>
-                  
-                  {/* Layer controls */}
-                  <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const selectedItem = items.find(item => item.id === selectedItemId);
-                        if (selectedItem) {
-                          if (selectedItem.view === 'front') {
-                            moveItemToBack(selectedItem.id);
-                            logAction('moved_item_to_back', { itemId: selectedItem.id });
-                          } else {
-                            moveItemToFront(selectedItem.id);
-                            logAction('moved_item_to_front', { itemId: selectedItem.id });
-                          }
+              <>
+                <div className="selection-indicator">
+                  <div className="selection-bar"></div>
+                  <span className="selection-text">Item Selected</span>
+                </div>
+                
+                {/* Layer controls */}
+                <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const selectedItem = items.find(item => item.id === selectedItemId);
+                      if (selectedItem) {
+                        if (selectedItem.view === 'front') {
+                          moveItemToBack(selectedItem.id);
+                          logAction('moved_item_to_back', { itemId: selectedItem.id });
+                        } else {
+                          moveItemToFront(selectedItem.id);
+                          logAction('moved_item_to_front', { itemId: selectedItem.id });
                         }
-                      }}
-                      style={{
-                        cursor: 'pointer',
-                        backgroundColor: '#4A9FBF',
-                        border: 'none',
-                        padding: '8px 16px',
-                        fontSize: '14px',
-                        color: 'white',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      {items.find(item => item.id === selectedItemId)?.view === 'front' ? 'Move to Back' : 'Move to Front'}
-                    </button>
-                  </div>
-                  
-                  <div className="color-wheel-section">
+                      }
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: '#4A9FBF',
+                      border: 'none',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      color: 'white',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    {items.find(item => item.id === selectedItemId)?.view === 'front' ? 'Move to Back' : 'Move to Front'}
+                  </button>
+                </div>
+                
+                {showColorWheel && (
+                  <>
+                    <div className="color-wheel-section">
                     <div className="color">
                       <h2 id="color-title">Color</h2>
                       <div className="color-grid" id="color-grid">
@@ -631,7 +644,7 @@ function App() {
               )}
               <ScaleControls itemId={selectedItemId} />
               
-              {items.find(item => item.id === selectedItemId)?.type !== 'display' && (
+              {items.find(item => item.id === selectedItemId)?.type !== 'display' && items.find(item => item.id === selectedItemId)?.type !== 'scent' && (
                 <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
                   <h2 id="speed-title">
                     {items.find(item => item.id === selectedItemId)?.type === 'battery' 
@@ -658,12 +671,20 @@ function App() {
                 </div>
               )}
               <h2 id="movement-title">
-                {items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'Sound' : 'Action'}
+                {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
+                  ? 'Sound' 
+                  : items.find(item => item.id === selectedItemId)?.type === 'scent'
+                    ? 'Scent'
+                    : 'Action'}
               </h2>
               <ItemControlPanel />
               <div className="custom-user-input">
                 <h2 id="custom-title">
-                  {items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'What should it play?' : 'Write my own action:'}
+                  {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
+                    ? 'What should it play?' 
+                    : items.find(item => item.id === selectedItemId)?.type === 'scent'
+                      ? 'What should the scent be?'
+                      : 'Write my own action:'}
                 </h2>
                 <textarea 
                   id="custom-input" 

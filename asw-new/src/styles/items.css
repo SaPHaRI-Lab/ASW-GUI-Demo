@@ -30,8 +30,39 @@
 }
 
 /* Draggable Items */
-.fur-patch, .light-ind, .light-strip, .battery, .display, .speaker, .other {
+.fur-patch, .light-ind, .light-strip, .inflatable, .battery, .display, .speaker, .scent, .other {
   cursor: grab;
+}
+
+.inflatable {
+  width: 55px;
+  height: 35px;
+  background-color: rgb(227, 227, 227);
+  border-radius: 50%;
+}
+
+.scent {
+  position: relative;
+  width: 35px;
+  height: 35px;
+}
+.scent::before,
+.scent::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #000;
+  border-radius: 50%;
+}
+.scent::before {
+  width: 30px;
+  height: 30px;
+}
+.scent::after {
+  width: 16px;
+  height: 16px;
 }
 
 .fur-patch, .dropped-item .fur-patch {
