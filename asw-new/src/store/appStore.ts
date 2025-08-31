@@ -26,6 +26,7 @@ interface AppStore extends ApplicationState {
   
   // Color copy/paste functionality
   copiedColor: string | null;
+  colorTxt: 'Copied' | 'Pasted' | null;
   copyColor: (color: string) => void;
   pasteColor: () => void;
   
@@ -83,6 +84,7 @@ export const useAppStore = create<AppStore>()(
     undoStack: [],
     redoStack: [],
     copiedColor: null,
+    colorTxt: null,
     copiedItem: null,
 
     // Session management
@@ -246,8 +248,12 @@ export const useAppStore = create<AppStore>()(
     })),
 
     duplicateItem: (id) => set((state) => {
-      const itemToDuplicate = state.items.find(item => item.id === id);
-      if (!itemToDuplicate) return state;
+      const itemsToDuplicate = state.items.filter(item => item.isSelected);
+      if (itemsToDuplicate.length === 0) {
+        const singleItem = state.items.find(item => item.id === id);
+        if (!singleItem) return state;
+        itemsToDuplicate.push(singleItem);
+      }
 
       // Save current state for undo
       const currentStateStr = JSON.stringify({
@@ -257,19 +263,23 @@ export const useAppStore = create<AppStore>()(
         jacketConfig: state.jacketConfig,
       });
 
-      const newId = `${itemToDuplicate.type}_CLONED_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const duplicatedItem: WearableItem = {
-        ...itemToDuplicate,
-        id: newId,
+      const timestamp = Date.now();
+      const duplicatedItems = itemsToDuplicate.map(item => ({
+        ...item,
+        id: `${item.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
         position: {
-          x: itemToDuplicate.position.x + 20,
-          y: itemToDuplicate.position.y + 20,
+          x: item.position.x + 20,
+          y: item.position.y + 20,
         },
-        isSelected: false,
-      };
+        isSelected: true,
+      }));
 
       return {
-        items: [...state.items, duplicatedItem],
+        items: [
+          ...state.items.map(item => ({ ...item, isSelected: false })),
+          ...duplicatedItems
+        ],
+        selectedItemId: duplicatedItems[0].id,
         undoStack: [...state.undoStack, currentStateStr],
         redoStack: [], // Clear redo stack on new action
       };
@@ -439,6 +449,7 @@ export const useAppStore = create<AppStore>()(
     // Color copy/paste functionality
     copyColor: (color) => set(() => ({
       copiedColor: color,
+      colorTxt: 'Copied'
     })),
 
     // Element copy/paste functionality
@@ -453,18 +464,41 @@ export const useAppStore = create<AppStore>()(
     },
 
     pasteItem: () => {
-      const { copiedItem } = get();
-      if (copiedItem) {
-        const newItem: WearableItem = {
-          ...copiedItem,
-          id: `item-${Date.now()}`, // Generate string ID
+      const state = get();
+      const selectedItems = state.items.filter(item => item.isSelected);
+      const timestamp = Date.now();
+      if (selectedItems.length > 1) {
+        const newItems = selectedItems.map(item => ({
+          ...item,
+          id: `${item.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
           position: {
-            x: copiedItem.position.x + 20, // Offset the pasted item slightly
-            y: copiedItem.position.y + 20
+            x: item.position.x + 20,
+            y: item.position.y + 20
+          },
+          isSelected: true
+        }));
+        set(state => ({
+          items: [
+            ...state.items.map(item => ({ ...item, isSelected: false })),
+            ...newItems
+          ],
+          selectedItemId: newItems[0].id
+        }));
+      }
+      else if (state.copiedItem) {
+        const newItem: WearableItem = {
+          ...state.copiedItem,
+          id: `${state.copiedItem.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
+          position: {
+            x: state.copiedItem.position.x + 20,
+            y: state.copiedItem.position.y + 20
           }
         };
         set(state => ({
-          items: [...state.items, newItem],
+          items: [
+            ...state.items.map(item => ({ ...item, isSelected: false })),
+            { ...newItem, isSelected: true }
+          ],
           selectedItemId: newItem.id
         }));
       }
@@ -473,14 +507,23 @@ export const useAppStore = create<AppStore>()(
     pasteColor: () => {
       const { copiedColor, items } = get();
       if (copiedColor) {
+        set({ colorTxt: 'Pasted' });
+        const rgba = hexToRgba(copiedColor);
         // Apply color to all selected items
         const selectedItems = items.filter(item => item.isSelected);
         if (selectedItems.length > 0) {
+          get().updateColorSelection({
+            rgba: rgba,
+            position: { x: 0, y: 0 }
+          });
           selectedItems.forEach(item => {
-            get().updateItem(item.id, { color: copiedColor });
+            get().updateItem(item.id, { 
+              color: `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
+              baseColor: `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
+              gradient: get().colorSelection.gradient 
+            });
           });
         } else {
-          const rgba = hexToRgba(copiedColor);
           get().updateJacketConfig({
             color: {
               r: rgba.r,

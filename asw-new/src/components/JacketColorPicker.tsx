@@ -12,7 +12,7 @@ interface JacketColorPickerProps {
 }
 
 export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
-  const { jacketConfig, updateJacketConfig, logAction, copyColor, pasteColor, copiedColor } = useAppStore();
+  const { jacketConfig, updateJacketConfig, logAction, copyColor, pasteColor, copiedColor, colorTxt } = useAppStore();
 
   // Convert current jacket color to hex and then to HSVA for the wheel
   const currentHex = rgbaToHex({ 
@@ -141,7 +141,7 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
             marginTop: '5px', 
             textAlign: 'center', 
             fontSize: '12px', 
-            color: '#666',
+            color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -157,7 +157,7 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
               border: '1px solid #ccc'
             }}
           ></div>
-          Copied
+          {colorTxt}
         </div>
       )}
     </div>

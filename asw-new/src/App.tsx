@@ -67,10 +67,8 @@ function App() {
   // Handle duplicate
   const handleDuplicate = () => {
     const selectedItems = items.filter(item => item.isSelected);
-    if (selectedItems.length > 1) {
-      selectedItems.forEach(item => {
-        duplicateItem(item.id);
-      });
+    if (selectedItems.length > 0) {
+      duplicateItem(selectedItems[0].id);
       logAction('duplicated_items', { 
         count: selectedItems.length, 
         itemIds: selectedItems.map(item => item.id) 
@@ -289,10 +287,17 @@ function App() {
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo): string {
     let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,Vertical Amount,X Position,Y Position\n';
+    const cloneCounters: { [key: string]: number } = {};
     const addRow = (item: WearableItem) => {
+      let cloneId = item.id;
+      if (item.id.includes('_CLONED_')) {
+        const itemType = item.id.split('_CLONED_')[0];
+        cloneCounters[itemType] = (cloneCounters[itemType] || 0) + 1;
+        cloneId = `${itemType}_CLONED_${Date.now()}_${cloneCounters[itemType]}`;
+      }
       csv += [
         item.view,
-        item.id,
+        cloneId,
         item.movement || '',
         item.speed || '', // Use per-item speed
         (item as any).customInput || '',
@@ -369,8 +374,7 @@ function App() {
     if (!selectedItemId) return false;
     const selectedItem = items.find(item => item.id === selectedItemId);
     if (!selectedItem) return false;
-    if (selectedItem.type === 'speaker' || selectedItem.id?.startsWith('speaker') ||
-    selectedItem.type === 'scent' || selectedItem.id?.startsWith('scent')) return false;
+    if (selectedItem.type === 'speaker' || selectedItem.id?.startsWith('speaker')) return false;
     if (
       selectedItem.type === 'fur-patch' || selectedItem.id?.startsWith('fur-patch') ||
       selectedItem.type === 'battery' || selectedItem.id?.startsWith('battery')

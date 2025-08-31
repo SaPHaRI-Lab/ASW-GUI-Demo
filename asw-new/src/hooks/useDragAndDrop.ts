@@ -102,8 +102,11 @@ export function useDragAndDrop() {
     // Set animation start time when movement changes for light items
     if (updates.movement) {
       const currentItem = items.find(item => item.id === itemId);
-      const isLightItem = currentItem?.type === 'light-strip' || currentItem?.type === 'light-ind';
-      if (isLightItem) {
+      const needsAnimationTime = 
+        currentItem?.type === 'light-strip' || 
+        currentItem?.type === 'light-ind' ||
+        (currentItem?.type === 'inflatable' && ['Inflate', 'Deflate'].includes(updates.movement));
+      if (needsAnimationTime) {
         updates.animationStartTime = Date.now();
       }
     }
@@ -122,6 +125,8 @@ export function useDragAndDrop() {
         case 'Trickle up':
         case 'Trickle down':
         case 'Random fl':
+        case 'Inflate':
+        case 'Deflate':
           // Start flashing animation for all flash-based movements
           if (!wasFlashing) {
             toggleItemFlashing(itemId);

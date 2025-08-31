@@ -26,7 +26,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   setPendingDropPosition 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem, logAction } = useAppStore();
+  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem, logAction, undo } = useAppStore();
   const { createItem, moveItem, saveUndoState } = useDragAndDrop();
   
   // State for dragging existing items
@@ -309,7 +309,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         
         // Get the adjusted color based on gradient
         const baseColor = { r: jacketConfig.color.r, g: jacketConfig.color.g, b: jacketConfig.color.b, a: 1 };
-        const adjustedColor = updateShade(baseColor, jacketConfig.gradient || 5);
+        const adjustedColor = updateShade(baseColor, jacketConfig.gradient ?? 5);
         const colorMatch = adjustedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
         
         if (colorMatch) {
@@ -625,7 +625,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             break;
           case 'scent':
             ctx.beginPath();
-            ctx.strokeStyle = '#000000';
+            ctx.strokeStyle = item.color || '#000000';
             ctx.lineWidth = 2;
             ctx.arc(17.5, 17.5, 15, 0, Math.PI * 2);
             ctx.stroke();
@@ -637,7 +637,24 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.fillStyle = item.color || '#333';
             let scaleX = 27.5;
             let scaleY = 17.5;
-            if (item.movement === 'Pulse') {
+            if (item.movement === 'Inflate' || item.movement === 'Deflate') {
+              const speed = item.speed || 3;
+              const startTime = item.animationStartTime || Date.now();
+              const duration = 1000 - speed * 150;
+              const elapsed = Math.min((Date.now() - startTime) / duration, 1);
+              const targetScale = item.movement === 'Inflate' ? 1.4 : 0.6;
+              const scale = item.movement === 'Inflate'
+                ? 1 + (targetScale - 1) * elapsed
+                : 1 - (1 - targetScale) * elapsed;
+              if (elapsed < 1) {
+                item.isFlashing = true;
+              } else {
+                item.isFlashing = false;
+              }
+              scaleX *= scale;
+              scaleY *= scale;
+            }
+            else if (item.movement === 'Pulse') {
               const speed = item.speed || 3;
               const now = Date.now();
               const pulseScale = 1 + Math.sin(now / (600 - speed * 80)) * 0.2;
@@ -787,7 +804,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       const selectedItems = getSelectedItems();
       const primarySelectedItem = storeItems.find(item => item.id === selectedItemId);
       
-      if (e.ctrlKey || e.metaKey) { // Ctrl on Windows/Linux, Cmd on Mac
+      if ((e.ctrlKey || e.metaKey) && !isInputElement(e.target as HTMLElement)) { // Ctrl on Windows/Linux, Cmd on Mac
         if (e.key === 'c' && selectedItems.length > 0) {
           e.preventDefault();
           if (selectedItems.length === 1) {
@@ -803,6 +820,10 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           e.preventDefault();
           pasteItem();
           console.log('Element pasted');
+        } else if (e.key === 'z') {
+          e.preventDefault();
+          undo();
+          logAction('undo', {});
         }
       }
       
@@ -823,7 +844,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       }
 
       // Handle arrow keys for item movement
-      if (selectedItemId) {
+      if (selectedItemId && !isInputElement(e.target as HTMLElement)) {
         const selectedItem = storeItems.find(item => item.id === selectedItemId);
         if (selectedItem) {
           const moveStep = e.shiftKey ? 10 : 1; // Hold shift for larger movements
@@ -879,7 +900,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems, moveItem]);
+  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems, moveItem, undo, logAction]);
 
   // Animation loop for movement effects
   useEffect(() => {
@@ -890,7 +911,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
         'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll', 'Roll btt',
-        'Trickle up', 'Trickle down', 'Random fl', 'Both', 'Pulse'
+        'Trickle up', 'Trickle down', 'Random fl', 'Both', 'Inflate', 'Deflate', 'Pulse'
       ].includes(item.movement) ||
       item.isFlashing
     );
@@ -944,31 +965,34 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   }, [rightClickMenu, createItem, setPendingItemType, setShowCreateItemPopup, setPendingDropPosition]);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    // Prevent click handling if we just completed a marquee selection
-    if (justCompletedMarquee) {
-      setJustCompletedMarquee(false);
-      return;
-    }
-
-    if (rotationState.isRotating) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    
-    if (canvas && ctx) {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+    // Only handle clicks if we're not dragging or rotating
+    if (!dragState.isDragging && !rotationState.isRotating && !justCompletedMarquee) {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
       
-      const clickedItem = getItemAtPosition(x, y);
-      const isCtrlPressed = event.ctrlKey || event.metaKey;
-      
-      if (clickedItem) {
-        // Use our multi-selection aware handler instead of handleItemClick
-        handleItemSelection(clickedItem, isCtrlPressed);
+      if (canvas && ctx) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        const clickedItem = getItemAtPosition(x, y);
+        const isCtrlPressed = event.ctrlKey || event.metaKey;
+        
+        if (clickedItem) {
+          // Handle Ctrl+Click selection here
+          handleItemSelection(clickedItem, isCtrlPressed);
+        } else if (!isCtrlPressed) {
+          // Clear selection when clicking empty space (unless Ctrl is pressed)
+          clearSelection();
+        }
       }
     }
-  }, [getItemAtPosition, handleItemSelection, justCompletedMarquee, rotationState.isRotating]);
+    
+    // Reset marquee flag
+    if (justCompletedMarquee) {
+      setJustCompletedMarquee(false);
+    }
+  }, [getItemAtPosition, handleItemSelection, justCompletedMarquee, rotationState.isRotating, clearSelection, dragState.isDragging]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -1005,7 +1029,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       // (we'll handle selection on mouseUp if no drag occurred)
       const isClickedItemSelected = clickedItem.isSelected || clickedItem.id === selectedItemId;
       
-      if (!isClickedItemSelected || isCtrlPressed) {
+      if (!isClickedItemSelected && !isCtrlPressed) {
         // Only change selection if:
         // 1. Clicking on an unselected item, OR
         // 2. Using Ctrl (for multi-selection toggle)

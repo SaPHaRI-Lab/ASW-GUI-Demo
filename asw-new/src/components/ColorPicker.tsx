@@ -12,7 +12,7 @@ interface ColorPickerProps {
 
 export const ColorPicker: React.FC<ColorPickerProps> = () => {
   const { colorSelection, handleColorChange } = useColorSelection();
-  const { copyColor, pasteColor, copiedColor, selectedItemId, items, logAction } = useAppStore();
+  const { copyColor, pasteColor, copiedColor, colorTxt, selectedItemId, items, logAction } = useAppStore();
 
   // Convert current RGBA to hex and then to HSVA for the wheel
   const currentHex = rgbaToHex(colorSelection.rgba);
@@ -115,7 +115,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
               border: '1px solid #ccc'
             }}
           ></div>
-          Copied
+          {colorTxt}
         </div>
       )}
     </div>

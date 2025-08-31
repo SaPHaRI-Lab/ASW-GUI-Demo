@@ -22,6 +22,7 @@ export type MovementType =
   | 'Light on ind' | 'Flash ind' // light-ind
   | 'Light on str' | 'Flash str' | 'Trickle up' | 'Trickle down' | 'Random fl' // light-strip
   | 'Continuous' | 'Discontinuous' // speaker
+  | 'Inflate' | 'Deflate' | 'Pulse' // inflatable
   | 'static' | 'rotating' | 'pulsing' | 'blinking'; // general
 
 export interface WearableItem {
