@@ -89,7 +89,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         const extraRows = verticalRows - 3;
         const extraHeight = extraRows * 12;
         const totalHeight = baseHeight + extraHeight;
-        return { width: totalWidth, height: totalHeight };
+        return { width: baseWidth, height: totalHeight };
       }
       case 'light-ind': return { width: 20, height: 20 };
       case 'light-strip': return { width: 20, height: 230 };
@@ -109,6 +109,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       if (item.view !== jacketConfig.view) return false;
       
       const bounds = getItemBounds(item.type, item);
+      const scale = item.size || 1;
       
       // If item has rotation, we need to check against rotated bounds
       if (item.rotation) {
@@ -117,13 +118,17 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         const centerY = item.position.y + bounds.height / 2;
         
         // Translate to origin
-        const translatedX = x - centerX;
-        const translatedY = y - centerY;
+        let translatedX = x - centerX;
+        let translatedY = y - centerY;
         
         // Rotate by negative rotation to undo the item's rotation
         const angle = (-item.rotation * Math.PI) / 180;
-        const rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
-        const rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+        let rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
+        let rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+        if (scale !== 1) {
+          rotatedX /= scale;
+          rotatedY /= scale;
+        }
         
         // Translate back and check bounds
         const localX = rotatedX + centerX;
@@ -136,6 +141,16 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       }
       
       // For non-rotated items, use simple bounds check
+      if (scale !== 1) {
+        const centerX = item.position.x + bounds.width / 2;
+        const centerY = item.position.y + bounds.height / 2;
+        const invX = (x - centerX) / scale + centerX;
+        const invY = (y - centerY) / scale + centerY;
+        return invX >= item.position.x && 
+               invX <= item.position.x + bounds.width &&
+               invY >= item.position.y && 
+               invY <= item.position.y + bounds.height;
+      }
       return x >= item.position.x && 
              x <= item.position.x + bounds.width &&
              y >= item.position.y && 
@@ -149,6 +164,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     if (!selectedItem) return null;
 
     const bounds = getItemBounds(selectedItem.type, selectedItem);
+    const scale = selectedItem.size || 1;
     
     // The rotation handle position in the item's local coordinate system
     // (matching the drawing code exactly)
@@ -179,9 +195,19 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       transformedY = rotatedY + centerOffsetY;
     }
     
+    // Apply scale to handle position to match visual scaling
+    let scaledHandleX = transformedX;
+    let scaledHandleY = transformedY;
+    if (scale !== 1) {
+      const centerOffsetX = bounds.width / 2;
+      const centerOffsetY = bounds.height / 2;
+      scaledHandleX = centerOffsetX + (transformedX - centerOffsetX) * scale;
+      scaledHandleY = centerOffsetY + (transformedY - centerOffsetY) * scale;
+    }
+
     // Convert to absolute canvas coordinates
-    const absoluteHandleX = selectedItem.position.x + transformedX;
-    const absoluteHandleY = selectedItem.position.y + transformedY;
+    const absoluteHandleX = selectedItem.position.x + scaledHandleX;
+    const absoluteHandleY = selectedItem.position.y + scaledHandleY;
     
     // Check if click is within handle radius (5px + some tolerance)
     const distance = Math.sqrt((x - absoluteHandleX) ** 2 + (y - absoluteHandleY) ** 2);
@@ -467,23 +493,20 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             const amount = item.amount || 15;
             const extraColumns = Math.floor((amount - 15) / 2);
             const triangles: FurTriangle[] = [...baseTriangles];
-            for (let i = 1; i <= extraColumns; i++) {
-              columnPattern.forEach(base => {
-                triangles.push({
-                  ...base,
-                  x: base.x + 30 + (i * 6),
-                  r: base.r + (i * 3),
-                  w: base.w * 0.95
-                });
-              });
-              columnPattern.forEach(base => {
-                triangles.push({
-                  ...base,
-                  x: base.x + 8 - (i * 6),
-                  r: base.r - (i * 3),
-                  w: base.w * 0.95
-                });
-              });
+              const baseLeft = 0;
+             const baseRight = 40;
+             const colWidth = 8;
+             for (let i = 1; i <= extraColumns; i++) {
+               triangles.push(
+                 { w: 11, h: 17, x: baseLeft - colWidth * i + 8, y: 1, r: -12 },
+                 { w: 10, h: 15, x: baseLeft - colWidth * i + 8, y: 8, r: -15 },
+                 { w: 9, h: 13, x: baseLeft - colWidth * i + 8, y: 15, r: -3 }
+               );
+               triangles.push(
+                 { w: 11, h: 17, x: baseRight + colWidth * (i - 1) - 8, y: 1, r: 12 },
+                 { w: 10, h: 15, x: baseRight + colWidth * (i - 1) - 8, y: 8, r: 15 },
+                 { w: 9, h: 13, x: baseRight + colWidth * (i - 1) - 8, y: 15, r: 3 }
+               );
             }
 
             // Vertical inc

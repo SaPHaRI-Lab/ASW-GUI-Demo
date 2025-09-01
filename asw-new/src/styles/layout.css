@@ -94,7 +94,7 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-.undoredodel {
+.undoredodel, .movement, .custom-user-input {
   margin-left: 30px;
 }
 

@@ -202,7 +202,7 @@ function App() {
 
       const result = await response.json();
       if (result.message) {
-        alert(result.message);
+        //alert(result.message);
         // Disable submit button
         const submitButton = document.getElementById('save-button');
         if (submitButton) {
@@ -650,7 +650,7 @@ function App() {
               
               {items.find(item => item.id === selectedItemId)?.type !== 'display' && items.find(item => item.id === selectedItemId)?.type !== 'scent' && (
                 <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
-                  <h2 id="speed-title">
+                  <h2 id="speed-title" style={{ marginLeft: 80 }}>
                     {items.find(item => item.id === selectedItemId)?.type === 'battery' 
                       ? 'Battery Level' 
                       : items.find(item => item.id === selectedItemId)?.type === 'speaker'
@@ -674,12 +674,14 @@ function App() {
                   />
                 </div>
               )}
-              <h2 id="movement-title">
+              <h2 id="movement-title" style={{ marginLeft: 80 }}>
                 {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
                   ? 'Sound' 
                   : items.find(item => item.id === selectedItemId)?.type === 'scent'
                     ? 'Scent'
-                    : 'Action'}
+                    : items.find(item => item.id === selectedItemId)?.type === 'display'
+                      ? 'Display'
+                      : 'Action'}
               </h2>
               <ItemControlPanel />
               <div className="custom-user-input">
@@ -688,7 +690,9 @@ function App() {
                     ? 'What should it play?' 
                     : items.find(item => item.id === selectedItemId)?.type === 'scent'
                       ? 'What should the scent be?'
-                      : 'Write my own action:'}
+                      : items.find(item => item.id === selectedItemId)?.type === 'display'
+                        ? 'What should it display?'
+                        : 'Write my own action:'}
                 </h2>
                 <textarea 
                   id="custom-input" 

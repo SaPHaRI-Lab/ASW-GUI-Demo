@@ -467,7 +467,13 @@ export const useAppStore = create<AppStore>()(
       const state = get();
       const selectedItems = state.items.filter(item => item.isSelected);
       const timestamp = Date.now();
-      if (selectedItems.length > 1) {
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      if (selectedItems.length >= 1) {
         const newItems = selectedItems.map(item => ({
           ...item,
           id: `${item.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
@@ -482,10 +488,15 @@ export const useAppStore = create<AppStore>()(
             ...state.items.map(item => ({ ...item, isSelected: false })),
             ...newItems
           ],
-          selectedItemId: newItems[0].id
+          selectedItemId: newItems[0].id,
+          undoStack: [...state.undoStack, currentStateStr],
+          redoStack: [],
         }));
-      }
-      else if (state.copiedItem) {
+        get().logAction('duplicated_items', {
+          count: newItems.length,
+          itemIds: newItems.map(i => i.id),
+        });
+      } else if (state.copiedItem) {
         const newItem: WearableItem = {
           ...state.copiedItem,
           id: `${state.copiedItem.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
@@ -499,8 +510,13 @@ export const useAppStore = create<AppStore>()(
             ...state.items.map(item => ({ ...item, isSelected: false })),
             { ...newItem, isSelected: true }
           ],
-          selectedItemId: newItem.id
+          selectedItemId: newItem.id,
+          undoStack: [...state.undoStack, currentStateStr],
+          redoStack: [],
         }));
+        get().logAction('duplicated_item', {
+          itemId: newItem.id,
+        });
       }
     },
 
