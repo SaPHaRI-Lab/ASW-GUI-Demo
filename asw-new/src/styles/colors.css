@@ -218,7 +218,7 @@
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: linear-gradient(to right, #666, #fff);
+  background: linear-gradient(to right, #fff, #666);
   outline: none;
   border-radius: 2px;
 }

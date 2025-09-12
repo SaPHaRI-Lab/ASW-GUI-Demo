@@ -3,16 +3,19 @@ import Wheel from '@uiw/react-color-wheel';
 import { hsvaToHex, hexToHsva } from '@uiw/color-convert';
 import { useColorSelection } from '../hooks/useColorSelection';
 import { useAppStore } from '../store/appStore';
-import { rgbaToHex, hexToRgba, rgbToHex } from '../utils/colorUtils';
+import { rgbaToHex, hexToRgba, rgbToHex, updateShade, parseRgbString } from '../utils/colorUtils';
 import { Button } from './Button';
+import { ColorInfoPopup } from './ColorInfoPopup';
+import Slider from 'rc-slider';
 
 interface ColorPickerProps {
   colorWheelImage?: HTMLImageElement | null; // Keep for backward compatibility but not used
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = () => {
-  const { colorSelection, handleColorChange } = useColorSelection();
-  const { copyColor, pasteColor, copiedColor, colorTxt, selectedItemId, items, logAction } = useAppStore();
+  const { colorSelection, handleColorChange, handleBrightnessChange } = useColorSelection();
+  const { copyColor, pasteColor, copiedColor, colorTxt, copiedBaseColor, copiedColorGradient, selectedItemId, items, logAction } = useAppStore();
+  const [showColorInfo, setShowColorInfo] = useState(false);
 
   // Convert current RGBA to hex and then to HSVA for the wheel
   const currentHex = rgbaToHex(colorSelection.rgba);
@@ -36,7 +39,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
   const handleCopyColor = useCallback(() => {
     const selectedItem = items.find(item => item.id === selectedItemId);
     if (selectedItem?.color) {
-      let hexColor = selectedItem.color;
+      let hexColor = selectedItem.baseColor || selectedItem.color;
       if (!hexColor.startsWith('#')) {
         if (hexColor.startsWith('rgb')) {
           const match = hexColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
@@ -70,8 +73,21 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
         />
       </div>
       
+      {/* Gradient Slider */}
+      <div className="gradient-control" style={{marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <Slider
+          min={0}
+          max={10}
+          value={colorSelection.gradient}
+          onChange={value => handleBrightnessChange(Array.isArray(value) ? value[0] : value)}
+          className="color-slider"
+          trackStyle={{ background: 'linear-gradient(to right, white, gray, black)' }}
+          handleStyle={{ backgroundColor: 'var(--primary-blue)', borderColor: 'var(--primary-blue)' }}
+        />
+      </div>
+      
       {/* Copy/Paste Color Buttons */}
-      <div className="color-actions" style={{ marginTop: '10px', display: 'flex', gap: '5px', justifyContent: 'center' }}>
+      <div className="color-actions" style={{ marginTop: '10px', display: 'flex', gap: '5px', justifyContent: 'center', alignItems: 'center' }}>
         <Button 
           size="small" 
           variant="secondary"
@@ -90,6 +106,26 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
         >
           Paste
         </Button>
+        <button
+          className="color-info-button"
+          onClick={() => setShowColorInfo(true)}
+          style={{
+            border: 'none',
+            borderRadius: '50%',
+            marginLeft: '5px',
+            height: '20px',
+            width: '20px',
+            color: 'white',
+            backgroundColor: 'rgb(126, 126, 126)',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          ?
+        </button>
       </div>
       
       {copiedColor && (
@@ -110,7 +146,12 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
             style={{ 
               width: '12px', 
               height: '12px', 
-              backgroundColor: copiedColor, 
+              backgroundColor: (() => {
+                const baseFromString = copiedBaseColor ? parseRgbString(copiedBaseColor) : null;
+                const baseRgba = baseFromString ? { r: baseFromString.r, g: baseFromString.g, b: baseFromString.b, a: 1 } : hexToRgba(copiedColor);
+                const grad = typeof copiedColorGradient === 'number' ? copiedColorGradient : 5;
+                return updateShade(baseRgba, grad);
+              })(), 
               borderRadius: '2px',
               border: '1px solid #ccc'
             }}
@@ -118,6 +159,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
           {colorTxt}
         </div>
       )}
+
+      <ColorInfoPopup 
+        isVisible={showColorInfo} 
+        onClose={() => setShowColorInfo(false)} 
+      />
     </div>
   );
 };

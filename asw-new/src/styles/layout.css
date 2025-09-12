@@ -71,13 +71,33 @@
 }
 
 .jacketbox {
-  width: 570px;
+  width: 570px; /*1.15*/
   height: 570px;
   background-color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+}
+
+.design-area-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #727272;
+  margin-bottom: 10px;
+  margin-top: -35px;
+}
+
+.sidebar-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #727272;
+  margin-top: -15px;
+  margin-bottom: 25px;
+  padding-bottom: 8px;
+  border-bottom: solid #d3d3d3;
 }
 
 .customization {

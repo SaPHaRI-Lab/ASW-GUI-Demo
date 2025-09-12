@@ -9,8 +9,8 @@ export interface MovementOption {
 export const MOVEMENT_OPTIONS: Record<string, MovementOption[]> = {
   'fur-patch': [
     { id: 'shake', value: 'Shake', label: 'Shake' },
-    { id: 'roll', value: 'Roll', label: 'Roll (top to bottom)' },
-    { id: 'roll-btt', value: 'Roll btt', label: 'Roll (bottom to top)' },
+    { id: 'roll', value: 'Roll', label: 'Roll Down' },
+    { id: 'roll-btt', value: 'Roll btt', label: 'Roll Up' },
     { id: 'stick-up', value: 'Stick up', label: 'Stick up' },
     { id: 'both', value: 'Both', label: 'Rattle' },
   ],
@@ -32,11 +32,11 @@ export const MOVEMENT_OPTIONS: Record<string, MovementOption[]> = {
   ],
   'speaker': [
     { id: 'continuous', value: 'Continuous', label: 'Continuous' },
-    { id: 'discontinuous', value: 'Discontinuous', label: 'Discontinuous' },
+    { id: 'discontinuous', value: 'Discontinuous', label: 'Discrete' },
   ],
   'scent': [
     { id: 'continuous', value: 'Continuous', label: 'Continuous' },
-    { id: 'discontinuous', value: 'Discontinuous', label: 'Discontinuous' },
+    { id: 'discontinuous', value: 'Discontinuous', label: 'Discrete' },
   ],
   'display': [],
   'other': [], // Special case - shows text input instead

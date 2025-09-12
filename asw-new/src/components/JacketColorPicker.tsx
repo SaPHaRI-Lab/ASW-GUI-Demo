@@ -3,8 +3,9 @@ import Wheel from '@uiw/react-color-wheel';
 import Slider from 'rc-slider';
 import { hsvaToHex, hexToHsva } from '@uiw/color-convert';
 import { useAppStore } from '../store/appStore';
-import { rgbaToHex, hexToRgba } from '../utils/colorUtils';
+import { rgbaToHex, hexToRgba, updateShade, parseRgbString } from '../utils/colorUtils';
 import { Button } from './Button';
+import { ColorInfoPopup } from './ColorInfoPopup';
 import 'rc-slider/assets/index.css';
 
 interface JacketColorPickerProps {
@@ -12,7 +13,8 @@ interface JacketColorPickerProps {
 }
 
 export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
-  const { jacketConfig, updateJacketConfig, logAction, copyColor, pasteColor, copiedColor, colorTxt } = useAppStore();
+  const { jacketConfig, updateJacketConfig, logAction, copyColor, pasteColor, copiedColor, colorTxt, copiedBaseColor, copiedColorGradient } = useAppStore();
+  const [showColorInfo, setShowColorInfo] = useState(false);
 
   // Convert current jacket color to hex and then to HSVA for the wheel
   const currentHex = rgbaToHex({ 
@@ -117,7 +119,7 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
         />
       </div>
 
-      <div className="jacket-color-copy-paste" style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+      <div className="jacket-color-copy-paste" style={{ marginTop: '10px', display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
         <Button
           variant="light-blue"
           size="small"
@@ -132,6 +134,26 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
         >
           Paste
         </Button>
+        <button
+          className="color-info-button"
+          onClick={() => setShowColorInfo(true)}
+          style={{
+            border: 'none',
+            borderRadius: '50%',
+            marginLeft: '5px',
+            height: '20px',
+            width: '20px',
+            color: 'white',
+            backgroundColor: 'rgb(126, 126, 126)',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          ?
+        </button>
       </div>
 
       {copiedColor && (
@@ -152,7 +174,12 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
             style={{ 
               width: '12px', 
               height: '12px', 
-              backgroundColor: copiedColor, 
+              backgroundColor: (() => {
+                const baseFromString = copiedBaseColor ? parseRgbString(copiedBaseColor) : null;
+                const baseRgba = baseFromString ? { r: baseFromString.r, g: baseFromString.g, b: baseFromString.b, a: 1 } : hexToRgba(copiedColor);
+                const grad = typeof copiedColorGradient === 'number' ? copiedColorGradient : 5;
+                return updateShade(baseRgba, grad);
+              })(), 
               borderRadius: '2px',
               border: '1px solid #ccc'
             }}
@@ -160,6 +187,11 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
           {colorTxt}
         </div>
       )}
+
+      <ColorInfoPopup 
+        isVisible={showColorInfo} 
+        onClose={() => setShowColorInfo(false)} 
+      />
     </div>
   );
 };

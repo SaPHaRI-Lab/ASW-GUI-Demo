@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { ApplicationState, WearableItem, ColorSelection, JacketConfig, ActionLog, Position } from '../types';
-import { hexToRgba } from '../utils/colorUtils';
+import { hexToRgba, updateShade, parseRgbString } from '../utils/colorUtils';
 
 interface AppStore extends ApplicationState {
   itemCounters: Record<string, number>;
@@ -19,14 +19,18 @@ interface AppStore extends ApplicationState {
   deleteSelectedItem: () => void;
   moveItemToFront: (id: string) => void;
   moveItemToBack: (id: string) => void;
+  moveMultipleItems: (itemIds: string[], targetView: 'front' | 'back') => void;
   updateColorSelection: (colorSelection: Partial<ColorSelection>) => void;
   updateJacketConfig: (config: Partial<JacketConfig>) => void;
+  updateJacketConfig2: (config: Partial<JacketConfig>) => void; // Will not be able to undo/redo view change
   toggleItemFlashing: (id: string) => void;
   clearSelection: () => void;
   
   // Color copy/paste functionality
   copiedColor: string | null;
   colorTxt: 'Copied' | 'Pasted' | null;
+  copiedBaseColor: string | null;
+  copiedColorGradient: number | null;
   copyColor: (color: string) => void;
   pasteColor: () => void;
   
@@ -38,6 +42,7 @@ interface AppStore extends ApplicationState {
   // Session management
   startSession: (participantId: string, designCode: string) => void;
   endSession: () => void;
+  waitPopupShown: () => void;
   
   // State persistence
   saveState: () => void;
@@ -69,7 +74,7 @@ export const useAppStore = create<AppStore>()(
     },
     jacketConfig: {
       view: 'front',
-      color: { r: 227, g: 227, b: 227 },
+      color: { r: 255, g: 255, b: 255 },
       colorPosition: null,
       gradient: 5,
     },
@@ -77,6 +82,7 @@ export const useAppStore = create<AppStore>()(
       participantId: '',
       designCode: '',
       startTime: 0,
+      waitPopupTime: undefined,
       isActive: false,
     },
     flashingItems: new Set<string>(),
@@ -85,6 +91,8 @@ export const useAppStore = create<AppStore>()(
     redoStack: [],
     copiedColor: null,
     colorTxt: null,
+    copiedBaseColor: null,
+    copiedColorGradient: null,
     copiedItem: null,
 
     // Session management
@@ -94,6 +102,7 @@ export const useAppStore = create<AppStore>()(
           participantId,
           designCode,
           startTime: Date.now(),
+          waitPopupTime: undefined,
           isActive: true,
         },
       });
@@ -102,6 +111,17 @@ export const useAppStore = create<AppStore>()(
         designCode,
         startTime: Date.now(),
       });
+    },
+
+    waitPopupShown: () => {
+      const { sessionInfo } = get();
+      set({
+        sessionInfo: {
+          ...sessionInfo,
+          waitPopupTime: Date.now()
+        }
+      });
+      get().logAction('wait_popup_shown', { timestamp: Date.now() });
     },
 
     endSession: () => {
@@ -268,8 +288,8 @@ export const useAppStore = create<AppStore>()(
         ...item,
         id: `${item.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
         position: {
-          x: item.position.x + 20,
-          y: item.position.y + 20,
+          x: item.position.x + 40,
+          y: item.position.y + 40,
         },
         isSelected: true,
       }));
@@ -279,7 +299,7 @@ export const useAppStore = create<AppStore>()(
           ...state.items.map(item => ({ ...item, isSelected: false })),
           ...duplicatedItems
         ],
-        selectedItemId: duplicatedItems[0].id,
+        selectedItemId: duplicatedItems.length === 1 ? duplicatedItems[0].id : null,
         undoStack: [...state.undoStack, currentStateStr],
         redoStack: [], // Clear redo stack on new action
       };
@@ -316,6 +336,7 @@ export const useAppStore = create<AppStore>()(
         items: state.items.map(item =>
           item.id === id ? { ...item, view: 'front' } : item
         ),
+        jacketConfig: { ...state.jacketConfig, view: 'front' },
         undoStack: [...state.undoStack, currentStateStr],
         redoStack: [],
       };
@@ -331,6 +352,24 @@ export const useAppStore = create<AppStore>()(
         items: state.items.map(item =>
           item.id === id ? { ...item, view: 'back' } : item
         ),
+        jacketConfig: { ...state.jacketConfig, view: 'back' },
+        undoStack: [...state.undoStack, currentStateStr],
+        redoStack: [],
+      };
+    }),
+
+    moveMultipleItems: (itemIds: string[], targetView: 'front' | 'back') => set((state) => {
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      return {
+        items: state.items.map(item =>
+          itemIds.includes(item.id) ? { ...item, view: targetView } : item
+        ),
+        jacketConfig: { ...state.jacketConfig, view: targetView },
         undoStack: [...state.undoStack, currentStateStr],
         redoStack: [],
       };
@@ -340,7 +379,21 @@ export const useAppStore = create<AppStore>()(
       colorSelection: { ...state.colorSelection, ...colorSelection },
     })),
 
-    updateJacketConfig: (config) => set((state) => ({
+    updateJacketConfig: (config) => set((state) => {
+      const currentStateStr = JSON.stringify({
+        items: state.items,
+        selectedItemId: state.selectedItemId,
+        colorSelection: state.colorSelection,
+        jacketConfig: state.jacketConfig,
+      });
+      return {
+        jacketConfig: { ...state.jacketConfig, ...config },
+        undoStack: [...state.undoStack, currentStateStr],
+        redoStack: [],
+      };
+    }),
+
+    updateJacketConfig2: (config) => set((state) => ({
       jacketConfig: { ...state.jacketConfig, ...config },
     })),
 
@@ -447,14 +500,34 @@ export const useAppStore = create<AppStore>()(
     },
     
     // Color copy/paste functionality
-    copyColor: (color) => set(() => ({
-      copiedColor: color,
-      colorTxt: 'Copied'
-    })),
+    copyColor: (color) => {
+      const { selectedItemId, items, jacketConfig, colorSelection } = get();
+      let copiedBaseColor: string | null = null;
+      let copiedGradient: number | null = null;
+
+      if (selectedItemId) {
+        const selectedItem = items.find(i => i.id === selectedItemId);
+        if (selectedItem) {
+          copiedBaseColor = selectedItem.baseColor 
+            || `rgb(${colorSelection.rgba.r}, ${colorSelection.rgba.g}, ${colorSelection.rgba.b})`;
+          copiedGradient = (selectedItem.gradient ?? colorSelection.gradient);
+        }
+      } else {
+        copiedBaseColor = `rgb(${jacketConfig.color.r}, ${jacketConfig.color.g}, ${jacketConfig.color.b})`;
+        copiedGradient = jacketConfig.gradient ?? null;
+      }
+
+      set({
+        copiedColor: color,
+        copiedBaseColor,
+        copiedColorGradient: copiedGradient,
+        colorTxt: 'Copied'
+      });
+    },
 
     // Element copy/paste functionality
     copyItem: () => {
-      const { selectedItemId, items } = get();
+      const { selectedItemId, items, jacketConfig } = get();
       if (selectedItemId) {
         const selectedItem = items.find(item => item.id === selectedItemId);
         if (selectedItem) {
@@ -478,9 +551,10 @@ export const useAppStore = create<AppStore>()(
           ...item,
           id: `${item.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
           position: {
-            x: item.position.x + 20,
-            y: item.position.y + 20
+            x: item.position.x + 40,
+            y: item.position.y + 40
           },
+          view: state.jacketConfig.view,
           isSelected: true
         }));
         set(state => ({
@@ -488,7 +562,7 @@ export const useAppStore = create<AppStore>()(
             ...state.items.map(item => ({ ...item, isSelected: false })),
             ...newItems
           ],
-          selectedItemId: newItems[0].id,
+          selectedItemId: newItems.length === 1 ? newItems[0].id : null,
           undoStack: [...state.undoStack, currentStateStr],
           redoStack: [],
         }));
@@ -501,9 +575,10 @@ export const useAppStore = create<AppStore>()(
           ...state.copiedItem,
           id: `${state.copiedItem.type}_CLONED_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
           position: {
-            x: state.copiedItem.position.x + 20,
-            y: state.copiedItem.position.y + 20
-          }
+            x: state.copiedItem.position.x + 40,
+            y: state.copiedItem.position.y + 40
+          },
+          view: state.jacketConfig.view
         };
         set(state => ({
           items: [
@@ -521,33 +596,37 @@ export const useAppStore = create<AppStore>()(
     },
 
     pasteColor: () => {
-      const { copiedColor, items } = get();
-      if (copiedColor) {
-        set({ colorTxt: 'Pasted' });
-        const rgba = hexToRgba(copiedColor);
-        // Apply color to all selected items
-        const selectedItems = items.filter(item => item.isSelected);
-        if (selectedItems.length > 0) {
-          get().updateColorSelection({
-            rgba: rgba,
-            position: { x: 0, y: 0 }
+      const state = get();
+      const { copiedColor, copiedBaseColor, copiedColorGradient } = state;
+      if (!copiedColor) return;
+      set({ colorTxt: 'Pasted' });
+
+      // Determine base color and gradient to apply
+      const baseRgbaFromHex = hexToRgba(copiedColor);
+      const baseRgbaFromString = copiedBaseColor ? parseRgbString(copiedBaseColor) : null;
+      const baseRgba = baseRgbaFromString ? { ...baseRgbaFromString, a: 1 } : baseRgbaFromHex;
+      const gradientToApply = (copiedColorGradient ?? state.colorSelection.gradient);
+
+      // Apply to selected items if any
+      const selectedItems = state.items.filter(item => item.isSelected);
+      if (selectedItems.length > 0) {
+        // Update UI selection model so the gradient slider reflects source gradient
+        state.updateColorSelection({ rgba: baseRgba, position: { x: 0, y: 0 }, gradient: gradientToApply });
+
+        selectedItems.forEach(item => {
+          const shaded = updateShade(baseRgba, gradientToApply);
+          state.updateItem(item.id, {
+            color: shaded,
+            baseColor: `rgb(${baseRgba.r}, ${baseRgba.g}, ${baseRgba.b})`,
+            gradient: gradientToApply
           });
-          selectedItems.forEach(item => {
-            get().updateItem(item.id, { 
-              color: `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
-              baseColor: `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
-              gradient: get().colorSelection.gradient 
-            });
-          });
-        } else {
-          get().updateJacketConfig({
-            color: {
-              r: rgba.r,
-              g: rgba.g,
-              b: rgba.b
-            }
-          });
-        }
+        });
+      } else {
+        // Paste to jacket color: set base color and gradient
+        state.updateJacketConfig({
+          color: { r: baseRgba.r, g: baseRgba.g, b: baseRgba.b },
+          gradient: gradientToApply
+        });
       }
     },
   }))

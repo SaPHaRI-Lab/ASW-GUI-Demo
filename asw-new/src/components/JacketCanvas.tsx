@@ -26,7 +26,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   setPendingDropPosition 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem, logAction, undo } = useAppStore();
+  const { jacketConfig, clearSelection, copyColor, pasteColor, copyItem, pasteItem, items: storeItems, selectedItemId, selectMultipleItems, selectItem, logAction, undo, redo } = useAppStore();
   const { createItem, moveItem, saveUndoState } = useDragAndDrop();
   
   // State for dragging existing items
@@ -35,7 +35,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     draggedItem: null as any,
     offset: { x: 0, y: 0 },
     initialPositions: new Map() as Map<string, { x: number, y: number }>,
-    hasMoved: false
+    hasMoved: false,
+    isMultiSelect: false
   });
 
   // State for rotation
@@ -44,7 +45,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     rotatingItem: null as any,
     startAngle: 0,
     startRotation: 0,
-    hasMoved: false
+    hasMoved: false,
+    rotationDone: false
   });
 
   // State for marquee selection
@@ -92,12 +94,18 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         return { width: baseWidth, height: totalHeight };
       }
       case 'light-ind': return { width: 20, height: 20 };
-      case 'light-strip': return { width: 20, height: 230 };
+      case 'light-strip': {
+        const length = item?.length ?? 1;
+        return { width: 20, height: 230 * length };
+      }
       case 'battery': return { width: 60, height: 25 };
       case 'display': return { width: 60, height: 40 };
       case 'speaker': return { width: 40, height: 30 };
       case 'scent': return { width: 35, height: 35 };
-      case 'inflatable': return { width: 55, height: 35 };
+      case 'inflatable': return { 
+        width: (item?.inflatableWidth ?? 27.5) * 2, 
+        height: (item?.inflatableLength ?? 17.5) * 2 
+      };
       default: return { width: 40, height: 30 };
     }
   }, []);
@@ -327,9 +335,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     if (canvas && ctx && jacketImage && jacketImage.complete) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(jacketImage, 0, 0, canvas.width, canvas.height);
-      
-      // Apply jacket color if not default
-      if (jacketConfig.color.r !== 227 || jacketConfig.color.g !== 227 || jacketConfig.color.b !== 227) {
+
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
@@ -337,7 +343,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         const baseColor = { r: jacketConfig.color.r, g: jacketConfig.color.g, b: jacketConfig.color.b, a: 1 };
         const adjustedColor = updateShade(baseColor, jacketConfig.gradient ?? 5);
         const colorMatch = adjustedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        
+
         if (colorMatch) {
           const [_, r, g, b] = colorMatch.map(Number);
           
@@ -355,7 +361,6 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           }
           
           ctx.putImageData(imageData, 0, 0);
-        }
       }
       
       // Draw all items on the jacket (sorted by zIndex for proper layering)
@@ -408,7 +413,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         switch (item.type) {
           case 'light-strip': {
             const numLights = item.amount || 6;
-            const spacing = 210 / (numLights - 1);
+            const length = item.length ?? 1;
+            const spacing = (210 * length) / (numLights - 1);
             const totalHeight = (numLights - 1) * spacing + 20;
             const startY = 10;
             ctx.strokeStyle = '#444';
@@ -537,33 +543,53 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 const speed = item.speed || 3;
                 const animationSpeed = 600 - speed * 50;
                 let rowIndex = -1;
-                if (t.y <= 3) {
-                  rowIndex = 0; // Top row
-                } else if (t.y > 3 && t.y <= 12) {
-                  rowIndex = 1; // Middle row
+                if (verticalRows == 3) {
+                  if (t.y <= 3) {
+                    rowIndex = 0; // Top row
+                  } else if (t.y <= 12) {
+                    rowIndex = 1; // Middle row
+                  } else {
+                    rowIndex = 2; // Bottom row
+                  }
                 } else {
-                  rowIndex = 2; // Bottom row
-                }
-                if (item.movement === 'Roll btt') {
-                  rowIndex = 2 - rowIndex;
+                  const rowHeight = 12;
+                  rowIndex = Math.floor((t.y+3) / rowHeight);
+                  rowIndex = Math.max(0, Math.min(rowIndex, verticalRows-1));
                 }
                 const totalCycleTime = animationSpeed * 6;
                 const cycleProgress = (now%totalCycleTime) / totalCycleTime;
-                if (cycleProgress < 0.5) {
-                  const downPhase = cycleProgress * 2;
-                  const rowStartTime = rowIndex * (1/3);
-                  if (downPhase >= rowStartTime) {
-                    const rowProgress = Math.min((downPhase-rowStartTime) * 3, 1);
+                if (item.movement === 'Roll btt') {
+                  if (cycleProgress < 0.5) {
+                    const upPhase = cycleProgress * 2;
+                    const rowStartTime = rowIndex * (1/verticalRows);
+                    if (upPhase >= rowStartTime) {
+                      const rowProgress = Math.min((upPhase-rowStartTime) * verticalRows, 1);
+                      angle += -60 + (60 * rowProgress);
+                    } else {
+                      angle += -60;
+                    }
+                  } else {
+                    const downPhase = (cycleProgress-0.5) * 2;
+                    const rowProgress = Math.min(downPhase*verticalRows, 1);
                     angle += -60 * rowProgress;
                   }
                 } else {
-                  const upPhase = (cycleProgress-0.5) * 2;
-                  const rowStartTime = rowIndex * (1/3);
-                  if (upPhase >= rowStartTime) {
-                    const rowProgress = Math.min((upPhase-rowStartTime) * 3, 1);
-                    angle += -60 + (60 * rowProgress);
+                  const cycleProgressDefault = cycleProgress;
+                  if (cycleProgressDefault < 0.5) {
+                    const downPhase = cycleProgressDefault * 2;
+                    const rowStartTime = rowIndex * (1/verticalRows);
+                    if (downPhase >= rowStartTime) {
+                      const rowProgress = Math.min((downPhase-rowStartTime) * verticalRows, 1);
+                      angle += -60 * rowProgress;
+                    }
                   } else {
-                    angle += -60;
+                    const upPhase = (cycleProgressDefault - 0.5) * 2;
+                    if (upPhase >= 0) {
+                      const rowProgress = Math.min(upPhase * verticalRows, 1);
+                      angle += -60 + (60 * rowProgress);
+                    } else {
+                      angle += -60;
+                    }
                   }
                 }
               } else if (item.movement === 'Stick up') {
@@ -658,8 +684,10 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             break;
           case 'inflatable': {
             ctx.fillStyle = item.color || '#333';
-            let scaleX = 27.5;
-            let scaleY = 17.5;
+            const baseWidth = item.inflatableWidth ?? 27.5;
+            const baseHeight = item.inflatableLength ?? 17.5;
+            let scaleX = baseWidth;
+            let scaleY = baseHeight;
             if (item.movement === 'Inflate' || item.movement === 'Deflate') {
               const speed = item.speed || 3;
               const startTime = item.animationStartTime || Date.now();
@@ -685,7 +713,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
               scaleY *= pulseScale;
             }
             ctx.beginPath();
-            ctx.ellipse(27.5, 17.5, scaleX, scaleY, 0, 0, Math.PI * 2);
+            ctx.ellipse(baseWidth, baseHeight, scaleX, scaleY, 0, 0, Math.PI * 2);
             ctx.fill();
             break;
           }
@@ -847,6 +875,14 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           e.preventDefault();
           undo();
           logAction('undo', {});
+        } else if (e.key === 'r') {
+          e.preventDefault();
+          redo();
+          logAction('redo', {});
+        } else if (e.key === 's') {
+          e.preventDefault();
+          clearSelection();
+          logAction('cleared_selection', {});
         }
       }
       
@@ -923,7 +959,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems, moveItem, undo, logAction]);
+  }, [copyColor, pasteColor, copyItem, pasteItem, storeItems, selectedItemId, getSelectedItems, moveItem, undo, redo, logAction, clearSelection]);
 
   // Animation loop for movement effects
   useEffect(() => {
@@ -989,7 +1025,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     // Only handle clicks if we're not dragging or rotating
-    if (!dragState.isDragging && !rotationState.isRotating && !justCompletedMarquee) {
+    if (!dragState.isDragging && !rotationState.isRotating && !justCompletedMarquee && !dragState.isMultiSelect) {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       
@@ -1005,8 +1041,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           // Handle Ctrl+Click selection here
           handleItemSelection(clickedItem, isCtrlPressed);
         } else if (!isCtrlPressed) {
-          // Clear selection when clicking empty space (unless Ctrl is pressed)
-          clearSelection();
+          if (!rotationState.rotationDone) clearSelection();
         }
       }
     }
@@ -1015,7 +1050,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     if (justCompletedMarquee) {
       setJustCompletedMarquee(false);
     }
-  }, [getItemAtPosition, handleItemSelection, justCompletedMarquee, rotationState.isRotating, clearSelection, dragState.isDragging]);
+  }, [getItemAtPosition, handleItemSelection, justCompletedMarquee, rotationState.isRotating, clearSelection, dragState.isDragging, dragState.isMultiSelect]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -1040,7 +1075,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         rotatingItem: rotationItem,
         startAngle,
         startRotation: rotationItem.rotation || 0,
-        hasMoved: false
+        hasMoved: false,
+        rotationDone: false
       });
       return;
     }
@@ -1088,7 +1124,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           y: offsetY
         },
         initialPositions,
-        hasMoved: false
+        hasMoved: false,
+        isMultiSelect: isDraggedItemSelected && selectedItems.length > 1
       });
     } else if (!isCtrlPressed) {
       // Start marquee selection when clicking on empty space (without Ctrl)
@@ -1272,20 +1309,34 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       }
     }
     
+    const isMultiSelect = dragState.isMultiSelect;
     setDragState({
       isDragging: false,
       draggedItem: null,
       offset: { x: 0, y: 0 },
       initialPositions: new Map(),
-      hasMoved: false
+      hasMoved: false,
+      isMultiSelect: isMultiSelect
     });
+    
+    if (isMultiSelect) {
+      setTimeout(() => {
+        setDragState(prev => ({ ...prev, isMultiSelect: false }));
+      }, 100);
+    }
     setRotationState(prev => ({
       isRotating: false,
       rotatingItem: null,
       startAngle: 0,
       startRotation: 0,
-      hasMoved: false
+      hasMoved: false,
+      rotationDone: prev.hasMoved
     }));
+    if (rotationState.hasMoved) {
+      setTimeout(() => {
+        setRotationState(prev => ({ ...prev, rotationDone: false }));
+      }, 100);
+    }
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.style.cursor = 'default';
@@ -1296,7 +1347,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     <>
       <canvas
         ref={canvasRef}
-        width={480}
+        width={480} //*1.15
         height={550}
         onContextMenu={handleRightClick}
         onMouseDown={handleMouseDown}

@@ -8,6 +8,7 @@ import { JacketCanvas } from './components/JacketCanvas';
 import { ItemControlPanel } from './components/ItemControlPanel';
 import { JacketColorPicker } from './components/JacketColorPicker';
 import { WelcomePopup } from './components/WelcomePopup';
+import { WaitPopup } from './components/WaitPopup';
 import { ConfirmationPopup } from './components/ConfirmationPopup';
 import { CreateItemPopup } from './components/CreateItemPopup';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
@@ -16,6 +17,7 @@ import './main.css';
 import 'rc-slider/assets/index.css';
 import html2canvas from 'html2canvas';
 import { uploadDesign } from './utils/uploadDesign';
+import { updateShade } from './utils/colorUtils';
 import type { WearableItem, JacketConfig, SessionInfo, ActionLog } from './types';
 import { Button } from './components/Button';
 import { InfoPopup } from './components/InfoPopup';
@@ -40,16 +42,22 @@ function App() {
     actionLogs,
     moveItemToFront,
     moveItemToBack,
-    logAction
+    moveMultipleItems,
+    logAction,
+    clearSelection,
+    updateJacketConfig2,
+    waitPopupShown
   } = useAppStore();
   const { updateItemConfiguration, createItem } = useDragAndDrop();
-  const { colorSelection, handleBrightnessChange } = useColorSelection();
+  const { colorSelection } = useColorSelection();
   const [jacketImage, setJacketImage] = useState<HTMLImageElement | null>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [showCreateItemPopup, setShowCreateItemPopup] = useState(false);
   const [pendingItemType, setPendingItemType] = useState<string | null>(null);
   const [pendingDropPosition, setPendingDropPosition] = useState<{x: number, y: number} | null>(null);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
+  const [showWaitPopup, setShowWaitPopup] = useState(false);
+  const [finalizeSubmission, setFinalizeSubmission] = useState(false);
 
   // Handle drag start for items
   const handleDragStart = useCallback((e: React.DragEvent, itemType: string) => {
@@ -60,7 +68,7 @@ function App() {
   // Handle view toggle
   const toggleView = () => {
     const newView = jacketConfig.view === 'front' ? 'back' : 'front';
-    updateJacketConfig({ view: newView });
+    updateJacketConfig2({ view: newView });
     logAction('switched_jacket_view', { view: newView });
   };
 
@@ -154,7 +162,13 @@ function App() {
       alert('Please enter participant ID and design code first.');
       return;
     }
-    setShowSubmitConfirmation(true);
+    
+    if (finalizeSubmission) {
+      setShowSubmitConfirmation(true);
+    } else {
+      waitPopupShown();
+      setShowWaitPopup(true);
+    }
   };
 
   const handleConfirmSubmit = async () => {
@@ -165,9 +179,9 @@ function App() {
 
       // Render PNGs for both views
       const origView = jacketConfig.view;
-      const guiImage1 = await renderJacketView('front', updateJacketConfig);
-      const guiImage2 = await renderJacketView('back', updateJacketConfig);
-      updateJacketConfig({ view: origView }); // Restore original view
+      const guiImage1 = await renderJacketView('front', updateJacketConfig2);
+      const guiImage2 = await renderJacketView('back', updateJacketConfig2);
+      updateJacketConfig2({ view: origView }); // Restore original view
 
       // Create form data
       const formData = new FormData();
@@ -224,11 +238,13 @@ function App() {
       //alert(`Failed to submit design: ${error.message || 'Unknown error'}`);
     } finally {
       setShowSubmitConfirmation(false);
+      setFinalizeSubmission(false);
     }
   };
 
   const handleCancelSubmit = () => {
     setShowSubmitConfirmation(false);
+    setFinalizeSubmission(false);
   };
 
   // Handle create item button click
@@ -286,7 +302,7 @@ function App() {
 
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo): string {
-    let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,Vertical Amount,X Position,Y Position\n';
+    let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,Length,Width,X Position,Y Position\n';
     const cloneCounters: { [key: string]: number } = {};
     const addRow = (item: WearableItem) => {
       let cloneId = item.id;
@@ -295,6 +311,18 @@ function App() {
         cloneCounters[itemType] = (cloneCounters[itemType] || 0) + 1;
         cloneId = `${itemType}_CLONED_${Date.now()}_${cloneCounters[itemType]}`;
       }
+      const lengthValue = (
+        item.type === 'light-strip' ? (item.length || 1) :
+        item.type === 'fur-patch' ? (item.verticalRows || '') :
+        item.type === 'inflatable' ? (item.inflatableLength || '') :
+        ''
+      );
+      const widthValue = (
+        item.type === 'fur-patch' ? (item.amount || '') :
+        item.type === 'inflatable' ? (item.inflatableWidth || '') :
+        ''
+      );
+
       csv += [
         item.view,
         cloneId,
@@ -305,7 +333,8 @@ function App() {
         item.rotation || 0,
         item.size || 1,
         item.amount || '',
-        item.type === 'fur-patch' ? (item.verticalRows || 3) : '',
+        lengthValue,
+        widthValue,
         item.position.x,
         item.position.y
       ].join(',') + '\n';
@@ -313,12 +342,17 @@ function App() {
     items.forEach(addRow);
     // Add jacket color and total time if available
     if (jacketConfig.color) {
-      const jacketColorString = `rgb(${jacketConfig.color.r} ${jacketConfig.color.g} ${jacketConfig.color.b})`;
-      csv += `JACKET COLOR: ${jacketColorString}`;
+      const baseColor = { r: jacketConfig.color.r, g: jacketConfig.color.g, b: jacketConfig.color.b, a: 1 };
+      const adjustedColor = updateShade(baseColor, jacketConfig.gradient ?? 5);
+      csv += `"JACKET COLOR: ${adjustedColor}"`;
     }
-    if (sessionInfo.startTime) {
+    /*if (sessionInfo.startTime) {
       const totalTime = Math.round((Date.now() - sessionInfo.startTime) / 1000);
       csv += `\nTOTAL TIME: ${totalTime}`;
+    }*/
+    if (sessionInfo.startTime && sessionInfo.waitPopupTime) {
+      const designTime = Math.round((sessionInfo.waitPopupTime - sessionInfo.startTime) / 1000);
+      csv += `\nTOTAL TIME: ${designTime}`;
     }
     return csv;
   }
@@ -381,7 +415,6 @@ function App() {
     ) return true;
     return true;
   })();
-  const showGradientSlider = showColorWheel;
 
   const renderBatteryBars = (numBars = 3) => {
     return Array.from({ length: numBars }, (_, i) => (
@@ -400,6 +433,7 @@ function App() {
       </div>
       <div className="container">
         <div className="sidebar">
+          <h3 className="sidebar-title">Item Selection Area</h3>
           <div className="option">
             <div className="option-txt">Create Item</div>
             <div className="item-container" id="other-cont">
@@ -510,7 +544,9 @@ function App() {
             <div className="session-item">Participant ID: {sessionInfo.participantId}</div>
             <div className="session-item">Design Code: {sessionInfo.designCode}</div>
           </div>
-          <div className="jacketbox" id="jacketbox" onDrop={handleDrop} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}>
+          <div className="design-area">
+            <h2 className="design-area-title">Main Design Area</h2>
+            <div className="jacketbox" id="jacketbox" onDrop={handleDrop} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}>
             <JacketCanvas 
               jacketImage={jacketImage}
               setPendingItemType={setPendingItemType}
@@ -532,9 +568,11 @@ function App() {
               Switch to Front
             </button>
           </div>
+          </div>
         </div>
 
         <div className="customization">
+          <h3 className="sidebar-title">Item Customization Area</h3>
           <div className="undoredodel">
             <div className="undoredo">
               <button 
@@ -571,6 +609,54 @@ function App() {
               Delete
             </button>
           </div>
+
+          {/* Multiple items move to front/back above jacket color wheel */}
+          {items.filter(item => item.isSelected).length > 1 && (
+            <>
+              <div className="selection-indicator" style={{ marginTop: '15px', marginBottom: '15px' }}>
+                <div className="selection-bar"></div>
+                <span className="selection-text">Item Selected</span>
+              </div>
+              
+              {/* Layer controls */}
+              <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const selectedItems = items.filter(item => item.isSelected);
+                    if (selectedItems.length > 0) {
+                      const firstItem = selectedItems[0];
+                      const targetView = firstItem.view === 'front' ? 'back' : 'front';
+                      moveMultipleItems(selectedItems.map(item => item.id), targetView);
+                      selectedItems.forEach(item => {
+                        if (targetView === 'front') {
+                          logAction('moved_item_to_front', { itemId: item.id });
+                        } else {
+                          logAction('moved_item_to_back', { itemId: item.id });
+                        }
+                      });
+                    }
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: '#4A9FBF',
+                    border: 'none',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    color: 'white',
+                    borderRadius: '4px'
+                  }}
+                >
+                  {(() => {
+                    const selectedItems = items.filter(item => item.isSelected);
+                    if (selectedItems.length === 0) return 'Move to Back';
+                    const firstItem = selectedItems[0];
+                    return firstItem.view === 'front' ? 'Move to Back' : 'Move to Front';
+                  })()}
+                </button>
+              </div>
+            </>
+          )}
 
           {!selectedItemId && (
             <div className="color-wheels-container">
@@ -629,85 +715,90 @@ function App() {
                       <div className="color-grid" id="color-grid">
                         <ColorPicker />
                       </div>
-                      {showGradientSlider && (
-                        <div className="gradient-control" style={{marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                          <Slider
-                            min={0}
-                            max={10}
-                            value={colorSelection.gradient}
-                            onChange={value => handleBrightnessChange(Array.isArray(value) ? value[0] : value)}
-                            className="color-slider"
-                            trackStyle={{ background: 'linear-gradient(to right, white, gray, black)' }}
-                            handleStyle={{ backgroundColor: 'var(--primary-blue)', borderColor: 'var(--primary-blue)' }}
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </>
               )}
               <ScaleControls itemId={selectedItemId} />
               
-              {items.find(item => item.id === selectedItemId)?.type !== 'display' && items.find(item => item.id === selectedItemId)?.type !== 'scent' && (
-                <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
-                  <h2 id="speed-title" style={{ marginLeft: 80 }}>
-                    {items.find(item => item.id === selectedItemId)?.type === 'battery' 
-                      ? 'Battery Level' 
-                      : items.find(item => item.id === selectedItemId)?.type === 'speaker'
-                        ? 'Volume'
-                        : 'Speed'}
+              {selectedItemId && (
+                <>
+                  <h2 id="movement-title" style={{ marginLeft: 80 }}>
+                    {(() => {
+                      const selectedItem = items.find(item => item.id === selectedItemId);
+                      if (selectedItem) {
+                        if (selectedItem.type === 'speaker') return 'Sound';
+                        if (selectedItem.type === 'scent') return 'Scent';
+                        if (selectedItem.type === 'display') return 'Display';
+                        return 'Action';
+                      }
+                      return 'Action';
+                    })()}
                   </h2>
-                  <Slider
-                    min={1}
-                    max={5}
-                    value={items.find(item => item.id === selectedItemId)?.speed ?? 3}
-                    onChange={value => {
-                      const speed = Array.isArray(value) ? value[0] : value;
-                      updateItemConfiguration(selectedItemId, { speed });
-                    }}
-                    className="speed-slider"
-                    trackStyle={[{ backgroundColor: 'var(--primary-blue)' }]}
-                    handleStyle={[{
-                      backgroundColor: 'var(--primary-blue)',
-                      borderColor: 'var(--primary-blue)'
-                    }]}
-                  />
+                  <ItemControlPanel />
+                </>
+              )}
+              
+              {selectedItemId && (
+                <div className="custom-user-input">
+                  <h2 id="custom-title">
+                    {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
+                      ? 'What should it play?' 
+                      : items.find(item => item.id === selectedItemId)?.type === 'scent'
+                        ? 'What should the scent be?'
+                        : items.find(item => item.id === selectedItemId)?.type === 'display'
+                          ? 'What should it display?'
+                          : 'Write my own action:'}
+                  </h2>
+                  <textarea 
+                    id="custom-input" 
+                    name="item-movement" 
+                    rows={2} 
+                    cols={22}
+                    value={items.find(item => item.id === selectedItemId)?.customInput || ''}
+                    onChange={handleCustomInputChange}
+                    placeholder={
+                      items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'Write the sound it should play' : 'Write the desired action for this item'
+                    }
+                  ></textarea>
                 </div>
               )}
-              <h2 id="movement-title" style={{ marginLeft: 80 }}>
-                {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
-                  ? 'Sound' 
-                  : items.find(item => item.id === selectedItemId)?.type === 'scent'
-                    ? 'Scent'
-                    : items.find(item => item.id === selectedItemId)?.type === 'display'
-                      ? 'Display'
-                      : 'Action'}
-              </h2>
-              <ItemControlPanel />
-              <div className="custom-user-input">
-                <h2 id="custom-title">
-                  {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
-                    ? 'What should it play?' 
-                    : items.find(item => item.id === selectedItemId)?.type === 'scent'
-                      ? 'What should the scent be?'
-                      : items.find(item => item.id === selectedItemId)?.type === 'display'
-                        ? 'What should it display?'
-                        : 'Write my own action:'}
-                </h2>
-                <textarea 
-                  id="custom-input" 
-                  name="item-movement" 
-                  rows={2} 
-                  cols={22}
-                  value={items.find(item => item.id === selectedItemId)?.customInput || ''}
-                  onChange={handleCustomInputChange}
-                  placeholder={
-                    items.find(item => item.id === selectedItemId)?.type === 'speaker' ? 'Write the sound it should play' : 'Write the desired action for this item'
-                  }
-                ></textarea>
-              </div>
-            </>
-          )}
+              
+              {(() => {
+                const selectedItem = items.find(item => item.id === selectedItemId);
+                if (!selectedItem || selectedItem.type === 'display' || selectedItem.type === 'scent') return null;
+                
+                return (
+                  <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
+                    <h2 id="speed-title" style={{ marginLeft: 80 }}>
+                      {selectedItem.type === 'battery' 
+                        ? 'Battery Level' 
+                        : selectedItem.type === 'speaker'
+                          ? 'Volume'
+                          : 'Speed'}
+                    </h2>
+                    <Slider
+                      min={1}
+                      max={5}
+                      value={selectedItem.speed ?? 3}
+                      onChange={value => {
+                        const speed = Array.isArray(value) ? value[0] : value;
+                        if (selectedItemId) {
+                          updateItemConfiguration(selectedItemId, { speed });
+                        }
+                      }}
+                      className="speed-slider"
+                      trackStyle={[{ backgroundColor: 'var(--primary-blue)' }]}
+                      handleStyle={[{
+                        backgroundColor: 'var(--primary-blue)',
+                        borderColor: 'var(--primary-blue)'
+                      }]}
+                    />
+                  </div>
+                );
+              })()}
+              </>
+            )}
           
           {/* Synchronize Animations */}
           {(() => {
@@ -789,12 +880,22 @@ function App() {
                   fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
                 }}
               >
-                Submit Design
+                {finalizeSubmission ? 'Finalize Submission' : 'Submit Design'}
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Wait popup */}
+      <WaitPopup 
+        isVisible={showWaitPopup}
+        onOk={() => {
+          setShowWaitPopup(false);
+          setFinalizeSubmission(true);
+        }}
+        onCancel={() => setShowWaitPopup(false)}
+      />
 
       {/* Confirmation popup */}
       <ConfirmationPopup 

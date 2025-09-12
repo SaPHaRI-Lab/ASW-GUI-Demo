@@ -45,7 +45,10 @@ export interface WearableItem {
   rotation?: number; // Rotation angle in degrees
   size?: number;
   amount?: number;
+  length?: number; // Length for light strip
   verticalRows?: number; // Vertical rows for fur patch
+  inflatableLength?: number; // Length for inflatable
+  inflatableWidth?: number; // Width for inflatable
   animationStartTime?: number;
 }
 
@@ -66,6 +69,7 @@ export interface SessionInfo {
   participantId: string;
   designCode: string;
   startTime: number;
+  waitPopupTime?: number;
   isActive: boolean;
 }
 
