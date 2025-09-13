@@ -9,7 +9,7 @@ interface AppStore extends ApplicationState {
   // Actions
   addItem: (item: WearableItem) => void;
   removeItem: (id: string) => void;
-  updateItem: (id: string, updates: Partial<WearableItem>) => void;
+  updateItem: (id: string, updates: Partial<WearableItem>, options?: { recordUndo?: boolean }) => void;
   updateItemPosition: (id: string, position: Position) => void;
   saveUndoState: () => void;
   selectItem: (id: string | null, skipLogging?: boolean) => void;
@@ -176,21 +176,26 @@ export const useAppStore = create<AppStore>()(
       };
     }),
 
-    updateItem: (id, updates) => set((state) => {
-      // Save current state for undo
-      const currentStateStr = JSON.stringify({
-        items: state.items,
-        selectedItemId: state.selectedItemId,
-        colorSelection: state.colorSelection,
-        jacketConfig: state.jacketConfig,
-      });
-      
+    updateItem: (id, updates, options) => set((state) => {
+      const recordUndo = options?.recordUndo !== false;
+      let undoStack = state.undoStack;
+      let redoStack = state.redoStack;
+      if (recordUndo) {
+        const currentStateStr = JSON.stringify({
+          items: state.items,
+          selectedItemId: state.selectedItemId,
+          colorSelection: state.colorSelection,
+          jacketConfig: state.jacketConfig,
+        });
+        undoStack = [...state.undoStack, currentStateStr];
+        redoStack = [];
+      }
       return {
         items: state.items.map(item => 
           item.id === id ? { ...item, ...updates } : item
         ),
-        undoStack: [...state.undoStack, currentStateStr],
-        redoStack: [], // Clear redo stack on new action
+        undoStack,
+        redoStack,
       };
     }),
 
@@ -610,6 +615,7 @@ export const useAppStore = create<AppStore>()(
       // Apply to selected items if any
       const selectedItems = state.items.filter(item => item.isSelected);
       if (selectedItems.length > 0) {
+        state.saveUndoState();
         // Update UI selection model so the gradient slider reflects source gradient
         state.updateColorSelection({ rgba: baseRgba, position: { x: 0, y: 0 }, gradient: gradientToApply });
 
@@ -619,7 +625,7 @@ export const useAppStore = create<AppStore>()(
             color: shaded,
             baseColor: `rgb(${baseRgba.r}, ${baseRgba.g}, ${baseRgba.b})`,
             gradient: gradientToApply
-          });
+          }, { recordUndo: false });
         });
       } else {
         // Paste to jacket color: set base color and gradient

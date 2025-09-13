@@ -59,7 +59,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = () => {
   // Handle paste color
   const handlePasteColor = useCallback(() => {
     pasteColor();
-    logAction('pasted_color_to_item', { itemId: selectedItemId });
+    logAction('pasted_color_to_item', { itemId: selectedItemId, color: copiedColor });
   }, [pasteColor, selectedItemId, logAction]);
 
   return (

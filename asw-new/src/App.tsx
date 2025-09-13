@@ -302,7 +302,7 @@ function App() {
 
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo): string {
-    let csv = 'Jacket Side,Item ID,Customization,Speed,User Input,Color,Rotation,Size,Amount,Length,Width,X Position,Y Position\n';
+    let csv = 'Jacket Side,Item ID,Customization,Speed,Created Item Name,User Input,Color,Rotation,Size,Amount,Length,Width,X Position,Y Position\n';
     const cloneCounters: { [key: string]: number } = {};
     const addRow = (item: WearableItem) => {
       let cloneId = item.id;
@@ -323,11 +323,13 @@ function App() {
         ''
       );
 
+      const createdItemName = item.type === 'other' ? (item.customName || '') : '';
       csv += [
         item.view,
         cloneId,
         item.movement || '',
         item.speed || '', // Use per-item speed
+        `"${createdItemName.replace(/"/g, '""')}"`,
         (item as any).customInput || '',
         `"${item.color || ''}"`,
         item.rotation || 0,

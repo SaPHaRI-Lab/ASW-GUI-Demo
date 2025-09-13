@@ -882,7 +882,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         } else if (e.key === 's') {
           e.preventDefault();
           clearSelection();
-          logAction('cleared_selection', {});
+          logAction('saved_item', {});
         }
       }
       
@@ -895,6 +895,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             // Use the store's removeItem function for each selected item
             const removeItem = useAppStore.getState().removeItem;
             removeItem(item.id);
+            logAction('deleted_item', { itemId: item.id });
           });
           console.log('DELETE COMPLETE: Deleted', selectedItems.length, 'items');
         } else {
@@ -1161,7 +1162,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
           hasMoved: true
         }));
       }
-      updateItem(rotationState.rotatingItem.id, { rotation: newRotation });
+      updateItem(rotationState.rotatingItem.id, { rotation: newRotation }, { recordUndo: false });
     } else if (dragState.isDragging && dragState.draggedItem) {
       // Handle dragging - use initial positions to maintain relative positions
       const mouseX = x - dragState.offset.x;

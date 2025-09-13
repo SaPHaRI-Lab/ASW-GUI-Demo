@@ -54,36 +54,22 @@ export function useColorSelection() {
       // Update selected item color
       if (selectedItemId) {
         const selectedColor = updateShade(newRgba, colorSelection.gradient);
-        updateItem(selectedItemId, { 
-          color: selectedColor,
-          baseColor,
-          gradient: colorSelection.gradient
-        });
         updateAndLogColor(selectedColor, baseColor, colorSelection.gradient);
       }
     }
   }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
 
   const handleGradientChange = useCallback((gradient: number) => {
-    updateColorSelection({ gradient });
-
     if (selectedItemId) {
       const currentItem = useAppStore.getState().items.find(item => item.id === selectedItemId);
       if (!currentItem?.baseColor) return;
       const baseRgba = parseRgbString(currentItem.baseColor);
       if (!baseRgba) return;
       const selectedColor = updateShade({ ...baseRgba, a: 1 }, gradient);
-      updateItem(selectedItemId, { 
-        color: selectedColor,
-        gradient
-      });
-      logAction('changed_color', {
-        itemID: selectedItemId,
-        color: selectedColor,
-        gradient
-      });
+      updateAndLogColor(selectedColor, undefined, gradient);
     }
-  }, [selectedItemId, updateColorSelection, updateItem, logAction]);
+    updateColorSelection({ gradient });
+  }, [selectedItemId, updateColorSelection, updateAndLogColor]);
 
   const handleRgbInputChange = useCallback((rgbString: string) => {
     const rgbMatch = rgbString.match(/rgb\((\d+),(\d+),(\d+)\)/);
@@ -96,43 +82,31 @@ export function useColorSelection() {
         a: 1,
       };
 
-      updateColorSelection({ rgba: newRgba });
-
       if (selectedItemId) {
         const selectedColor = updateShade(newRgba, colorSelection.gradient);
-        updateItem(selectedItemId, { color: selectedColor });
-        logAction('changed_color', {
-          itemID: selectedItemId,
-          color: selectedColor,
-        });
+        updateAndLogColor(selectedColor);
       }
+      updateColorSelection({ rgba: newRgba });
     }
-  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, logAction]);
+  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateAndLogColor]);
 
   const handleColorChange = useCallback((rgba: RGBA) => {
     const baseColor = rgbaToString(rgba);
-    updateColorSelection({ rgba });
 
     if (selectedItemId) {
       const selectedColor = updateShade(rgba, colorSelection.gradient);
-      updateItem(selectedItemId, { 
-        color: selectedColor,
-        baseColor,
-        gradient: colorSelection.gradient
-      });
       updateAndLogColor(selectedColor, baseColor, colorSelection.gradient);
     }
-  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
+    updateColorSelection({ rgba });
+  }, [colorSelection.gradient, selectedItemId, updateColorSelection, updateAndLogColor]);
 
   const handleBrightnessChange = useCallback((gradient: number) => {
-    updateColorSelection({ gradient });
-
     if (selectedItemId) {
       const selectedColor = updateShade(colorSelection.rgba, gradient);
-      updateItem(selectedItemId, { color: selectedColor });
       updateAndLogColor(selectedColor, undefined, gradient);
     }
-  }, [colorSelection.rgba, selectedItemId, updateColorSelection, updateItem, updateAndLogColor]);
+    updateColorSelection({ gradient });
+  }, [colorSelection.rgba, selectedItemId, updateColorSelection, updateAndLogColor]);
 
   return {
     colorSelection,

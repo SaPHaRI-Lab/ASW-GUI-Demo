@@ -112,7 +112,7 @@ export function useDragAndDrop() {
     }
     
     // Update item configuration
-    updateItem(itemId, updates);
+    updateItem(itemId, updates, { recordUndo: false })
     
     // Handle animation triggers when movement changes
     if (updates.movement) {

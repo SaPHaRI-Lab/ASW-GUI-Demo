@@ -86,7 +86,7 @@ export const JacketColorPicker: React.FC<JacketColorPickerProps> = () => {
 
   const handlePasteToJacket = useCallback(() => {
     pasteColor();
-    logAction('pasted_color_to_jacket', {});
+    logAction('pasted_color_to_jacket', { color: copiedColor });
   }, [pasteColor, logAction]);
 
   return (
