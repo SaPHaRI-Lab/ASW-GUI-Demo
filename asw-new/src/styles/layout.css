@@ -71,8 +71,8 @@
 }
 
 .jacketbox {
-  width: 480px; /*1.15*/
-  height: 550px;
+  width: 672px; /*480 *1.15*/
+  height: 770px; /*550 *1.15*/
   background-color: #ffffff;
   display: flex;
   justify-content: center;
@@ -84,7 +84,7 @@
   text-align: center;
   font-size: 15px;
   font-weight: 500;
-  color: #ffffff;
+  color: #727272;
   margin-bottom: 10px;
   margin-top: -35px;
 }
@@ -93,7 +93,7 @@
   text-align: center;
   font-size: 15px;
   font-weight: 500;
-  color: #ffffff;
+  color: #727272;
   margin-top: -15px;
   margin-bottom: 25px;
   padding-bottom: 8px;

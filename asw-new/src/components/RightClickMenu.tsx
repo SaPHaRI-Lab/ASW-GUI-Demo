@@ -8,13 +8,15 @@ interface RightClickMenuProps {
 
 export const RightClickMenu: React.FC<RightClickMenuProps> = ({ position, onItemSelect, onClose }) => {
   const items = [
+    { id: 'other', label: 'Create Item' },
     { id: 'fur-patch', label: 'Fur Patch' },
     { id: 'light-ind', label: 'Individual Light' },
     { id: 'light-strip', label: 'Light Strip' },
+    { id: 'inflatable', label: 'Inflatable' },
     { id: 'battery', label: 'Social Battery Display' },
     { id: 'display', label: 'Display Screen' },
     { id: 'speaker', label: 'Speaker' },
-    { id: 'other', label: 'Other' }
+    { id: 'scent', label: 'Scent' }
   ];
 
   return (
@@ -40,11 +42,11 @@ export const RightClickMenu: React.FC<RightClickMenuProps> = ({ position, onItem
           backgroundColor: 'rgb(228, 228, 228)',
           borderRadius: '10px',
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-          width: '250px',
+          width: '270px',
           padding: '5px',
           gap: '5px',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(3, auto)',
+          gridTemplateRows: 'repeat(3, 1fr)',
           zIndex: 15
         }}
       >
@@ -63,7 +65,9 @@ export const RightClickMenu: React.FC<RightClickMenuProps> = ({ position, onItem
               cursor: 'pointer',
               transition: 'background-color 0.2s ease',
               fontSize: '15px',
-              gridColumn: index === 6 ? '2' : 'auto'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             {item.label}

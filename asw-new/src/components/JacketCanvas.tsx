@@ -84,19 +84,21 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       case 'fur-patch': {
         const baseWidth = 40;
         const extraColumns = item?.amount ? Math.floor((item.amount - 15) / 2) : 0;
-        const extraWidth = extraColumns * 12;
+        const extraWidth = extraColumns * 14;
         const totalWidth = baseWidth + extraWidth;
         const baseHeight = 35;
         const verticalRows = item?.verticalRows ?? 3;
         const extraRows = verticalRows - 3;
         const extraHeight = extraRows * 12;
         const totalHeight = baseHeight + extraHeight;
-        return { width: baseWidth, height: totalHeight };
+        return { width: totalWidth, height: totalHeight };
       }
       case 'light-ind': return { width: 20, height: 20 };
       case 'light-strip': {
         const length = item?.length ?? 1;
-        return { width: 20, height: 230 * length };
+        const numLights = item?.amount || 6;
+        const spacing = (210 * length) / (numLights - 1);
+        return { width: 20, height: (numLights - 1) * spacing + 20 };
       }
       case 'battery': return { width: 60, height: 25 };
       case 'display': return { width: 60, height: 40 };
@@ -118,11 +120,13 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       
       const bounds = getItemBounds(item.type, item);
       const scale = item.size || 1;
+      const leftExpansion = item.type === 'fur-patch' ? Math.max(0, (bounds.width - 40) / 2) : 0;
+      const minX = item.position.x - leftExpansion;
       
       // If item has rotation, we need to check against rotated bounds
       if (item.rotation) {
         // Transform the click point to item's local coordinate system
-        const centerX = item.position.x + bounds.width / 2;
+        const centerX = minX + bounds.width / 2;
         const centerY = item.position.y + bounds.height / 2;
         
         // Translate to origin
@@ -142,25 +146,25 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         const localX = rotatedX + centerX;
         const localY = rotatedY + centerY;
         
-        return localX >= item.position.x && 
-               localX <= item.position.x + bounds.width &&
+        return localX >= minX && 
+               localX <= minX + bounds.width &&
                localY >= item.position.y && 
                localY <= item.position.y + bounds.height;
       }
       
       // For non-rotated items, use simple bounds check
       if (scale !== 1) {
-        const centerX = item.position.x + bounds.width / 2;
+        const centerX = minX + bounds.width / 2;
         const centerY = item.position.y + bounds.height / 2;
         const invX = (x - centerX) / scale + centerX;
         const invY = (y - centerY) / scale + centerY;
-        return invX >= item.position.x && 
-               invX <= item.position.x + bounds.width &&
+        return invX >= minX && 
+               invX <= minX + bounds.width &&
                invY >= item.position.y && 
                invY <= item.position.y + bounds.height;
       }
-      return x >= item.position.x && 
-             x <= item.position.x + bounds.width &&
+      return x >= minX && 
+             x <= minX + bounds.width &&
              y >= item.position.y && 
              y <= item.position.y + bounds.height;
     });
@@ -172,6 +176,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     if (!selectedItem) return null;
 
     const bounds = getItemBounds(selectedItem.type, selectedItem);
+    const leftExpansion = selectedItem.type === 'fur-patch' ? Math.max(0, (bounds.width-40) / 2) : 0;
     const scale = selectedItem.size || 1;
     
     // The rotation handle position in the item's local coordinate system
@@ -214,7 +219,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     }
 
     // Convert to absolute canvas coordinates
-    const absoluteHandleX = selectedItem.position.x + scaledHandleX;
+    const absoluteHandleX = (selectedItem.position.x-leftExpansion) + scaledHandleX;
     const absoluteHandleY = selectedItem.position.y + scaledHandleY;
     
     // Check if click is within handle radius (5px + some tolerance)
@@ -370,9 +375,10 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
       sortedItems.forEach(item => {
         ctx.save();
-        ctx.translate(item.position.x, item.position.y);
-        const scale = item.size || 1;
         const bounds = getItemBounds(item.type, item);
+        const leftExpansion = item.type === 'fur-patch' ? Math.max(0, (bounds.width-40) / 2) : 0;
+        ctx.translate(item.position.x-leftExpansion, item.position.y);
+        const scale = item.size || 1;
         if (scale !== 1) {
           ctx.translate(bounds.width / 2, bounds.height / 2);
           ctx.scale(scale, scale);
@@ -479,7 +485,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
               { w: 10, h: 15, x: 0, y: 8, r: -15 },
               { w: 9, h: 13, x: 0, y: 15, r: -3 }
             ];
-            const baseTriangles: FurTriangle[] = [
+            const boundsForFur = getItemBounds(item.type, item);
+            const offsetX = Math.max(0, (boundsForFur.width - 40) / 2);
+            const baseTrianglesBase: FurTriangle[] = [
               { w: 12, h: 18, x: 14, y: 0, r: -5 },
               { w: 11, h: 17, x: 20, y: 1, r: 8 },
               { w: 11, h: 17, x: 10, y: 1, r: -12 },
@@ -496,23 +504,24 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
               { w: 8, h: 12, x: 8, y: 18, r: -18 },
               { w: 8, h: 12, x: 26, y: 18, r: 18 }
             ];
+            const baseTriangles: FurTriangle[] = baseTrianglesBase.map(t => ({ ...t, x: t.x + offsetX }));
             const amount = item.amount || 15;
             const extraColumns = Math.floor((amount - 15) / 2);
             const triangles: FurTriangle[] = [...baseTriangles];
-              const baseLeft = 0;
-             const baseRight = 40;
-             const colWidth = 8;
-             for (let i = 1; i <= extraColumns; i++) {
-               triangles.push(
-                 { w: 11, h: 17, x: baseLeft - colWidth * i + 8, y: 1, r: -12 },
-                 { w: 10, h: 15, x: baseLeft - colWidth * i + 8, y: 8, r: -15 },
-                 { w: 9, h: 13, x: baseLeft - colWidth * i + 8, y: 15, r: -3 }
-               );
-               triangles.push(
-                 { w: 11, h: 17, x: baseRight + colWidth * (i - 1) - 8, y: 1, r: 12 },
-                 { w: 10, h: 15, x: baseRight + colWidth * (i - 1) - 8, y: 8, r: 15 },
-                 { w: 9, h: 13, x: baseRight + colWidth * (i - 1) - 8, y: 15, r: 3 }
-               );
+            const baseLeft = offsetX;
+            const baseRight = offsetX + 40;
+            const colWidth = 8;
+            for (let i = 1; i <= extraColumns; i++) {
+              triangles.push(
+                { w: 11, h: 17, x: baseLeft - colWidth * i + 8, y: 1, r: -12 },
+                { w: 10, h: 15, x: baseLeft - colWidth * i + 8, y: 8, r: -15 },
+                { w: 9, h: 13, x: baseLeft - colWidth * i + 8, y: 15, r: -3 }
+              );
+              triangles.push(
+                { w: 11, h: 17, x: baseRight + colWidth * (i - 1) - 8, y: 1, r: 12 },
+                { w: 10, h: 15, x: baseRight + colWidth * (i - 1) - 8, y: 8, r: 15 },
+                { w: 9, h: 13, x: baseRight + colWidth * (i - 1) - 8, y: 15, r: 3 }
+              );
             }
 
             // Vertical inc
@@ -1151,7 +1160,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     if (rotationState.isRotating && rotationState.rotatingItem) {
       // Handle rotation
       const bounds = getItemBounds(rotationState.rotatingItem.type, rotationState.rotatingItem);
-      const centerX = rotationState.rotatingItem.position.x + bounds.width / 2;
+      const leftExpansion = rotationState.rotatingItem.type === 'fur-patch' ? Math.max(0, (bounds.width-40) / 2) : 0;
+      const centerX = (rotationState.rotatingItem.position.x-leftExpansion) + bounds.width / 2;
       const centerY = rotationState.rotatingItem.position.y + bounds.height / 2;
       const currentAngle = calculateAngle(centerX, centerY, x, y);
       const rotationChange = currentAngle - rotationState.startAngle;
@@ -1348,8 +1358,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     <>
       <canvas
         ref={canvasRef}
-        width={480} //*1.15
-        height={550}
+        width={672} //480 *1.15
+        height={770} //550
         onContextMenu={handleRightClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
