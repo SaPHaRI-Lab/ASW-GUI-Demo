@@ -1344,8 +1344,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     <>
       <canvas
         ref={canvasRef}
-        width={672} //480 *1.15
-        height={770} //550
+        width={480} //480 *1.15
+        height={550} //550
         onContextMenu={handleRightClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

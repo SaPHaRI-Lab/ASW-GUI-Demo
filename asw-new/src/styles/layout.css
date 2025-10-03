@@ -71,8 +71,8 @@
 }
 
 .jacketbox {
-  width: 672px; /*480 *1.15*/
-  height: 770px; /*550 *1.15*/
+  width: 480px; /*480 *1.15*/
+  height: 550px; /*550 *1.15*/
   background-color: #ffffff;
   display: flex;
   justify-content: center;
@@ -114,9 +114,9 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-.undoredodel, .movement, .custom-user-input {
+/*.undoredodel, .movement, .custom-user-input {
   margin-left: 30px;
-}
+}*/
 
 /* Responsive Design */
 @media (max-width: 1200px) {
