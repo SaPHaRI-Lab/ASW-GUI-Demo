@@ -18,7 +18,7 @@ export interface Position {
 export type ItemType = 'fur-patch' | 'light-ind' | 'light-strip' | 'inflatable' | 'battery' | 'display' | 'speaker' | 'scent' | 'other';
 
 export type MovementType = 
-  | 'Shake' | 'Roll' | 'Roll btt' | 'Stick up' | 'Both' // fur-patch
+  | 'Shake' | 'Roll' | 'Roll btt' | 'Stick up' // fur-patch
   | 'Light on ind' | 'Flash ind' // light-ind
   | 'Light on str' | 'Flash str' | 'Trickle up' | 'Trickle down' | 'Random fl' // light-strip
   | 'Continuous' | 'Discontinuous' // speaker

@@ -12,7 +12,6 @@ export const MOVEMENT_OPTIONS: Record<string, MovementOption[]> = {
     { id: 'roll', value: 'Roll', label: 'Roll Down' },
     { id: 'roll-btt', value: 'Roll btt', label: 'Roll Up' },
     { id: 'stick-up', value: 'Stick up', label: 'Stick up' },
-    { id: 'both', value: 'Both', label: 'Rattle' },
   ],
   'light-ind': [
     { id: 'light-on', value: 'Light on ind', label: 'Light on' },

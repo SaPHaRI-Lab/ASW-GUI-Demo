@@ -475,10 +475,23 @@ export const useAppStore = create<AppStore>()(
         const previousStateStr = state.undoStack[state.undoStack.length - 1];
         const previousState = JSON.parse(previousStateStr);
         
+        const lastAction = state.actionLogs[state.actionLogs.length - 1];
+        if (lastAction) {
+          state.logAction('undo', {
+            undo_action: lastAction.type,
+            undo_data: lastAction.data
+          });
+        }
+        
         set({
           ...previousState,
           undoStack: state.undoStack.slice(0, -1),
           redoStack: [...state.redoStack, currentStateStr],
+          flashingItems: new Set(
+            (previousState.items || [])
+              .filter((it: any) => it.isFlashing)
+              .map((it: any) => it.id)
+          ),
         });
       }
     },
@@ -496,10 +509,23 @@ export const useAppStore = create<AppStore>()(
         const nextStateStr = state.redoStack[state.redoStack.length - 1];
         const nextState = JSON.parse(nextStateStr);
         
+        const lastUndoneAction = state.actionLogs[state.actionLogs.length - 2];
+        if (lastUndoneAction) {
+          state.logAction('redo', {
+            redo_action: lastUndoneAction.type,
+            redo_data: lastUndoneAction.data
+          });
+        }
+        
         set({
           ...nextState,
           undoStack: [...state.undoStack, currentStateStr],
           redoStack: state.redoStack.slice(0, -1),
+          flashingItems: new Set(
+            (nextState.items || [])
+              .filter((it: any) => it.isFlashing)
+              .map((it: any) => it.id)
+          ),
         });
       }
     },

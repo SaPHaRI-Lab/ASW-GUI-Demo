@@ -404,14 +404,6 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.translate(bounds.width / 2, bounds.height / 2);
             ctx.rotate(-40 * Math.PI / 180);
             ctx.translate(-bounds.width / 2, -bounds.height / 2);
-          } else if (item.movement === 'Both') {
-            const speed = item.speed || 3;
-            const now = Date.now();
-            const baseAngle = -40;
-            const shake = Math.sin(now / (120 - speed * 15)) * 10;
-            ctx.translate(bounds.width / 2, bounds.height / 2);
-            ctx.rotate(((baseAngle + shake) * Math.PI) / 180);
-            ctx.translate(-bounds.width / 2, -bounds.height / 2);
           }
           ctx.restore();
         }
@@ -570,7 +562,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 if (item.movement === 'Roll btt') {
                   if (cycleProgress < 0.5) {
                     const upPhase = cycleProgress * 2;
-                    const rowStartTime = rowIndex * (1/verticalRows);
+                    const rollUpIndex = (verticalRows-1) - rowIndex;
+                    const rowStartTime = rollUpIndex * (1/(verticalRows*2.5));
                     if (upPhase >= rowStartTime) {
                       const rowProgress = Math.min((upPhase-rowStartTime) * verticalRows, 1);
                       angle += -60 + (60 * rowProgress);
@@ -586,7 +579,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                   const cycleProgressDefault = cycleProgress;
                   if (cycleProgressDefault < 0.5) {
                     const downPhase = cycleProgressDefault * 2;
-                    const rowStartTime = rowIndex * (1/verticalRows);
+                    const rowStartTime = rowIndex * (1/(verticalRows*2.5));
                     if (downPhase >= rowStartTime) {
                       const rowProgress = Math.min((downPhase-rowStartTime) * verticalRows, 1);
                       angle += -60 * rowProgress;
@@ -603,11 +596,6 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
                 }
               } else if (item.movement === 'Stick up') {
                 angle -= 40;
-              } else if (item.movement === 'Both') {
-                const speed = item.speed || 3;
-                const baseAngle = -40;
-                const shake = Math.sin(now / (120 - speed * 15)) * 10;
-                angle += baseAngle + shake;
               }
               ctx.save();
               ctx.translate(t.x + t.w/2, t.y + t.h/2);
@@ -883,11 +871,9 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
         } else if (e.key === 'z') {
           e.preventDefault();
           undo();
-          logAction('undo', {});
         } else if (e.key === 'r') {
           e.preventDefault();
           redo();
-          logAction('redo', {});
         } else if (e.key === 's') {
           e.preventDefault();
           clearSelection();
@@ -980,7 +966,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
         'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll', 'Roll btt',
-        'Trickle up', 'Trickle down', 'Random fl', 'Both', 'Inflate', 'Deflate', 'Pulse'
+        'Trickle up', 'Trickle down', 'Random fl', 'Inflate', 'Deflate', 'Pulse'
       ].includes(item.movement) ||
       item.isFlashing
     );

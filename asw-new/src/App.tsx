@@ -113,12 +113,10 @@ function App() {
 
   const handleUndo = () => {
     undo();
-    logAction('undo', {});
   };
 
   const handleRedo = () => {
     redo();
-    logAction('redo', {});
   };
 
   // Check if any items are selected (for button states)
@@ -175,7 +173,7 @@ function App() {
     try {
       // Generate CSVs
       const csvData = generateDesignCSV(items, jacketConfig, sessionInfo);
-      const keystrokeData = generateKeystrokeCSV(actionLogs);
+      const keystrokeData = generateKeystrokeCSV(actionLogs, items);
 
       // Render PNGs for both views
       const origView = jacketConfig.view;
@@ -301,7 +299,8 @@ function App() {
   };
 
   // Helper: Serialize items to legacy CSV format
-  function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo): string {
+  function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo, cloneStamp?: number): string {
+    const stamp = cloneStamp ?? Date.now();
     let csv = 'Jacket Side,Item ID,Customization,Speed,Created Item Name,User Input,Color,Rotation,Size,Amount,Length,Width,X Position,Y Position\n';
     const cloneCounters: { [key: string]: number } = {};
     const addRow = (item: WearableItem) => {
@@ -309,7 +308,7 @@ function App() {
       if (item.id.includes('_CLONED_')) {
         const itemType = item.id.split('_CLONED_')[0];
         cloneCounters[itemType] = (cloneCounters[itemType] || 0) + 1;
-        cloneId = `${itemType}_CLONED_${Date.now()}_${cloneCounters[itemType]}`;
+        cloneId = `${itemType}_CLONED_${stamp}_${cloneCounters[itemType]}`;
       }
       const lengthValue = (
         item.type === 'light-strip' ? (item.length || 1) :
@@ -360,10 +359,33 @@ function App() {
   }
 
   // Helper: Serialize action logs to legacy keystroke CSV
-  function generateKeystrokeCSV(actionLogs: ActionLog[]): string {
+  function generateKeystrokeCSV(actionLogs: ActionLog[], itemsForLookup: WearableItem[], cloneStamp?: number): string {
+    const stamp = cloneStamp ?? Date.now();
+    const cloneCounters: { [key: string]: number } = {};
+    const idToEmitted: Record<string, string> = {};
+    itemsForLookup.forEach(it => {
+      let emitted = it.id;
+      if (it.id.includes('_CLONED_')) {
+        const itemType = it.id.split('_CLONED_')[0];
+        cloneCounters[itemType] = (cloneCounters[itemType] || 0) + 1;
+        emitted = `${itemType}_CLONED_${stamp}_${cloneCounters[itemType]}`;
+      }
+      idToEmitted[it.id] = emitted;
+    });
+    const formatId = (id: string): string => idToEmitted[id] || id;
     let csv = 'Timestamp,Action,Info\n';
     actionLogs.forEach((log: ActionLog) => {
-      csv += `${log.timestamp},${log.type},"${JSON.stringify(log.data).replace(/"/g, '""')}"\n`;
+      const data: any = log.data ? { ...log.data } : {};
+      if (typeof data.itemId === 'string') data.itemId = formatId(data.itemId);
+      if (typeof data.itemID === 'string') data.itemID = formatId(data.itemID);
+      if (Array.isArray(data.itemIds)) data.itemIds = data.itemIds.map((id: string) => formatId(id));
+      if (Array.isArray(data.allItemPositions)) {
+        data.allItemPositions = data.allItemPositions.map((p: any) => ({
+          ...p,
+          itemId: typeof p.itemId === 'string' ? formatId(p.itemId) : p.itemId
+        }));
+      }
+      csv += `${log.timestamp},${log.type},"${JSON.stringify(data).replace(/"/g, '""')}"\n`;
     });
     return csv;
   }
@@ -435,7 +457,7 @@ function App() {
       </div>
       <div className="container">
         <div className="sidebar">
-          <h3 className="sidebar-title">Item Selection Area</h3>
+          <h3 className="sidebar-title" style={{color: 'white'}}>Item Selection Area</h3>
           <div className="option">
             <div className="option-txt">Create Item</div>
             <div className="item-container" id="other-cont">
@@ -547,7 +569,7 @@ function App() {
             <div className="session-item">Design Code: {sessionInfo.designCode}</div>
           </div>
           <div className="design-area">
-            <h2 className="design-area-title">Main Design Area</h2>
+            <h2 className="design-area-title" style={{color: 'white'}}>Main Design Area</h2>
             <div className="jacketbox" id="jacketbox" onDrop={handleDrop} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}>
             <JacketCanvas 
               jacketImage={jacketImage}
@@ -574,7 +596,7 @@ function App() {
         </div>
 
         <div className="customization">
-          <h3 className="sidebar-title">Item Customization Area</h3>
+          <h3 className="sidebar-title" style={{color: 'white'}}>Item Customization Area</h3>
           <div className="undoredodel">
             <div className="undoredo">
               <button 
@@ -819,6 +841,9 @@ function App() {
                         updateItemConfiguration(item.id, { 
                           animationStartTime: now 
                         });
+                      });
+                      logAction('synchronized_animations', {
+                        itemIds: selectedLightStrips.map(item => item.id)
                       });
                     }}
                     style={{
