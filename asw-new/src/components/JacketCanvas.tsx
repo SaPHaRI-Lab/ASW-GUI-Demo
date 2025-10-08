@@ -174,6 +174,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
   const getRotationHandleAtPosition = useCallback((x: number, y: number) => {
     const selectedItem = storeItems.find(item => item.id === selectedItemId);
     if (!selectedItem) return null;
+    if (selectedItem.locked) return null;
 
     const bounds = getItemBounds(selectedItem.type, selectedItem);
     const leftExpansion = selectedItem.type === 'fur-patch' ? Math.max(0, (bounds.width-40) / 2) : 0;
@@ -423,36 +424,36 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.stroke();
             for (let i = 0; i < numLights; i++) {
               let lightColor = '#333'; // Default off color
-              if ((item.movement === 'Trickle up' || item.movement === 'Trickle down') && item.isFlashing) {
+              if ((item.movement === 'relaxed' || item.movement === 'sad') && item.isFlashing) {
                 const minInterval = 180, maxInterval = 400;
                 const interval = maxInterval - ((item.speed - 1) * (maxInterval - minInterval) / 4);
                 const itemTime = item.animationStartTime || Date.now();
                 const currentLight = Math.floor((Date.now()-itemTime) / interval) % numLights;
-                if (item.movement === 'Trickle up') {
+                if (item.movement === 'relaxed') {
                   const lightIndex = numLights - 1 - i;
                   if (lightIndex === currentLight) {
                     lightColor = item.color || '#FFD700';
                   }
-                } else if (item.movement === 'Trickle down') {
+                } else if (item.movement === 'sad') {
                   if (i === currentLight) {
                     lightColor = item.color || '#FFD700';
                   }
                 }
-              } else if (item.movement === 'Random fl' && item.isFlashing) {
+              } else if (item.movement === 'happy' && item.isFlashing) {
                 const speed = item.speed ? item.speed * 0.005 : 0.005;
                 const itemTime = item.animationStartTime || Date.now();
                 const randomSeed = Math.sin((Date.now()-itemTime) * speed + i * 1.5);
                 if (randomSeed > 0.3) {
                   lightColor = item.color || '#FFD700';
                 }
-              } else if (item.movement === 'Flash str' && item.isFlashing) {
+              } else if (item.movement === 'angry' && item.isFlashing) {
                 const flashSpeed = item.speed ? item.speed * 0.002 : 0.002;
                 const itemTime = item.animationStartTime || Date.now();
                 const flashCycle = Math.sin((Date.now()-itemTime) * flashSpeed) > 0;
                 if (flashCycle) {
                   lightColor = item.color || '#FFD700';
                 }
-              } else if (item.movement === 'Light on str' || !item.movement || item.movement === 'static') {
+              } else if (item.movement === 'scared' || !item.movement || item.movement === 'static') {
                 lightColor = item.color || '#FFD700';
               }
               ctx.fillStyle = lightColor;
@@ -766,8 +767,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.strokeStyle = isPrimarySelection ? '#0077ff' : '#00aaff';
             ctx.lineWidth = isPrimarySelection ? 3 : 2;
             ctx.strokeRect(-halfWidth - 5, -halfHeight - 5, bounds.width + 10, bounds.height + 10);
-            // Draw rotation handle only for the primary selected item
-            if (isPrimarySelection) {
+            if (isPrimarySelection && !item.locked) {
               const handleX = 0;
               const handleY = -halfHeight - 15;
               ctx.fillStyle = '#0077ff';
@@ -800,7 +800,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
             ctx.lineWidth = isPrimarySelection ? 3 : 2;
             ctx.strokeRect(-5, -5, bounds.width + 10, bounds.height + 10);
             // Draw rotation handle only for the primary selected item
-            if (isPrimarySelection) {
+            if (isPrimarySelection && !item.locked) {
               const handleX = bounds.width / 2;
               const handleY = -15;
               ctx.fillStyle = '#0077ff';
@@ -902,6 +902,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       if (selectedItemId && !isInputElement(e.target as HTMLElement)) {
         const selectedItem = storeItems.find(item => item.id === selectedItemId);
         if (selectedItem) {
+          if (selectedItem.locked) return;
           const moveStep = e.shiftKey ? 10 : 1; // Hold shift for larger movements
           let moved = false;
           switch (e.key) {
@@ -965,8 +966,8 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     
     const hasAnimatedItems = storeItems.some(item => 
       item.movement && [
-        'Shake', 'Flash ind', 'Flash str', 'pulsing', 'Roll', 'Roll btt',
-        'Trickle up', 'Trickle down', 'Random fl', 'Inflate', 'Deflate', 'Pulse'
+        'Shake', 'Flash ind', 'angry', 'pulsing', 'Roll', 'Roll btt',
+        'relaxed', 'sad', 'happy', 'Inflate', 'Deflate', 'Pulse'
       ].includes(item.movement) ||
       item.isFlashing
     );
@@ -1060,6 +1061,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     // Check if clicking on rotation handle first
     const rotationItem = getRotationHandleAtPosition(x, y);
     if (rotationItem) {
+      if (rotationItem.locked) return;
       saveUndoState();
       const bounds = getItemBounds(rotationItem.type, rotationItem);
       const centerX = rotationItem.position.x + bounds.width / 2;
@@ -1080,6 +1082,11 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     const clickedItem = getItemAtPosition(x, y);
     
     if (clickedItem) {
+      if (clickedItem.locked) {
+        const isCtrlPressed = event.ctrlKey || event.metaKey;
+        handleItemSelection(clickedItem, isCtrlPressed);
+        return;
+      }
       // If clicking on an already selected item, don't change selection yet
       // (we'll handle selection on mouseUp if no drag occurred)
       const isClickedItemSelected = clickedItem.isSelected || clickedItem.id === selectedItemId;
@@ -1144,6 +1151,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
     const y = event.clientY - rect.top;
 
     if (rotationState.isRotating && rotationState.rotatingItem) {
+      if (rotationState.rotatingItem.locked) return;
       // Handle rotation
       const bounds = getItemBounds(rotationState.rotatingItem.type, rotationState.rotatingItem);
       const leftExpansion = rotationState.rotatingItem.type === 'fur-patch' ? Math.max(0, (bounds.width-40) / 2) : 0;
@@ -1160,6 +1168,7 @@ export const JacketCanvas: React.FC<JacketCanvasProps> = ({
       }
       updateItem(rotationState.rotatingItem.id, { rotation: newRotation }, { recordUndo: false });
     } else if (dragState.isDragging && dragState.draggedItem) {
+      if (dragState.draggedItem.locked) return;
       // Handle dragging - use initial positions to maintain relative positions
       const mouseX = x - dragState.offset.x;
       const mouseY = y - dragState.offset.y;

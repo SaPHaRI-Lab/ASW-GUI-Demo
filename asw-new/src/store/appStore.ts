@@ -159,6 +159,9 @@ export const useAppStore = create<AppStore>()(
     }),
 
     removeItem: (id) => set((state) => {
+      const target = state.items.find(item => item.id === id);
+      if (!target) return state;
+      if (target.locked) return state;
       // Save current state for undo
       const currentStateStr = JSON.stringify({
         items: state.items,
@@ -180,6 +183,11 @@ export const useAppStore = create<AppStore>()(
       const recordUndo = options?.recordUndo !== false;
       let undoStack = state.undoStack;
       let redoStack = state.redoStack;
+      const targetItem = state.items.find(item => item.id === id);
+      if (targetItem?.locked) {
+        const { rotation, position, ...rest } = updates as any;
+        updates = rest as Partial<WearableItem>;
+      }
       if (recordUndo) {
         const currentStateStr = JSON.stringify({
           items: state.items,
@@ -200,9 +208,11 @@ export const useAppStore = create<AppStore>()(
     }),
 
     updateItemPosition: (id, position) => set((state) => ({
-      items: state.items.map(item => 
-        item.id === id ? { ...item, position } : item
-      ),
+      items: state.items.map(item => {
+        if (item.id !== id) return item;
+        if (item.locked) return item;
+        return { ...item, position };
+      })
     })),
 
     saveUndoState: () => set((state) => {
@@ -312,6 +322,9 @@ export const useAppStore = create<AppStore>()(
 
     deleteSelectedItem: () => set((state) => {
       if (!state.selectedItemId) return state;
+      const target = state.items.find(item => item.id === state.selectedItemId);
+      if (!target) return state;
+      if (target.locked) return state;
 
       // Save current state for undo
       const currentStateStr = JSON.stringify({
@@ -558,7 +571,7 @@ export const useAppStore = create<AppStore>()(
 
     // Element copy/paste functionality
     copyItem: () => {
-      const { selectedItemId, items, jacketConfig } = get();
+      const { selectedItemId, items } = get();
       if (selectedItemId) {
         const selectedItem = items.find(item => item.id === selectedItemId);
         if (selectedItem) {

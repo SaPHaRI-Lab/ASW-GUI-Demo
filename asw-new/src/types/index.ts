@@ -20,7 +20,7 @@ export type ItemType = 'fur-patch' | 'light-ind' | 'light-strip' | 'inflatable' 
 export type MovementType = 
   | 'Shake' | 'Roll' | 'Roll btt' | 'Stick up' // fur-patch
   | 'Light on ind' | 'Flash ind' // light-ind
-  | 'Light on str' | 'Flash str' | 'Trickle up' | 'Trickle down' | 'Random fl' // light-strip
+  | 'scared' | 'angry' | 'relaxed' | 'sad' | 'happy' // light-strip
   | 'Continuous' | 'Discontinuous' // speaker
   | 'Inflate' | 'Deflate' | 'Pulse' // inflatable
   | 'static' | 'rotating' | 'pulsing' | 'blinking'; // general
@@ -50,6 +50,7 @@ export interface WearableItem {
   inflatableLength?: number; // Length for inflatable
   inflatableWidth?: number; // Width for inflatable
   animationStartTime?: number;
+  locked?: boolean; // If true, item cannot be moved or rotated
 }
 
 export interface ColorSelection {

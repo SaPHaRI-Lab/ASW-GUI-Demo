@@ -128,6 +128,35 @@ function App() {
     
     // Load saved state
     loadState();
+    setTimeout(() => {
+      const state = useAppStore.getState();
+      const existingDefaults = state.items.filter(i => i.locked && i.type === 'light-strip');
+      if (existingDefaults.length === 0) {
+        const createLockedStrip = (view: 'front' | 'back', x: number, y: number, rotation: number) => {
+          const strip = state.items.length;
+          const newItem: WearableItem = {
+            id: `light-strip_DEFAULT_${view}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+            type: 'light-strip',
+            position: { x, y },
+            color: 'rgb(227, 227, 227)',
+            gradient: 5,
+            movement: 'static',
+            speed: 3,
+            amount: 12,
+            length: 1.5,
+            isSelected: false,
+            isFlashing: false,
+            view,
+            zIndex: strip + 1,
+            rotation: rotation,
+            locked: true,
+          };
+          state.addItem(newItem);
+        };
+        createLockedStrip('front', 60, 130, 4);
+        createLockedStrip('front', 405, 130, -4);
+      }
+    }, 0);
   }, [loadState]);
 
   // Load jacket image when view changes

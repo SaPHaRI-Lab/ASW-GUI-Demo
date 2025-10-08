@@ -46,6 +46,7 @@ export function useDragAndDrop() {
       view: jacketConfig.view,
       zIndex: maxZIndex + 1,
       rotation: 0, // Default rotation
+      locked: false,
     };
 
     // Reset color selection state
@@ -121,10 +122,10 @@ export function useDragAndDrop() {
       
       switch (updates.movement) {
         case 'Flash ind':
-        case 'Flash str':
-        case 'Trickle up':
-        case 'Trickle down':
-        case 'Random fl':
+        case 'angry':
+        case 'relaxed':
+        case 'sad':
+        case 'happy':
         case 'Inflate':
         case 'Deflate':
           // Start flashing animation for all flash-based movements
@@ -133,7 +134,7 @@ export function useDragAndDrop() {
           }
           break;
         case 'Light on ind':
-        case 'Light on str':
+        case 'scared':
           // Stop flashing, keep steady glow
           if (wasFlashing) {
             toggleItemFlashing(itemId);

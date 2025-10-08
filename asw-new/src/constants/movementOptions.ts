@@ -18,11 +18,11 @@ export const MOVEMENT_OPTIONS: Record<string, MovementOption[]> = {
     { id: 'flash', value: 'Flash ind', label: 'Flash' },
   ],
   'light-strip': [
-    { id: 'light-on-str', value: 'Light on str', label: 'Light on' },
-    { id: 'flash-str', value: 'Flash str', label: 'Flash' },
-    { id: 'trickle-up', value: 'Trickle up', label: 'Trickle up' },
-    { id: 'trickle-down', value: 'Trickle down', label: 'Trickle down' },
-    { id: 'random-fl', value: 'Random fl', label: 'Random flash' },
+    { id: 'scared', value: 'scared', label: 'Light on' },
+    { id: 'angry', value: 'angry', label: 'Flash' },
+    { id: 'relaxed', value: 'relaxed', label: 'Trickle up' },
+    { id: 'sad', value: 'sad', label: 'Trickle down' },
+    { id: 'happy', value: 'happy', label: 'Random flash' },
   ],
   'inflatable': [
     { id: 'inflate', value: 'Inflate', label: 'Inflate' },
