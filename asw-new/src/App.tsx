@@ -132,7 +132,7 @@ function App() {
       const state = useAppStore.getState();
       const existingDefaults = state.items.filter(i => i.locked && i.type === 'light-strip');
       if (existingDefaults.length === 0) {
-        const createLockedStrip = (view: 'front' | 'back', x: number, y: number, rotation: number) => {
+        const createLockedStrip = (view: 'front' | 'back', x: number, y: number, amount: number, length: number, size: number, rotation: number) => {
           const strip = state.items.length;
           const newItem: WearableItem = {
             id: `light-strip_DEFAULT_${view}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
@@ -142,19 +142,41 @@ function App() {
             gradient: 5,
             movement: 'static',
             speed: 3,
-            amount: 12,
-            length: 1.5,
+            amount: amount,
+            length: length,
             isSelected: false,
             isFlashing: false,
             view,
             zIndex: strip + 1,
             rotation: rotation,
+            size: size,
             locked: true,
           };
           state.addItem(newItem);
         };
-        createLockedStrip('front', 60, 130, 4);
-        createLockedStrip('front', 405, 130, -4);
+        createLockedStrip('front', 60, 130, 12, 1.7, 1, 4);
+        createLockedStrip('front', 405, 130, 12, 1.7, 1, -4);
+        createLockedStrip('front', 45, 470, 5, 0.3, 0.7, 95);
+        createLockedStrip('front', 410, 473, 5, 0.3, 0.7, -95);
+        const hasLockedBattery = state.items.some(i => i.type === 'battery' && i.locked);
+        if (!hasLockedBattery) {
+          const newBattery: WearableItem = {
+            id: `battery_DEFAULT_front_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+            type: 'battery',
+            position: { x: 310, y: 160 },
+            color: '#4CAF50',
+            gradient: 5,
+            movement: 'static',
+            speed: 3,
+            isSelected: false,
+            isFlashing: false,
+            view: 'front',
+            zIndex: state.items.length + 1,
+            rotation: 0,
+            locked: true,
+          };
+          state.addItem(newBattery);
+        }
       }
     }, 0);
   }, [loadState]);
