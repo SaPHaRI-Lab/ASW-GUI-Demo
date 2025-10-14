@@ -172,7 +172,7 @@ function App() {
           const newBattery: WearableItem = {
             id: `battery_DEFAULT_front_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
             type: 'battery',
-            position: { x: 310, y: 160 },
+            position: { x: 300, y: 260 },
             color: '#4CAF50',
             gradient: 5,
             movement: 'static',
@@ -181,7 +181,7 @@ function App() {
             isFlashing: false,
             view: 'front',
             zIndex: state.items.length + 1,
-            rotation: 0,
+            rotation: 180,
             locked: true,
           };
           state.addItem(newBattery);

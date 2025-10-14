@@ -180,21 +180,26 @@ export const useESPHub = () => {
     console.log("Movement received:", movement);
 
     //const emotion = emotionMap[movement] || 'sleepy';
-
+    
     // Determine the command based on placement
     let command: string;
+    let commandColor: string;
     switch (placement) {
       case 'left-arm':
         command = 'npx_animation_L';
+        commandColor = 'changecolor_L'; 
         break;
       case 'right-arm':
         command = 'npx_animation_R';
+        commandColor = 'changecolor_R'; 
         break;
       case 'left-wrist':
         command = 'npx_animation_LW';
+        commandColor = 'changecolor_LW'; 
         break;
       case 'right-wrist':
         command = 'npx_animation_RW';
+        commandColor = 'changecolor_RW'; 
         break;
       default:
         command = 'npx_animation'; // fallback to general
@@ -206,7 +211,7 @@ export const useESPHub = () => {
     // Send color change after animation
     if (success && color) {
       setTimeout(() => {
-        sendColorChange(color);
+        sendColorChange(commandColor, color);
       }, 100); // Small delay to ensure animation command is processed first
     }
 
@@ -214,7 +219,7 @@ export const useESPHub = () => {
   };
 
   // Parse RGB from color string and send changecolor command
-  const sendColorChange = (colorString: string) => {
+  const sendColorChange = (colorComString: string, colorString: string) => {
     // Parse "rgb(227, 52, 58)" format (always RGB, no rgba)
     const rgbMatch = colorString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     
@@ -222,10 +227,10 @@ export const useESPHub = () => {
       const r = rgbMatch[1];
       const g = rgbMatch[2];
       const b = rgbMatch[3];
-      const colorCommand = `${r},${g},${b}`;
+      const colorCommand = `${r}${g}${b}`;
       
       console.log(`Sending changecolor("${colorCommand}")`);
-      return sendCommand('changecolor', colorCommand);
+      return sendCommand(colorComString, colorCommand);
     }
     
     console.warn('Could not parse RGB color:', colorString);
