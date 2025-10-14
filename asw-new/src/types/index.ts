@@ -51,6 +51,7 @@ export interface WearableItem {
   inflatableWidth?: number; // Width for inflatable
   animationStartTime?: number;
   locked?: boolean; // If true, item cannot be moved or rotated
+  placement?: 'right-arm' | 'left-arm' | 'right-wrist' | 'left-wrist'
 }
 
 export interface ColorSelection {
