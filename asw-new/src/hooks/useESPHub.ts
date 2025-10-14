@@ -17,7 +17,7 @@ export const useESPHub = () => {
   const [allClients, setAllClients] = useState<any[]>([]);
 
   useEffect(() => {
-    console.log('🔌 Initializing ESPHub connection...');
+    console.log('Initializing ESPHub connection...');
     
     const socket = io(ESPHUB_URL, {
       path: '/socket.io/',
@@ -28,7 +28,7 @@ export const useESPHub = () => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ Connected to ESPHub server');
+      console.log('Connected to ESPHub server');
       console.log('   Socket ID:', socket.id);
       setIsConnected(true);
       
@@ -39,42 +39,42 @@ export const useESPHub = () => {
         name: 'Jacket Design GUI',
         config: 'designer'
       };
-      console.log('📝 Registering client:', registration);
+      console.log('Registering client:', registration);
       socket.emit('register', registration);
       
       // Enter membership and request list (matching Python code)
       setTimeout(() => {
-        console.log('🔍 Entering membership and requesting list...');
+        console.log('Entering membership and requesting list...');
         socket.emit('enter', 'membership');
         socket.emit('list');
       }, 1000);
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Disconnected from ESPHub');
+      console.log('Disconnected from ESPHub');
       setIsConnected(false);
       setClientSid(null);
       setAllClients([]);
     });
 
     socket.on('connect_error', (error) => {
-      console.error('❌ Connection error:', error);
+      console.error('Connection error:', error);
     });
 
     // Listen for list response (the server sends back client list)
     socket.on('list', (clientsData: any) => {
-      console.log('👥 Received list event:', clientsData);
+      console.log('Received list event:', clientsData);
       handleClientsList(clientsData);
     });
 
     // Listen for clients list
     socket.on('clients', (clientsData: any) => {
-      console.log('👥 Received clients event:', clientsData);
+      console.log('Received clients event:', clientsData);
       handleClientsList(clientsData);
     });
 
     const handleClientsList = (clientsData: any) => {
-      console.log('   Processing clients data:', clientsData);
+      console.log('  Processing clients data:', clientsData);
       
       let clientArray: any[] = [];
       
@@ -108,7 +108,7 @@ export const useESPHub = () => {
       );
       
       if (jacket) {
-        console.log('🎉 Found fox_jacket!');
+        console.log('Found fox_jacket!');
         console.log('   Name:', jacket.name);
         console.log('   SID:', jacket.sid);
         console.log('   MAC:', jacket.mac);
@@ -122,11 +122,11 @@ export const useESPHub = () => {
 
     // Listen for ALL events to debug
     socket.onAny((eventName, ...args) => {
-      console.log(`📨 Event: "${eventName}"`, args);
+      console.log(`Event: "${eventName}"`, args);
     });
 
     return () => {
-      console.log('🔌 Disconnecting from ESPHub');
+      console.log('Disconnecting from ESPHub');
       socket.disconnect();
     };
   }, []);
@@ -134,7 +134,7 @@ export const useESPHub = () => {
   // Function to manually refresh clients list
   const refreshClients = () => {
     if (socketRef.current && isConnected) {
-      console.log('🔄 Manually refreshing clients list...');
+      console.log('Manually refreshing clients list...');
       socketRef.current.emit('list');
     }
   };
@@ -142,12 +142,12 @@ export const useESPHub = () => {
   // Send command to jacket
   const sendCommand = (event: string, data: any) => {
     if (!socketRef.current || !isConnected) {
-      console.warn('❌ Socket not connected');
+      console.warn('Socket not connected');
       return false;
     }
 
     if (!clientSid) {
-      console.warn('❌ Jacket SID not found');
+      console.warn('Jacket SID not found');
       return false;
     }
 
@@ -157,7 +157,7 @@ export const useESPHub = () => {
       data: data
     };
 
-    console.log('📤 Sending command to jacket:');
+    console.log('Sending command to jacket:');
     console.log('  Event:', event);
     console.log('  Data:', data);
     console.log('  Full packet:', JSON.stringify(packet, null, 2));
@@ -179,7 +179,7 @@ export const useESPHub = () => {
 
     console.log("Movement received:", movement);
 
-    const emotion = emotionMap[movement] || 'sleepy';
+    //const emotion = emotionMap[movement] || 'sleepy';
 
     // Determine the command based on placement
     let command: string;
