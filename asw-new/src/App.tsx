@@ -22,6 +22,7 @@ import type { WearableItem, JacketConfig, SessionInfo, ActionLog } from './types
 import { Button } from './components/Button';
 import { InfoPopup } from './components/InfoPopup';
 import { ScaleControls } from './components/ScaleControls';
+import { useESPHub } from './hooks/useESPHub';
 
 function App() {
   const { 
@@ -58,6 +59,13 @@ function App() {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [showWaitPopup, setShowWaitPopup] = useState(false);
   const [finalizeSubmission, setFinalizeSubmission] = useState(false);
+  const { 
+    isConnected, 
+    hasJacket, 
+    sendLEDStripAnimation, 
+    sendBatteryLevel, 
+    sendFurCommand 
+  } = useESPHub();
 
   // Handle drag start for items
   const handleDragStart = useCallback((e: React.DragEvent, itemType: string) => {
@@ -132,7 +140,7 @@ function App() {
       const state = useAppStore.getState();
       const existingDefaults = state.items.filter(i => i.locked && i.type === 'light-strip');
       if (existingDefaults.length === 0) {
-        const createLockedStrip = (view: 'front' | 'back', x: number, y: number, amount: number, length: number, size: number, rotation: number) => {
+        const createLockedStrip = (view: 'front' | 'back', x: number, y: number, amount: number, length: number, size: number, rotation: number, placement: 'right-arm' | 'left-arm' | 'right-wrist' | 'left-wrist') => {
           const strip = state.items.length;
           const newItem: WearableItem = {
             id: `light-strip_DEFAULT_${view}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
@@ -151,13 +159,14 @@ function App() {
             rotation: rotation,
             size: size,
             locked: true,
+            placement: placement
           };
           state.addItem(newItem);
         };
-        createLockedStrip('front', 60, 130, 12, 1.7, 1, 4);
-        createLockedStrip('front', 405, 130, 12, 1.7, 1, -4);
-        createLockedStrip('front', 45, 470, 5, 0.3, 0.7, 95);
-        createLockedStrip('front', 410, 473, 5, 0.3, 0.7, -95);
+        createLockedStrip('front', 60, 130, 12, 1.7, 1, 4, 'right-arm');
+        createLockedStrip('front', 405, 130, 12, 1.7, 1, -4, 'left-arm');
+        createLockedStrip('front', 45, 470, 5, 0.3, 0.7, 95, 'right-wrist');
+        createLockedStrip('front', 410, 473, 5, 0.3, 0.7, -95, 'left-wrist');
         const hasLockedBattery = state.items.some(i => i.type === 'battery' && i.locked);
         if (!hasLockedBattery) {
           const newBattery: WearableItem = {
@@ -342,12 +351,89 @@ function App() {
     }
   }, [selectedItemId, updateItemConfiguration]);
 
+  const sendItemToJacket = (item: WearableItem) => {
+    console.log('Sending item to physical jacket:', item);
+    
+    switch (item.type) {
+      case 'light-strip':
+      case 'light-ind':
+        // Check if item has placement field (arm or wrist)
+        if (item.placement) {
+          const movement = item.movement || 'static';
+            const color = item.color
+            ? `rgb(${item.color.match(/\d+/g)?.map(c => c.padStart(3, '0')).join(',')})`
+            : 'rgb(227, 227, 227)';
+          
+          console.log(`LED Strip - Placement: ${item.placement}, Movement: ${movement}, Color: ${color}`);
+          sendLEDStripAnimation(item.placement, movement, color);
+        } else {
+          console.warn('LED item missing placement field:', item);
+        }
+        break;
+        
+      case 'battery':
+        // Send battery level (speed represents level 1-5)
+        const level = item.speed || 3;
+        console.log(`Battery - Level: ${level}`);
+        sendBatteryLevel(level);
+        break;
+        
+      case 'fur-patch':
+        // Map movement to fur animation
+        const furAnim = mapMovementToFur(item.movement || 'static');
+        const side = getFurSide(item.position.x);
+        console.log(`Fur Patch - Side: ${side}, Animation: ${furAnim}`);
+        sendFurCommand(side, furAnim);
+        break;
+        
+      default:
+        console.log('Item type not supported for jacket control:', item.type);
+    }
+  };
+  
+  // Helper: Map GUI movement to fur animation
+  const mapMovementToFur = (movement: string): string => {
+    const furMap: { [key: string]: string } = {
+      'pulse': 'shake',
+      'runway': 'rollup',
+      'sad': 'rolldown',
+      'twinkle': 'middle',
+      'static': 'middle'
+    };
+    return furMap[movement] || 'middle';
+  };
+  
+  // Helper: Determine fur side based on X position
+  const getFurSide = (x: number): 'b' | 'l' | 'r' => {
+    if (x < 150) return 'r'; // Right side
+    if (x > 300) return 'l'; // Left side
+    return 'b'; // Both/center
+  }; 
+  
+  
+  
+  
+  
+  
   const handleSaveItem = () => {
+    console.log(items)
     const deselectItem = useAppStore.getState().deselectItem;
     if (selectedItemId) {
+      const selectedItem = items.find(item => item.id === selectedItemId);
+
+      if (selectedItem) {
+        // send command to physical jacket
+        if (isConnected && hasJacket) {
+          sendItemToJacket(selectedItem);
+      } else {
+        console.log('Not connected to jacket, skipping send');
+      }
+    }
       deselectItem(selectedItemId);
     }
   };
+
+  
 
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo, cloneStamp?: number): string {
