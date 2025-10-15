@@ -248,6 +248,14 @@ export const useESPHub = () => {
     return sendCommand(event, {});
   };
 
+  const reconnect = () => {
+    console.log('🔄 Manually reconnecting...');
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current.connect();
+    }
+  };
+
   return {
     isConnected,
     hasJacket: !!clientSid,
@@ -257,6 +265,7 @@ export const useESPHub = () => {
     sendColorChange,
     sendBatteryLevel,
     sendFurCommand,
-    sendCommand
+    sendCommand, 
+    reconnect
   };
 };

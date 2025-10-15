@@ -64,7 +64,10 @@ function App() {
     hasJacket, 
     sendLEDStripAnimation, 
     sendBatteryLevel, 
-    sendFurCommand 
+    sendFurCommand, 
+    allClients,
+    reconnect,
+    refreshClients
   } = useESPHub();
 
   // Handle drag start for items
@@ -588,6 +591,190 @@ function App() {
       {!sessionInfo.isActive && (
         <WelcomePopup isVisible={!sessionInfo.isActive} onContinue={handleSessionStart} />
       )}
+      {/* Connection Status Panel */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        left: '10px',
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px'
+      }}>
+        {/* Main Status Indicator */}
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          backgroundColor: isConnected ? (hasJacket ? '#4CAF50' : '#FF9800') : '#f44336',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '200px'
+        }}>
+          <div style={{
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            backgroundColor: 'white',
+            animation: isConnected && hasJacket ? 'pulse 2s infinite' : 'none'
+          }} />
+          <div style={{ flex: 1 }}>
+            {isConnected ? (
+              hasJacket ? (
+                <>✓ Jacket Connected</>
+              ) : (
+                <>⚠ Searching for Jacket...</>
+              )
+            ) : (
+              <>✗ Disconnected</>
+            )}
+          </div>
+        </div>
+
+        {/* Debug/Action Panel */}
+        <div style={{
+          padding: '12px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          color: 'white',
+          fontSize: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          minWidth: '200px'
+        }}>
+          <div style={{ 
+            fontWeight: 'bold', 
+            marginBottom: '8px',
+            borderBottom: '1px solid rgba(255,255,255,0.2)',
+            paddingBottom: '6px'
+          }}>
+            Connection Details
+          </div>
+          
+          <div style={{ marginBottom: '6px' }}>
+            <span style={{ opacity: 0.7 }}>Server:</span>{' '}
+            <span style={{ color: isConnected ? '#4CAF50' : '#f44336' }}>
+              {isConnected ? '✓ Connected' : '✗ Disconnected'}
+            </span>
+          </div>
+          
+          <div style={{ marginBottom: '6px' }}>
+            <span style={{ opacity: 0.7 }}>Jacket:</span>{' '}
+            <span style={{ color: hasJacket ? '#4CAF50' : '#f44336' }}>
+              {hasJacket ? '✓ Found' : '✗ Not Found'}
+            </span>
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <span style={{ opacity: 0.7 }}>Total Clients:</span>{' '}
+            <span style={{ fontWeight: 'bold' }}>{allClients.length}</span>
+          </div>
+
+          {/* Client List */}
+          {allClients.length > 0 && (
+            <div style={{
+              marginBottom: '10px',
+              padding: '6px',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              borderRadius: '4px',
+              maxHeight: '100px',
+              overflow: 'auto',
+              fontSize: '10px'
+            }}>
+              <div style={{ opacity: 0.7, marginBottom: '4px' }}>Connected Clients:</div>
+              {allClients.map((client, i) => (
+                <div 
+                  key={i} 
+                  style={{ 
+                    marginBottom: '2px',
+                    color: client.name === 'fox_jacket' ? '#4CAF50' : 'white'
+                  }}
+                >
+                  • {client.name || 'unnamed'} 
+                  <span style={{ opacity: 0.5 }}> ({client.sid?.substring(0, 8)}...)</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '6px', flexDirection: 'column' }}>
+            {!isConnected && (
+              <button 
+                onClick={reconnect}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1976D2'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2196F3'}
+              >
+                🔄 Reconnect to Server
+              </button>
+            )}
+            
+            {isConnected && !hasJacket && (
+              <button 
+                onClick={refreshClients}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  backgroundColor: '#FF9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F57C00'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FF9800'}
+              >
+                🔍 Search for Jacket
+              </button>
+            )}
+
+            {isConnected && hasJacket && (
+              <button 
+                onClick={refreshClients}
+                style={{
+                  padding: '6px 10px',
+                  fontSize: '11px',
+                  backgroundColor: 'rgba(76, 175, 80, 0.3)',
+                  color: 'white',
+                  border: '1px solid rgba(76, 175, 80, 0.5)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(76, 175, 80, 0.5)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(76, 175, 80, 0.3)'}
+              >
+                🔄 Refresh
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Add pulse animation in a style tag */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+      `}</style>
+
       <div className="title-container">
         <h1 id="title">Wearable Design</h1>
         <button id="info-button" onClick={() => setShowInfoPopup(true)}>?</button>
