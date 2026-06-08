@@ -161,7 +161,13 @@ function App() {
             locked: true,
             placement: placement
           };
+          state.addItem(newItem);
         };
+
+        createLockedStrip('front', 60, 130, 12, 1.7, 1, 4, 'right-arm');
+        createLockedStrip('front', 405, 130, 12, 1.7, 1, -4, 'left-arm');
+        createLockedStrip('front', 45, 470, 5, 0.3, 0.7, 95, 'right-wrist');
+        createLockedStrip('front', 410, 473, 5, 0.3, 0.7, -95, 'left-wrist');
 
         const hasLockedBattery = state.items.some(i => i.type === 'battery' && i.locked);
         if (!hasLockedBattery) {
@@ -180,7 +186,9 @@ function App() {
             rotation: 180,
             locked: true,
           };
+          state.addItem(newBattery);
         }
+
       }
 
       const hasLockedBackFur = state.items.some(
@@ -218,10 +226,15 @@ function App() {
           state.addItem(newItem);
         };
 
+        createLockedFurPatch(150, 150, 2, 0, 'static', 3, 'r');
+        createLockedFurPatch(275, 150, 2, 0, 'static', 3, 'l');
       }
 
     }, 0);
+
   }, [loadState]);
+
+
 
   // Load jacket image when view changes
   useEffect(() => {
