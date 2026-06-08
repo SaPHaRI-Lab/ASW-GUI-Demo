@@ -115,7 +115,7 @@ export const useESPHub = () => {
         console.log('   IP:', jacket.ip);
         setClientSid(jacket.sid);
       } else {
-        console.warn('⚠️ fox_jacket not found');
+        console.warn('fox_jacket not found');
         console.log('   Available client names:', clientArray.map((c: any) => c.name || 'unnamed'));
       }
     };

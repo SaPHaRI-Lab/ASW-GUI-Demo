@@ -3,21 +3,24 @@
 #jacketCanvas {
   position: absolute;
   pointer-events: auto;
+  background-color: #808080;
 }
 
-#back-view, #front-view {
+#back-view,
+#front-view {
   position: absolute;
   bottom: -60px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background-color: var(--light-blue);
+  background-color: var(#808080);
   border: none;
   padding: 12px;
   font-size: 15px;
   border-radius: 4px;
 }
 
-#back-view:hover, #front-view:hover {
-  background-color: var(--light-blue-hover) !important;
+#back-view:hover,
+#front-view:hover {
+  background-color: var(#808080) !important;
 }

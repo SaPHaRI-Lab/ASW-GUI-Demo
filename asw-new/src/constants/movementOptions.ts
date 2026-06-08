@@ -8,10 +8,10 @@ export interface MovementOption {
 
 export const MOVEMENT_OPTIONS: Record<string, MovementOption[]> = {
   'fur-patch': [
-    { id: 'shake', value: 'Shake', label: 'Shake' },
-    { id: 'roll', value: 'Roll', label: 'Roll Down' },
-    { id: 'roll-btt', value: 'Roll btt', label: 'Roll Up' },
-    { id: 'stick-up', value: 'Stick up', label: 'Stick up' },
+    { id: 'off', value: 'off', label: 'Off' },
+    { id: 'rolldown', value: 'rolldown', label: 'Roll Down' },
+    { id: 'rollup', value: 'rollup', label: 'Roll Up' },
+    { id: 'top', value: 'top', label: 'Stick up' },
   ],
   'light-ind': [
     { id: 'light-on', value: 'Light on ind', label: 'Light on' },

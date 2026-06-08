@@ -18,7 +18,7 @@ export interface Position {
 export type ItemType = 'fur-patch' | 'light-ind' | 'light-strip' | 'inflatable' | 'battery' | 'display' | 'speaker' | 'scent' | 'other';
 
 export type MovementType = 
-  | 'Shake' | 'Roll' | 'Roll btt' | 'Stick up' // fur-patch
+  | 'off' | 'rolldown' | 'rollup' | 'top' // fur-patch
   | 'Light on ind' | 'Flash ind' // light-ind
   | 'scared' | 'angry' | 'relaxed' | 'sad' | 'happy' // light-strip
   | 'Continuous' | 'Discontinuous' // speaker
@@ -51,8 +51,7 @@ export interface WearableItem {
   inflatableWidth?: number; // Width for inflatable
   animationStartTime?: number;
   locked?: boolean; // If true, item cannot be moved or rotated
-  placement?: 'right-arm' | 'left-arm' | 'right-wrist' | 'left-wrist'
-}
+placement?: 'right-arm' | 'left-arm' | 'right-wrist' | 'left-wrist' | 'l' | 'r';}
 
 export interface ColorSelection {
   rgba: RGBA;

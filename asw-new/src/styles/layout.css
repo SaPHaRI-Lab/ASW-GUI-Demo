@@ -37,7 +37,7 @@
 }
 
 .sidebar::after {
-  content: ''; 
+  content: '';
   height: 70px;
   display: block;
 }
@@ -54,7 +54,8 @@
 .session-info {
   position: absolute;
   top: -35px;
-  right: 16%; /* Right of main view, left of right panel (15% + 1% margin) */
+  right: 16%;
+  /* Right of main view, left of right panel (15% + 1% margin) */
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -71,9 +72,11 @@
 }
 
 .jacketbox {
-  width: 480px; /*480 *1.15*/
-  height: 550px; /*550 *1.15*/
-  background-color: #ffffff;
+  width: 480px;
+  /*480 *1.15*/
+  height: 550px;
+  /*550 *1.15*/
+  background-color: #232323;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -103,7 +106,7 @@
 .customization {
   width: 15%;
   height: 100vh;
-  padding: 50px 20px 15px; 
+  padding: 50px 20px 15px;
   position: absolute;
   right: 0;
   top: -10px;
@@ -124,13 +127,13 @@
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .left-panel,
   .right-panel {
     flex: none;
     order: 2;
   }
-  
+
   .center-panel {
     order: 1;
   }
@@ -140,11 +143,11 @@
   .app-main {
     padding: 0.5rem;
   }
-  
+
   .app-header {
     padding: 1rem;
   }
-  
+
   .app-header h1 {
     font-size: 1.5rem;
   }

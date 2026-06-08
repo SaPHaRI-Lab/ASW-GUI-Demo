@@ -25,16 +25,16 @@ import { ScaleControls } from './components/ScaleControls';
 import { useESPHub } from './hooks/useESPHub';
 
 function App() {
-  const { 
-    loadState, 
-    jacketConfig, 
-    updateJacketConfig, 
-    undo, 
-    redo, 
-    canUndo, 
-    canRedo, 
-    selectedItemId, 
-    duplicateItem, 
+  const {
+    loadState,
+    jacketConfig,
+    updateJacketConfig,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    selectedItemId,
+    duplicateItem,
     deleteSelectedItem,
     sessionInfo,
     startSession,
@@ -55,16 +55,16 @@ function App() {
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [showCreateItemPopup, setShowCreateItemPopup] = useState(false);
   const [pendingItemType, setPendingItemType] = useState<string | null>(null);
-  const [pendingDropPosition, setPendingDropPosition] = useState<{x: number, y: number} | null>(null);
+  const [pendingDropPosition, setPendingDropPosition] = useState<{ x: number, y: number } | null>(null);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [showWaitPopup, setShowWaitPopup] = useState(false);
   const [finalizeSubmission, setFinalizeSubmission] = useState(false);
-  const { 
-    isConnected, 
-    hasJacket, 
-    sendLEDStripAnimation, 
-    sendBatteryLevel, 
-    sendFurCommand 
+  const {
+    isConnected,
+    hasJacket,
+    sendLEDStripAnimation,
+    sendBatteryLevel,
+    sendFurCommand
   } = useESPHub();
 
   // Handle drag start for items
@@ -85,9 +85,9 @@ function App() {
     const selectedItems = items.filter(item => item.isSelected);
     if (selectedItems.length > 0) {
       duplicateItem(selectedItems[0].id);
-      logAction('duplicated_items', { 
-        count: selectedItems.length, 
-        itemIds: selectedItems.map(item => item.id) 
+      logAction('duplicated_items', {
+        count: selectedItems.length,
+        itemIds: selectedItems.map(item => item.id)
       });
     } else if (selectedItemId) {
       duplicateItem(selectedItemId);
@@ -99,7 +99,7 @@ function App() {
   const handleDelete = () => {
     // Get all selected items
     const selectedItems = items.filter(item => item.isSelected);
-    
+
     if (selectedItems.length > 0) {
       console.log('DELETE BUTTON: Deleting', selectedItems.length, 'items:', selectedItems.map(item => item.id));
       selectedItems.forEach(item => {
@@ -107,9 +107,9 @@ function App() {
         const removeItem = useAppStore.getState().removeItem;
         removeItem(item.id);
       });
-      logAction('deleted_items', { 
-        count: selectedItems.length, 
-        itemIds: selectedItems.map(item => item.id) 
+      logAction('deleted_items', {
+        count: selectedItems.length,
+        itemIds: selectedItems.map(item => item.id)
       });
       console.log('DELETE BUTTON COMPLETE: Deleted', selectedItems.length, 'items');
     } else if (selectedItemId) {
@@ -133,7 +133,7 @@ function App() {
   // Load static images on component mount
   useEffect(() => {
     console.log('Loading jacket images...');
-    
+
     // Load saved state
     loadState();
     setTimeout(() => {
@@ -143,7 +143,7 @@ function App() {
         const createLockedStrip = (view: 'front' | 'back', x: number, y: number, amount: number, length: number, size: number, rotation: number, placement: 'right-arm' | 'left-arm' | 'right-wrist' | 'left-wrist') => {
           const strip = state.items.length;
           const newItem: WearableItem = {
-            id: `light-strip_DEFAULT_${view}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+            id: `light-strip_DEFAULT_${view}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             type: 'light-strip',
             position: { x, y },
             color: 'rgb(227, 227, 227)',
@@ -161,16 +161,12 @@ function App() {
             locked: true,
             placement: placement
           };
-          state.addItem(newItem);
         };
-        createLockedStrip('front', 60, 130, 12, 1.7, 1, 4, 'right-arm');
-        createLockedStrip('front', 405, 130, 12, 1.7, 1, -4, 'left-arm');
-        createLockedStrip('front', 45, 470, 5, 0.3, 0.7, 95, 'right-wrist');
-        createLockedStrip('front', 410, 473, 5, 0.3, 0.7, -95, 'left-wrist');
+
         const hasLockedBattery = state.items.some(i => i.type === 'battery' && i.locked);
         if (!hasLockedBattery) {
           const newBattery: WearableItem = {
-            id: `battery_DEFAULT_front_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+            id: `battery_DEFAULT_front_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             type: 'battery',
             position: { x: 300, y: 260 },
             color: '#4CAF50',
@@ -184,16 +180,53 @@ function App() {
             rotation: 180,
             locked: true,
           };
-          state.addItem(newBattery);
         }
       }
+
+      const hasLockedBackFur = state.items.some(
+        i => i.type === 'fur-patch' && i.locked && i.view === 'back'
+      );
+
+      if (!hasLockedBackFur) {
+        const createLockedFurPatch = (
+          x: number,
+          y: number,
+          size = 1,
+          rotation = 0,
+          movement: WearableItem['movement'] = 'static',
+          speed = 3,
+          side: 'l' | 'r' = 'r'
+        ) => {
+          const newItem: WearableItem = {
+            id: `fur-patch_DEFAULT_back_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            type: 'fur-patch',
+            position: { x, y },
+            color: 'rgb(227, 227, 227)',
+            gradient: 5,
+            movement,
+            speed,
+            isSelected: false,
+            isFlashing: false,
+            view: 'back',
+            zIndex: state.items.length + 1,
+            rotation,
+            size,
+            locked: true,
+            placement: side,
+          };
+
+          state.addItem(newItem);
+        };
+
+      }
+
     }, 0);
   }, [loadState]);
 
   // Load jacket image when view changes
   useEffect(() => {
     console.log('Loading jacket image for view:', jacketConfig.view);
-    
+
     const jacket = new Image();
     jacket.onload = () => {
       console.log('Jacket image loaded');
@@ -220,7 +253,7 @@ function App() {
       alert('Please enter participant ID and design code first.');
       return;
     }
-    
+
     if (finalizeSubmission) {
       setShowSubmitConfirmation(true);
     } else {
@@ -245,7 +278,7 @@ function App() {
       const formData = new FormData();
       formData.append("participant_num", sessionInfo.participantId);
       formData.append("video_num", sessionInfo.designCode);
-      
+
       // Add CSV files
       const csvBlob = new Blob([csvData], { type: "text/csv" });
       const csvFile = new File([csvBlob], `Participant_${sessionInfo.participantId}_Design_${sessionInfo.designCode}.csv`, { type: "text/csv" });
@@ -327,10 +360,10 @@ function App() {
     e.stopPropagation();
     const itemType = e.dataTransfer.getData('application/item-type');
     if (!itemType) return;
-    
+
     const rect = document.getElementById('jacketbox')?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const bounds = { width: 40, height: 30 };
     const x = e.clientX - rect.left - (bounds.width / 2);
     const y = e.clientY - rect.top - (bounds.height / 2);
@@ -353,68 +386,73 @@ function App() {
 
   const sendItemToJacket = (item: WearableItem) => {
     console.log('Sending item to physical jacket:', item);
-    
+
     switch (item.type) {
       case 'light-strip':
       case 'light-ind':
         // Check if item has placement field (arm or wrist)
         if (item.placement) {
           const movement = item.movement || 'static';
-            const color = item.color
+          const color = item.color
             ? `rgb(${item.color.match(/\d+/g)?.map(c => c.padStart(3, '0')).join(',')})`
             : 'rgb(227, 227, 227)';
-          
+
           console.log(`LED Strip - Placement: ${item.placement}, Movement: ${movement}, Color: ${color}`);
           sendLEDStripAnimation(item.placement, movement, color);
         } else {
           console.warn('LED item missing placement field:', item);
         }
         break;
-        
+
       case 'battery':
         // Send battery level (speed represents level 1-5)
         const level = item.speed || 3;
         console.log(`Battery - Level: ${level}`);
         sendBatteryLevel(level);
         break;
-        
-      case 'fur-patch':
-        // Map movement to fur animation
+
+      case 'fur-patch': {
         const furAnim = mapMovementToFur(item.movement || 'static');
-        const side = getFurSide(item.position.x);
+
+        // Fixed addressing: each fur patch must have placement 'l' or 'r'
+        const side = item.placement === 'l' || item.placement === 'r'
+          ? item.placement
+          : (item.position.x < 250 ? 'r' : 'l'); // fallback if old items exist
+
         console.log(`Fur Patch - Side: ${side}, Animation: ${furAnim}`);
         sendFurCommand(side, furAnim);
         break;
-        
+      }
+
       default:
         console.log('Item type not supported for jacket control:', item.type);
     }
   };
-  
+
   // Helper: Map GUI movement to fur animation
   const mapMovementToFur = (movement: string): string => {
     const furMap: { [key: string]: string } = {
-      'pulse': 'shake',
-      'runway': 'rollup',
-      'sad': 'rolldown',
-      'twinkle': 'middle',
-      'static': 'middle'
+      'shake': 'shake',
+      'rollup': 'rollup',
+      'rolldown': 'rolldown',
+      'top': 'top',
+      'static': 'off'
     };
-    return furMap[movement] || 'middle';
+    return furMap[movement] || 'off';
   };
-  
+
   // Helper: Determine fur side based on X position
   const getFurSide = (x: number): 'b' | 'l' | 'r' => {
     if (x < 150) return 'r'; // Right side
     if (x > 300) return 'l'; // Left side
     return 'b'; // Both/center
-  }; 
-  
-  
-  
-  
-  
-  
+  };
+
+
+
+
+
+
   const handleSaveItem = () => {
     console.log(items)
     const deselectItem = useAppStore.getState().deselectItem;
@@ -425,15 +463,15 @@ function App() {
         // send command to physical jacket
         if (isConnected && hasJacket) {
           sendItemToJacket(selectedItem);
-      } else {
-        console.log('Not connected to jacket, skipping send');
+        } else {
+          console.log('Not connected to jacket, skipping send');
+        }
       }
-    }
       deselectItem(selectedItemId);
     }
   };
 
-  
+
 
   // Helper: Serialize items to legacy CSV format
   function generateDesignCSV(items: WearableItem[], jacketConfig: JacketConfig, sessionInfo: SessionInfo, cloneStamp?: number): string {
@@ -449,14 +487,14 @@ function App() {
       }
       const lengthValue = (
         item.type === 'light-strip' ? (item.length || 1) :
-        item.type === 'fur-patch' ? (item.verticalRows || '') :
-        item.type === 'inflatable' ? (item.inflatableLength || '') :
-        ''
+          item.type === 'fur-patch' ? (item.verticalRows || '') :
+            item.type === 'inflatable' ? (item.inflatableLength || '') :
+              ''
       );
       const widthValue = (
         item.type === 'fur-patch' ? (item.amount || '') :
-        item.type === 'inflatable' ? (item.inflatableWidth || '') :
-        ''
+          item.type === 'inflatable' ? (item.inflatableWidth || '') :
+            ''
       );
 
       const createdItemName = item.type === 'other' ? (item.customName || '') : '';
@@ -594,75 +632,75 @@ function App() {
       </div>
       <div className="container">
         <div className="sidebar">
-          <h3 className="sidebar-title" style={{color: 'white'}}>Item Selection Area</h3>
+          <h3 className="sidebar-title" style={{ color: 'white' }}>Item Selection Area</h3>
           <div className="option">
             <div className="option-txt">Create Item</div>
             <div className="item-container" id="other-cont">
-              <div 
-                className="other" 
-                id="other" 
-                draggable="true" 
+              <div
+                className="other"
+                id="other"
+                draggable="true"
                 onDragStart={(e) => handleDragStart(e, 'other')}
                 data-name="?"
               ></div>
             </div>
           </div>
-          
+
           <div className="option">Fur Patch
             <div className="item-container" id="fur-patch-cont">
               <div className="fur-patch" id="fur-patch" draggable="true" onDragStart={(e) => handleDragStart(e, 'fur-patch')}>
                 {/* Back row */}
-                <div className="fur1" style={{width: '12px', height: '18px', top: '0px', left: '16px', transform: 'rotate(-5deg)'}}></div>
-                <div className="fur2" style={{width: '11px', height: '17px', top: '1px', left: '22px', transform: 'rotate(8deg)'}}></div>
-                <div className="fur1" style={{width: '11px', height: '17px', top: '1px', left: '12px', transform: 'rotate(-12deg)'}}></div>
+                <div className="fur1" style={{ width: '12px', height: '18px', top: '0px', left: '16px', transform: 'rotate(-5deg)' }}></div>
+                <div className="fur2" style={{ width: '11px', height: '17px', top: '1px', left: '22px', transform: 'rotate(8deg)' }}></div>
+                <div className="fur1" style={{ width: '11px', height: '17px', top: '1px', left: '12px', transform: 'rotate(-12deg)' }}></div>
                 {/* Middle row */}
-                <div className="fur1" style={{width: '10px', height: '15px', top: '8px', left: '8px', transform: 'rotate(-20deg)'}}></div>
-                <div className="fur2" style={{width: '10px', height: '15px', top: '8px', left: '14px', transform: 'rotate(-15deg)'}}></div>
-                <div className="fur1" style={{width: '10px', height: '15px', top: '8px', left: '26px', transform: 'rotate(15deg)'}}></div>
-                <div className="fur2" style={{width: '10px', height: '15px', top: '8px', left: '30px', transform: 'rotate(22deg)'}}></div>
+                <div className="fur1" style={{ width: '10px', height: '15px', top: '8px', left: '8px', transform: 'rotate(-20deg)' }}></div>
+                <div className="fur2" style={{ width: '10px', height: '15px', top: '8px', left: '14px', transform: 'rotate(-15deg)' }}></div>
+                <div className="fur1" style={{ width: '10px', height: '15px', top: '8px', left: '26px', transform: 'rotate(15deg)' }}></div>
+                <div className="fur2" style={{ width: '10px', height: '15px', top: '8px', left: '30px', transform: 'rotate(22deg)' }}></div>
                 {/* Front row */}
-                <div className="fur1" style={{width: '9px', height: '13px', top: '15px', left: '18px', transform: 'rotate(-3deg)'}}></div>
-                <div className="fur2" style={{width: '9px', height: '13px', top: '15px', left: '20px', transform: 'rotate(10deg)'}}></div>
+                <div className="fur1" style={{ width: '9px', height: '13px', top: '15px', left: '18px', transform: 'rotate(-3deg)' }}></div>
+                <div className="fur2" style={{ width: '9px', height: '13px', top: '15px', left: '20px', transform: 'rotate(10deg)' }}></div>
                 {/* Side fill */}
-                <div className="fur1" style={{width: '8px', height: '14px', top: '12px', left: '4px', transform: 'rotate(-25deg)'}}></div>
-                <div className="fur2" style={{width: '8px', height: '14px', top: '12px', left: '34px', transform: 'rotate(25deg)'}}></div>
+                <div className="fur1" style={{ width: '8px', height: '14px', top: '12px', left: '4px', transform: 'rotate(-25deg)' }}></div>
+                <div className="fur2" style={{ width: '8px', height: '14px', top: '12px', left: '34px', transform: 'rotate(25deg)' }}></div>
                 {/* Back fill */}
-                <div className="fur1" style={{width: '10px', height: '16px', top: '3px', left: '16px', transform: 'rotate(-8deg)'}}></div>
-                <div className="fur2" style={{width: '10px', height: '16px', top: '3px', left: '24px', transform: 'rotate(5deg)'}}></div>
+                <div className="fur1" style={{ width: '10px', height: '16px', top: '3px', left: '16px', transform: 'rotate(-8deg)' }}></div>
+                <div className="fur2" style={{ width: '10px', height: '16px', top: '3px', left: '24px', transform: 'rotate(5deg)' }}></div>
                 {/* Front fill */}
-                <div className="fur1" style={{width: '8px', height: '12px', top: '18px', left: '10px', transform: 'rotate(-18deg)'}}></div>
-                <div className="fur2" style={{width: '8px', height: '12px', top: '18px', left: '28px', transform: 'rotate(18deg)'}}></div>
+                <div className="fur1" style={{ width: '8px', height: '12px', top: '18px', left: '10px', transform: 'rotate(-18deg)' }}></div>
+                <div className="fur2" style={{ width: '8px', height: '12px', top: '18px', left: '28px', transform: 'rotate(18deg)' }}></div>
               </div>
             </div>
           </div>
-          
+
           <div className="option">
             <div className="option-txt">Individual Light</div>
             <div className="item-container" id="light-ind-cont">
               <div className="light-ind" id="light-ind" draggable="true" onDragStart={(e) => handleDragStart(e, 'light-ind')}></div>
             </div>
           </div>
-          
+
           <div className="option">Light Strip
             <div className="item-container" id="light-strip-cont">
               <div className="light-strip" id="light-strip" draggable="true" onDragStart={(e) => handleDragStart(e, 'light-strip')}>
                 <div className="rectangle"></div>
-                <div className="circle" style={{top: '-3px'}}></div>
-                <div className="circle" style={{top: '37px'}}></div>
-                <div className="circle" style={{top: '77px'}}></div>
-                <div className="circle" style={{top: '117px'}}></div>
-                <div className="circle" style={{top: '157px'}}></div>
-                <div className="circle" style={{top: '195px'}}></div>
+                <div className="circle" style={{ top: '-3px' }}></div>
+                <div className="circle" style={{ top: '37px' }}></div>
+                <div className="circle" style={{ top: '77px' }}></div>
+                <div className="circle" style={{ top: '117px' }}></div>
+                <div className="circle" style={{ top: '157px' }}></div>
+                <div className="circle" style={{ top: '195px' }}></div>
               </div>
             </div>
           </div>
 
           <div className="option">Inflatable
             <div className="item-container" id="inflatable-cont">
-              <div className="inflatable" draggable="true" onDragStart={(e) => handleDragStart(e, 'inflatable')}/>
+              <div className="inflatable" draggable="true" onDragStart={(e) => handleDragStart(e, 'inflatable')} />
             </div>
           </div>
-          
+
           <div className="option">
             <div className="option-txt">Social Battery Display</div>
             <div className="item-container" id="battery-cont">
@@ -674,14 +712,14 @@ function App() {
               </div>
             </div>
           </div>
-          
+
           <div className="option">
             <div className="option-txt">Display Screen</div>
             <div className="item-container" id="display-cont">
               <div className="display" id="display" draggable="true" onDragStart={(e) => handleDragStart(e, 'display')}></div>
             </div>
           </div>
-          
+
           <div className="option">Speaker
             <div className="item-container" id="speaker-cont">
               <div className="speaker" id="speaker" draggable="true" onDragStart={(e) => handleDragStart(e, 'speaker')}>
@@ -695,7 +733,7 @@ function App() {
 
           <div className="option">Scent
             <div className="item-container" id="scent-cont">
-              <div className="scent" draggable="true" onDragStart={(e) => handleDragStart(e, 'scent')}/>
+              <div className="scent" draggable="true" onDragStart={(e) => handleDragStart(e, 'scent')} />
             </div>
           </div>
         </div>
@@ -706,66 +744,66 @@ function App() {
             <div className="session-item">Design Code: {sessionInfo.designCode}</div>
           </div>
           <div className="design-area">
-            <h2 className="design-area-title" style={{color: 'white'}}>Main Design Area</h2>
+            <h2 className="design-area-title" style={{ color: 'white' }}>Main Design Area</h2>
             <div className="jacketbox" id="jacketbox" onDrop={handleDrop} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}>
-            <JacketCanvas 
-              jacketImage={jacketImage}
-              setPendingItemType={setPendingItemType}
-              setShowCreateItemPopup={setShowCreateItemPopup}
-              setPendingDropPosition={setPendingDropPosition}
-            />
-            <button 
-              id="back-view" 
-              onClick={toggleView}
-              style={{display: jacketConfig.view === 'front' ? 'block' : 'none'}}
-            >
-              Switch to Back
-            </button>
-            <button 
-              id="front-view" 
-              onClick={toggleView}
-              style={{display: jacketConfig.view === 'back' ? 'block' : 'none'}}
-            >
-              Switch to Front
-            </button>
-          </div>
+              <JacketCanvas
+                jacketImage={jacketImage}
+                setPendingItemType={setPendingItemType}
+                setShowCreateItemPopup={setShowCreateItemPopup}
+                setPendingDropPosition={setPendingDropPosition}
+              />
+              <button
+                id="back-view"
+                onClick={toggleView}
+                style={{ display: jacketConfig.view === 'front' ? 'block' : 'none' }}
+              >
+                Switch to Back
+              </button>
+              <button
+                id="front-view"
+                onClick={toggleView}
+                style={{ display: jacketConfig.view === 'back' ? 'block' : 'none' }}
+              >
+                Switch to Front
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="customization">
-          <h3 className="sidebar-title" style={{color: 'white'}}>Item Customization Area</h3>
+          <h3 className="sidebar-title" style={{ color: 'white' }}>Item Customization Area</h3>
           <div className="undoredodel">
             <div className="undoredo">
-              <button 
-                id="undo" 
+              <button
+                id="undo"
                 onClick={handleUndo}
                 disabled={!canUndo()}
-                style={{opacity: canUndo() ? 1 : 0.5}}
+                style={{ opacity: canUndo() ? 1 : 0.5 }}
               >
-                <img src="undo.png" id="undo-arrow" draggable="false" style={{display: 'block'}} />
+                <img src="undo.png" id="undo-arrow" draggable="false" style={{ display: 'block' }} />
               </button>
-              <button 
-                id="redo" 
+              <button
+                id="redo"
                 onClick={handleRedo}
                 disabled={!canRedo()}
-                style={{opacity: canRedo() ? 1 : 0.5}}
+                style={{ opacity: canRedo() ? 1 : 0.5 }}
               >
-                <img src="redo.png" id="redo-arrow" draggable="false" style={{display: 'block'}} />
+                <img src="redo.png" id="redo-arrow" draggable="false" style={{ display: 'block' }} />
               </button>
             </div>
-            <button 
-              id="duplicate" 
+            <button
+              id="duplicate"
               onClick={handleDuplicate}
               disabled={!hasSelectedItems}
-              style={{opacity: hasSelectedItems ? 1 : 0.5}}
+              style={{ opacity: hasSelectedItems ? 1 : 0.5 }}
             >
               Duplicate
             </button>
-            <button 
-              id="delete" 
+            <button
+              id="delete"
               onClick={handleDelete}
               disabled={!hasSelectedItems}
-              style={{opacity: hasSelectedItems ? 1 : 0.5}}
+              style={{ opacity: hasSelectedItems ? 1 : 0.5 }}
             >
               Delete
             </button>
@@ -778,10 +816,10 @@ function App() {
                 <div className="selection-bar"></div>
                 <span className="selection-text">Item Selected</span>
               </div>
-              
+
               {/* Layer controls */}
               <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     const selectedItems = items.filter(item => item.isSelected);
@@ -832,45 +870,45 @@ function App() {
           )}
 
           {selectedItemId && (
-              <>
-                <div className="selection-indicator">
-                  <div className="selection-bar"></div>
-                  <span className="selection-text">Item Selected</span>
-                </div>
-                
-                {/* Layer controls */}
-                <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      const selectedItem = items.find(item => item.id === selectedItemId);
-                      if (selectedItem) {
-                        if (selectedItem.view === 'front') {
-                          moveItemToBack(selectedItem.id);
-                          logAction('moved_item_to_back', { itemId: selectedItem.id });
-                        } else {
-                          moveItemToFront(selectedItem.id);
-                          logAction('moved_item_to_front', { itemId: selectedItem.id });
-                        }
+            <>
+              <div className="selection-indicator">
+                <div className="selection-bar"></div>
+                <span className="selection-text">Item Selected</span>
+              </div>
+
+              {/* Layer controls */}
+              <div className="layer-controls" style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const selectedItem = items.find(item => item.id === selectedItemId);
+                    if (selectedItem) {
+                      if (selectedItem.view === 'front') {
+                        moveItemToBack(selectedItem.id);
+                        logAction('moved_item_to_back', { itemId: selectedItem.id });
+                      } else {
+                        moveItemToFront(selectedItem.id);
+                        logAction('moved_item_to_front', { itemId: selectedItem.id });
                       }
-                    }}
-                    style={{
-                      cursor: 'pointer',
-                      backgroundColor: '#4A9FBF',
-                      border: 'none',
-                      padding: '8px 16px',
-                      fontSize: '14px',
-                      color: 'white',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    {items.find(item => item.id === selectedItemId)?.view === 'front' ? 'Move to Back' : 'Move to Front'}
-                  </button>
-                </div>
-                
-                {showColorWheel && (
-                  <>
-                    <div className="color-wheel-section">
+                    }
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: '#4A9FBF',
+                    border: 'none',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    color: 'white',
+                    borderRadius: '4px'
+                  }}
+                >
+                  {items.find(item => item.id === selectedItemId)?.view === 'front' ? 'Move to Back' : 'Move to Front'}
+                </button>
+              </div>
+
+              {showColorWheel && (
+                <>
+                  <div className="color-wheel-section">
                     <div className="color">
                       <h2 id="color-title">Color</h2>
                       <div className="color-grid" id="color-grid">
@@ -881,7 +919,7 @@ function App() {
                 </>
               )}
               <ScaleControls itemId={selectedItemId} />
-              
+
               {selectedItemId && (
                 <>
                   <h2 id="movement-title" style={{ marginLeft: 80 }}>
@@ -899,22 +937,22 @@ function App() {
                   <ItemControlPanel />
                 </>
               )}
-              
+
               {selectedItemId && (
                 <div className="custom-user-input">
                   <h2 id="custom-title">
-                    {items.find(item => item.id === selectedItemId)?.type === 'speaker' 
-                      ? 'What should it play?' 
+                    {items.find(item => item.id === selectedItemId)?.type === 'speaker'
+                      ? 'What should it play?'
                       : items.find(item => item.id === selectedItemId)?.type === 'scent'
                         ? 'What should the scent be?'
                         : items.find(item => item.id === selectedItemId)?.type === 'display'
                           ? 'What should it display?'
                           : 'Write my own action:'}
                   </h2>
-                  <textarea 
-                    id="custom-input" 
-                    name="item-movement" 
-                    rows={2} 
+                  <textarea
+                    id="custom-input"
+                    name="item-movement"
+                    rows={2}
                     cols={22}
                     value={items.find(item => item.id === selectedItemId)?.customInput || ''}
                     onChange={handleCustomInputChange}
@@ -924,16 +962,16 @@ function App() {
                   ></textarea>
                 </div>
               )}
-              
+
               {(() => {
                 const selectedItem = items.find(item => item.id === selectedItemId);
                 if (!selectedItem || selectedItem.type === 'display' || selectedItem.type === 'scent') return null;
-                
+
                 return (
                   <div className="speed" style={{ marginTop: 20, marginBottom: 20 }}>
                     <h2 id="speed-title" style={{ marginLeft: 80 }}>
-                      {selectedItem.type === 'battery' 
-                        ? 'Battery Level' 
+                      {selectedItem.type === 'battery'
+                        ? 'Battery Level'
                         : selectedItem.type === 'speaker'
                           ? 'Volume'
                           : 'Speed'}
@@ -958,13 +996,13 @@ function App() {
                   </div>
                 );
               })()}
-              </>
-            )}
-          
+            </>
+          )}
+
           {/* Synchronize Animations */}
           {(() => {
             const selectedItems = items.filter(item => item.isSelected);
-            const selectedLightStrips = selectedItems.filter(item => 
+            const selectedLightStrips = selectedItems.filter(item =>
               item.type === 'light-strip' || item.type === 'light-ind'
             );
             if (selectedLightStrips.length > 1) {
@@ -975,8 +1013,8 @@ function App() {
                     onClick={() => {
                       const now = Date.now();
                       selectedLightStrips.forEach(item => {
-                        updateItemConfiguration(item.id, { 
-                          animationStartTime: now 
+                        updateItemConfiguration(item.id, {
+                          animationStartTime: now
                         });
                       });
                       logAction('synchronized_animations', {
@@ -1000,12 +1038,12 @@ function App() {
             }
             return null;
           })()}
-          
+
           <div className="save">
             {selectedItemId ? (
-              <button 
-                type="button" 
-                id="save-item-button" 
+              <button
+                type="button"
+                id="save-item-button"
                 onClick={handleSaveItem}
                 style={{
                   position: 'absolute',
@@ -1025,9 +1063,9 @@ function App() {
                 Save Item
               </button>
             ) : (
-              <button 
-                type="button" 
-                id="save-button" 
+              <button
+                type="button"
+                id="save-button"
                 onClick={handleSubmitDesign}
                 style={{
                   position: 'absolute',
@@ -1052,7 +1090,7 @@ function App() {
       </div>
 
       {/* Wait popup */}
-      <WaitPopup 
+      <WaitPopup
         isVisible={showWaitPopup}
         onOk={() => {
           setShowWaitPopup(false);
@@ -1062,12 +1100,12 @@ function App() {
       />
 
       {/* Confirmation popup */}
-      <ConfirmationPopup 
-        isVisible={showSubmitConfirmation} 
+      <ConfirmationPopup
+        isVisible={showSubmitConfirmation}
         title="Submit Design?"
         message="Are you sure you want to submit your design? This action cannot be undone."
-        onConfirm={handleConfirmSubmit} 
-        onCancel={handleCancelSubmit} 
+        onConfirm={handleConfirmSubmit}
+        onCancel={handleCancelSubmit}
       />
 
       <CreateItemPopup
@@ -1075,7 +1113,7 @@ function App() {
         onSave={handleSaveNewItem}
         onCancel={() => { setShowCreateItemPopup(false); setPendingItemType(null); }}
       />
-      <InfoPopup 
+      <InfoPopup
         isVisible={showInfoPopup}
         onClose={() => setShowInfoPopup(false)}
       />
